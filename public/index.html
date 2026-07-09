@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sign In - LeoAxis</title>
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+  <div class="auth-container">
+    
+    <!-- Left Intro Column (Rich Design) -->
+    <div class="auth-sidebar">
+      <div class="auth-brand">
+        <div class="auth-brand-logo">L</div>
+        <span>LeoAxis</span>
+      </div>
+      
+      <div class="auth-intro-content">
+        <h1 class="auth-intro-title">Empower Your Learning Journey</h1>
+        <p class="auth-intro-subtitle">
+          Access high-quality recorded lectures, track your milestones, and complete growth cycles with real-time feedback.
+        </p>
+      </div>
+
+      <div class="auth-cards-container">
+        <div class="auth-feature-card">
+          <h4>Recorded Lectures</h4>
+          <p>Learn at your own pace with curated multi-stage lessons.</p>
+        </div>
+        <div class="auth-feature-card">
+          <h4>Progress Tracking</h4>
+          <p>Track your milestones, assignments, and weekly goals.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Right Form Column -->
+    <div class="auth-form-side">
+      <div class="auth-form-wrapper">
+        
+        <!-- Toggle State Info -->
+        <div class="auth-header">
+          <h2 id="auth-title">Welcome Back</h2>
+          <p id="auth-subtitle">
+            New to LeoAxis? <span class="auth-toggle-link" onclick="toggleAuthMode(true)">Create an account</span>
+          </p>
+        </div>
+
+        <div id="error-alert" class="alert alert-danger"></div>
+        <div id="success-alert" class="alert alert-success"></div>
+
+        <!-- Credentials Form -->
+        <form id="auth-form" class="auth-form" onsubmit="handleAuthSubmit(event)">
+          
+          <div class="form-group" id="name-group" style="display: none;">
+            <label class="form-label" for="reg-name">Full Name</label>
+            <input class="form-input" type="text" id="reg-name" placeholder="John Doe">
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="auth-email">Email Address</label>
+            <input class="form-input" type="email" id="auth-email" required placeholder="name@domain.com">
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="auth-password">Password</label>
+            <input class="form-input" type="password" id="auth-password" required placeholder="••••••••">
+          </div>
+
+          <button type="submit" class="btn btn-primary btn-block" id="submit-btn" style="margin-top: 1rem;">
+            Sign In
+          </button>
+        </form>
+
+      </div>
+    </div>
+  </div>
+
+  <script src="js/api.js"></script>
+  <script>
+    let isSignUpMode = false;
+
+    // Direct check if logged in
+    window.addEventListener('DOMContentLoaded', async () => {
+      // Apply active theme at startup
+      const activeTheme = localStorage.getItem('leo-theme') || 'theme-dark-slate';
+      document.body.classList.remove('theme-dark-slate', 'theme-cream-white', 'theme-cyberpunk', 'theme-ocean');
+      document.body.classList.add(activeTheme);
+
+      try {
+        const response = await fetch('/api/auth/me');
+        const data = await response.json();
+        if (data.loggedIn) {
+          redirectToDashboard(data.user.role);
+        }
+      } catch (err) {
+        console.error('Error checking active login session:', err);
+      }
+    });
+
+    function toggleAuthMode(signUp) {
+      isSignUpMode = signUp;
+      const title = document.getElementById('auth-title');
+      const subtitle = document.getElementById('auth-subtitle');
+      const nameGroup = document.getElementById('name-group');
+      const submitBtn = document.getElementById('submit-btn');
+      const nameInput = document.getElementById('reg-name');
+
+      if (signUp) {
+        title.textContent = 'Create Account';
+        subtitle.innerHTML = 'Already have an account? <span class="auth-toggle-link" onclick="toggleAuthMode(false)">Sign In</span>';
+        nameGroup.style.display = 'flex';
+        nameInput.setAttribute('required', 'true');
+        submitBtn.textContent = 'Register Account';
+      } else {
+        title.textContent = 'Welcome Back';
+        subtitle.innerHTML = 'New to LeoAxis? <span class="auth-toggle-link" onclick="toggleAuthMode(true)">Create an account</span>';
+        nameGroup.style.display = 'none';
+        nameInput.removeAttribute('required');
+        submitBtn.textContent = 'Sign In';
+      }
+      clearAlerts();
+    }
+
+    // Clear alert contents
+    function clearAlerts() {
+      const errEl = document.getElementById('error-alert');
+      const succEl = document.getElementById('success-alert');
+      errEl.style.display = 'none';
+      succEl.style.display = 'none';
+    }
+
+    function showAlert(type, message) {
+      clearAlerts();
+      const el = document.getElementById(type === 'error' ? 'error-alert' : 'success-alert');
+      el.textContent = message;
+      el.style.display = 'block';
+    }
+
+    async function handleAuthSubmit(e) {
+      e.preventDefault();
+      clearAlerts();
+
+      const email = document.getElementById('auth-email').value;
+      const password = document.getElementById('auth-password').value;
+      
+      try {
+        if (isSignUpMode) {
+          const name = document.getElementById('reg-name').value;
+          const data = await API.register(name, email, password);
+          if (data.error) {
+            showAlert('error', data.error);
+          } else {
+            showAlert('success', 'Registration successful! Redirecting...');
+            setTimeout(() => redirectToDashboard(data.user.role), 1000);
+          }
+        } else {
+          const data = await API.login(email, password);
+          if (data.error) {
+            showAlert('error', data.error);
+          } else {
+            showAlert('success', 'Login successful! Redirecting...');
+            setTimeout(() => redirectToDashboard(data.user.role), 1000);
+          }
+        }
+      } catch (err) {
+        showAlert('error', 'Network error. Please try again.');
+      }
+    }
+
+    function redirectToDashboard(role) {
+      if (role === 'admin' || role === 'faculty') {
+        window.location.href = 'admin.html';
+      } else {
+        window.location.href = 'dashboard.html';
+      }
+    }
+  </script>
+</body>
+</html>
