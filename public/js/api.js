@@ -132,5 +132,15 @@ const API = {
     return this.fetchJSON(`/api/lectures/${lectureId}`, {
       method: 'DELETE'
     });
+  },
+
+  getTeamMembers() {
+    return this.fetchJSON('/api/admin/team');
+  },
+
+  deleteTeamMember(userId) {
+    return this.fetchJSON(`/api/admin/team/${userId}`, {
+      method: 'DELETE'
+    });
   }
 };

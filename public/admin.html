@@ -134,6 +134,7 @@
               <table class="data-table">
                 <thead>
                   <tr>
+                    <th>Name</th>
                     <th>Email</th>
                     <th>Session Logged In At</th>
                     <th>Client IP</th>
@@ -142,7 +143,7 @@
                 </thead>
                 <tbody id="login-logs-tbody">
                   <tr>
-                    <td colspan="4" style="text-align: center; color: var(--text-muted);">Loading session audits...</td>
+                    <td colspan="5" style="text-align: center; color: var(--text-muted);">Loading session audits...</td>
                   </tr>
                 </tbody>
               </table>
@@ -279,12 +280,14 @@
             </form>
           </div>
           
-          <div class="widget-card" style="padding: 2rem; justify-content: center; height: fit-content;">
-            <div class="auth-brand-logo" style="width: 60px; height: 60px; font-size: 2rem; margin-bottom: 1rem;">🔑</div>
-            <h4 style="font-size: 1.2rem; margin-bottom: 0.5rem;">Observer Credentials</h4>
-            <p style="font-size: 0.85rem; color: var(--text-muted); line-height: 1.6;">
-              Coordinators and instructors can log in through the main sign-in portal. They will be directed automatically to this administrative interface.
+          <div class="admin-panel-card" style="height: fit-content; max-height: 480px; overflow-y: auto;">
+            <h3>Authorized Team Members</h3>
+            <p style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 1.25rem;">
+              Coordinators, observers, and faculty accounts created on this platform.
             </p>
+            <div id="authorized-team-list" style="display: flex; flex-direction: column; gap: 0.75rem;">
+              <span style="color: var(--text-muted); font-size: 0.85rem; font-style: italic;">Loading team members...</span>
+            </div>
           </div>
         </div>
       </section>

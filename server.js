@@ -515,9 +515,10 @@ app.get('/api/admin/tracking', requireAdminOrFaculty, (req, res) => {
 
   // 2. Fetch login logs
   const logsQuery = `
-    SELECT id, email, ip_address, user_agent, login_time 
-    FROM login_logs 
-    ORDER BY login_time DESC 
+    SELECT l.id, l.email, u.name as user_name, l.ip_address, l.user_agent, l.login_time 
+    FROM login_logs l
+    LEFT JOIN users u ON u.id = l.user_id
+    ORDER BY l.login_time DESC 
     LIMIT 100
   `;
 
@@ -604,6 +605,30 @@ app.delete('/api/lectures/:id', requireAdmin, (req, res) => {
       return res.status(500).json({ error: 'Failed to delete lecture.' });
     }
     res.json({ success: true, message: 'Lecture deleted successfully.' });
+  });
+});
+
+// Get all invited/authorized team members (Admin only)
+app.get('/api/admin/team', requireAdmin, (req, res) => {
+  db.all(
+    `SELECT id, name, email, role, created_at FROM users WHERE role IN ('admin', 'faculty') ORDER BY created_at DESC`,
+    [],
+    (err, rows) => {
+      if (err) return res.status(500).json({ error: 'Failed to fetch team members.' });
+      res.json(rows);
+    }
+  );
+});
+
+// Delete/Revoke team member access (Admin only)
+app.delete('/api/admin/team/:id', requireAdmin, (req, res) => {
+  const targetId = req.params.id;
+  if (parseInt(targetId) === req.session.userId) {
+    return res.status(400).json({ error: 'You cannot revoke your own admin access.' });
+  }
+  db.run(`DELETE FROM users WHERE id = ?`, [targetId], (err) => {
+    if (err) return res.status(500).json({ error: 'Failed to revoke access.' });
+    res.json({ success: true, message: 'Access revoked successfully.' });
   });
 });
 

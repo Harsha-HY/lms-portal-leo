@@ -184,6 +184,7 @@ function switchAdminTab(tabId, button) {
   } else if (tabId === 'access') {
     titleEl.textContent = 'Grant Portal Access';
     subEl.textContent = 'Setup login credentials for observers, instructors, and faculty.';
+    loadTeamMembersData();
   } else if (tabId === 'history') {
     titleEl.textContent = 'Candidate Audit Logs';
     subEl.textContent = 'Track and review student session logs, course enrollments, and video lecture progress history.';
@@ -867,13 +868,14 @@ async function loadAdminData() {
     if (logsBody) {
       logsBody.innerHTML = '';
       if (data.loginLogs.length === 0) {
-        logsBody.innerHTML = `<tr><td colspan="4" style="text-align: center; color: var(--text-muted);">No active logins recorded.</td></tr>`;
+        logsBody.innerHTML = `<tr><td colspan="5" style="text-align: center; color: var(--text-muted);">No active logins recorded.</td></tr>`;
       } else {
         data.loginLogs.forEach(row => {
           const formattedTime = new Date(row.login_time).toLocaleString();
           const tr = document.createElement('tr');
           tr.innerHTML = `
-            <td style="font-weight: 600; color: var(--text-main);">${row.email}</td>
+            <td style="font-weight: 600; color: var(--text-main);">${row.user_name || 'System User'}</td>
+            <td>${row.email}</td>
             <td>${formattedTime}</td>
             <td><code>${row.ip_address}</code></td>
             <td style="font-size: 0.8rem; color: var(--text-muted); max-width: 250px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${row.user_agent}">
@@ -1086,6 +1088,7 @@ async function handleInviteFaculty(e) {
     } else {
       showAdminAlert(alertContainer, 'success', `Successfully granted ${role} access to ${email}!`);
       e.target.reset();
+      loadTeamMembersData(); // Refresh list automatically
     }
   } catch (err) {
     showAdminAlert(alertContainer, 'error', 'Network failure.');
@@ -1488,4 +1491,66 @@ window.changeVideoQuality = function(val) {
     player.style.filter = 'none';
   }
   console.log(`Resolution changed to: ${val === 'auto' ? 'Auto' : val + 'p'}`);
+};
+
+// Render invited/authorized team members
+async function loadTeamMembersData() {
+  const container = document.getElementById('authorized-team-list');
+  if (!container) return;
+  
+  try {
+    const team = await API.getTeamMembers();
+    container.innerHTML = '';
+    
+    if (team.length === 0) {
+      container.innerHTML = `<span style="color: var(--text-muted); font-size: 0.85rem; font-style: italic;">No team members registered.</span>`;
+      return;
+    }
+    
+    team.forEach(member => {
+      const card = document.createElement('div');
+      card.style.cssText = 'display: flex; justify-content: space-between; align-items: center; padding: 0.65rem 0.85rem; border-radius: var(--radius-sm); border: 1px solid var(--card-border); background-color: rgba(255,255,255,0.01); width: 100%;';
+      
+      const initials = member.name ? member.name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase() : 'U';
+      const roleClass = member.role === 'admin' ? 'badge-yellow' : 'badge-green';
+      const roleText = member.role === 'admin' ? 'ADMIN' : 'OBSERVER';
+      
+      card.innerHTML = `
+        <div style="display: flex; align-items: center; gap: 0.65rem; overflow: hidden; flex: 1; margin-right: 0.5rem;">
+          <div class="user-avatar" style="width: 32px; height: 32px; font-size: 0.85rem; flex-shrink: 0; background: var(--sidebar-active); color: white; display: flex; align-items: center; justify-content: center; font-weight: 700; border-radius: 50%;">${initials}</div>
+          <div style="display: flex; flex-direction: column; overflow: hidden; text-align: left;">
+            <span style="font-weight: 700; font-size: 0.85rem; color: var(--text-main); text-overflow: ellipsis; white-space: nowrap; overflow: hidden;" title="${member.name}">${member.name}</span>
+            <span style="font-size: 0.7rem; color: var(--text-muted); text-overflow: ellipsis; white-space: nowrap; overflow: hidden;" title="${member.email}">${member.email}</span>
+          </div>
+        </div>
+        <div style="display: flex; align-items: center; gap: 0.5rem; flex-shrink: 0;">
+          <span class="lecture-badge ${roleClass}" style="font-size: 0.6rem; padding: 0.1rem 0.35rem; text-transform: uppercase;">${roleText}</span>
+          <button onclick="revokeTeamMember(${member.id}, '${member.name.replace(/'/g, "\\'")}')" style="background: transparent; border: none; cursor: pointer; color: #f43f5e; font-size: 0.85rem; font-weight: bold; padding: 0.1rem 0.25rem;" title="Revoke Access">
+            🗑
+          </button>
+        </div>
+      `;
+      container.appendChild(card);
+    });
+  } catch (err) {
+    container.innerHTML = `<span style="color: var(--text-muted); font-size: 0.85rem;">Error loading team members list.</span>`;
+  }
+}
+
+// Revoke access handler
+window.revokeTeamMember = async function(memberId, name) {
+  const confirmed = confirm(`Are you sure you want to revoke authorization access for ${name}?`);
+  if (!confirmed) return;
+  
+  try {
+    const res = await API.deleteTeamMember(memberId);
+    if (res.error) {
+      alert('Failed to revoke access: ' + res.error);
+    } else {
+      alert('Access revoked successfully.');
+      await loadTeamMembersData();
+    }
+  } catch (err) {
+    console.error('Error revoking access:', err);
+  }
 };
