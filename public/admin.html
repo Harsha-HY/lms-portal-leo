@@ -24,7 +24,7 @@
           Student Analytics
         </button>
 
-        <button class="sidebar-link" onclick="switchAdminTab('content', this)">
+        <button class="sidebar-link" id="content-nav-btn" onclick="switchAdminTab('content', this)">
           <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
             <path stroke-linecap="round" stroke-linejoin="round" d="M15 10l4.553-2.276A1 1 0 0020 8.618v6.764a1 1 0 00.553.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"></path>
           </svg>
@@ -55,7 +55,7 @@
       </nav>
 
       <!-- Delete Batch Collapsible Sidebar Monitor -->
-      <div style="border-top: 1px solid var(--card-border); margin-top: auto; padding: 1rem 0.5rem 0.5rem 0.5rem; display: flex; flex-direction: column;">
+      <div id="delete-batch-sidebar-section" style="border-top: 1px solid var(--card-border); margin-top: auto; padding: 1rem 0.5rem 0.5rem 0.5rem; display: flex; flex-direction: column;">
         <button id="delete-batch-toggle" style="width: 100%; border: none; background: transparent; display: flex; justify-content: space-between; align-items: center; cursor: pointer; color: var(--text-main); font-weight: 700; font-size: 0.85rem; padding: 0.5rem 0.75rem; border-radius: var(--radius-sm); text-transform: uppercase; letter-spacing: 0.05em; text-align: left;">
           <span style="display: flex; align-items: center; gap: 0.5rem;">
             <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" style="width: 16px; height: 16px;">
@@ -128,7 +128,7 @@
           </div>
 
           <!-- Active Logins / Audits -->
-          <div class="admin-wide-section">
+          <div class="admin-wide-section" id="recent-login-activities-section">
             <h3>Recent Login Activities</h3>
             <div class="table-responsive">
               <table class="data-table">

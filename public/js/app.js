@@ -56,10 +56,19 @@ async function initApp() {
         await loadDashboardData();
         renderHomeDates();
       } else if (window.location.pathname.includes('admin.html')) {
-        // Observers / Faculty cannot invite other faculty members (Admin only)
+        // Faculty (Observer/Coordinator) Role-Based Access Controls
         if (currentUser.role === 'faculty') {
           const inviteBtn = document.getElementById('invite-nav-btn');
           if (inviteBtn) inviteBtn.style.display = 'none';
+
+          const contentBtn = document.getElementById('content-nav-btn');
+          if (contentBtn) contentBtn.style.display = 'none';
+
+          const deleteBatchSection = document.getElementById('delete-batch-sidebar-section');
+          if (deleteBatchSection) deleteBatchSection.style.display = 'none';
+
+          const recentLoginsSection = document.getElementById('recent-login-activities-section');
+          if (recentLoginsSection) recentLoginsSection.style.display = 'none';
         }
         
         // Attach change listener for course lectures management list
@@ -158,6 +167,13 @@ function switchTab(tabId, button) {
 }
 
 function switchAdminTab(tabId, button) {
+  if (currentUser && currentUser.role === 'faculty') {
+    if (tabId === 'content' || tabId === 'access') {
+      alert('Access Denied: You do not have permission to view this tab.');
+      return;
+    }
+  }
+
   document.querySelectorAll('.admin-tab-view').forEach(view => {
     view.style.display = 'none';
   });
