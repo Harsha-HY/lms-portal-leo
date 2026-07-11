@@ -826,6 +826,57 @@ async function toggleLectureStatus(lectureId) {
 let activeModalMCQs = [];
 let activeModalAssignment = null;
 let selectedModalQuizOptions = {};
+let ytPlayer = null;
+let ytTimer = null;
+
+// YouTube Iframe API Loader
+function loadYTVideo(youtubeId, lectureId) {
+  if (ytTimer) clearInterval(ytTimer);
+
+  const oldElement = document.getElementById('video-iframe');
+  if (oldElement) {
+    const newDiv = document.createElement('div');
+    newDiv.id = 'video-iframe';
+    newDiv.style.cssText = 'position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: none;';
+    oldElement.parentNode.replaceChild(newDiv, oldElement);
+  }
+
+  if (typeof YT !== 'undefined' && YT.Player) {
+    ytPlayer = new YT.Player('video-iframe', {
+      height: '100%',
+      width: '100%',
+      videoId: youtubeId,
+      playerVars: {
+        'autoplay': 1,
+        'controls': 1,
+        'rel': 0
+      },
+      events: {
+        'onReady': (event) => {
+          event.target.playVideo();
+          ytTimer = setInterval(() => {
+            try {
+              if (ytPlayer && typeof ytPlayer.getDuration === 'function') {
+                const duration = ytPlayer.getDuration();
+                const currentTime = ytPlayer.getCurrentTime();
+                if (duration > 0) {
+                  const remaining = duration - currentTime;
+                  if (remaining <= 30 && !completedLectureIds.includes(lectureId)) {
+                    autoCompleteLecture(lectureId);
+                  }
+                }
+              }
+            } catch (e) {
+              console.error(e);
+            }
+          }, 1000);
+        }
+      }
+    });
+  } else {
+    setTimeout(() => loadYTVideo(youtubeId, lectureId), 500);
+  }
+}
 
 // Switch between tabs in Milestone Workspace
 window.switchModalTab = function(tabName) {
@@ -853,6 +904,11 @@ window.switchModalTab = function(tabName) {
   if (tabName !== 'video') {
     const player = document.getElementById('video-player');
     if (player) player.pause();
+    if (ytPlayer && typeof ytPlayer.pauseVideo === 'function') {
+      try {
+        ytPlayer.pauseVideo();
+      } catch (e) {}
+    }
   }
 };
 
@@ -910,12 +966,29 @@ window.playLecture = async function(lectureId, title, courseTitle, videoUrl) {
     if (qualitySelect) qualitySelect.value = 'auto';
     if (player) player.style.filter = 'none';
 
+    if (customControls) customControls.style.display = 'flex';
+
     if (isLocalFile) {
-      if (customControls) customControls.style.display = 'flex';
-      if (iframe) {
-        iframe.style.display = 'none';
-        iframe.src = '';
+      if (ytTimer) clearInterval(ytTimer);
+      if (ytPlayer && typeof ytPlayer.destroy === 'function') {
+        try {
+          ytPlayer.destroy();
+        } catch(e) {}
+        ytPlayer = null;
       }
+
+      // Recreate iframe placeholder if it was replaced by YT Player div
+      const element = document.getElementById('video-iframe');
+      if (element && element.tagName !== 'IFRAME') {
+        const newIframe = document.createElement('iframe');
+        newIframe.id = 'video-iframe';
+        newIframe.style.cssText = 'position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: none; display: none;';
+        element.parentNode.replaceChild(newIframe, element);
+      } else if (element) {
+        element.style.display = 'none';
+        element.src = '';
+      }
+
       if (player) {
         player.style.display = 'block';
         player.src = videoUrl;
@@ -931,16 +1004,13 @@ window.playLecture = async function(lectureId, title, courseTitle, videoUrl) {
         player.play().catch(e => console.log('Autoplay blocked:', e));
       }
     } else {
-      if (customControls) customControls.style.display = 'none';
+      // YouTube Player logic
       if (player) {
         player.pause();
         player.style.display = 'none';
         player.src = '';
       }
-      if (iframe) {
-        iframe.style.display = 'block';
-        iframe.src = `https://www.youtube.com/embed/${videoUrl}?autoplay=1&rel=0`;
-      }
+      loadYTVideo(videoUrl, lectureId);
     }
   }
 
@@ -1049,14 +1119,34 @@ window.playLecture = async function(lectureId, title, courseTitle, videoUrl) {
 };
 
 window.closeVideoModal = function() {
+  if (ytTimer) {
+    clearInterval(ytTimer);
+    ytTimer = null;
+  }
+  if (ytPlayer && typeof ytPlayer.destroy === 'function') {
+    try {
+      ytPlayer.destroy();
+    } catch(e) {}
+    ytPlayer = null;
+  }
+
   const modal = document.getElementById('video-modal');
   const iframe = document.getElementById('video-iframe');
   const player = document.getElementById('video-player');
   if (modal) modal.style.display = 'none';
-  if (iframe) {
-    iframe.src = ''; 
-    iframe.style.display = 'none';
+  
+  // Recreate iframe element placeholder if it was replaced by YT player div
+  const element = document.getElementById('video-iframe');
+  if (element && element.tagName !== 'IFRAME') {
+    const newIframe = document.createElement('iframe');
+    newIframe.id = 'video-iframe';
+    newIframe.style.cssText = 'position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: none; display: none;';
+    element.parentNode.replaceChild(newIframe, element);
+  } else if (element) {
+    element.style.display = 'none';
+    element.src = '';
   }
+
   if (player) {
     player.pause();
     player.src = '';
@@ -1985,16 +2075,34 @@ async function autoCompleteLecture(lectureId) {
 
 // Seek playback forward or backward by specific seconds
 window.seekVideo = function(seconds) {
+  if (ytPlayer && typeof ytPlayer.getCurrentTime === 'function') {
+    const cur = ytPlayer.getCurrentTime();
+    ytPlayer.seekTo(Math.max(0, cur + seconds), true);
+    return;
+  }
   const player = document.getElementById('video-player');
   if (player) {
     player.currentTime = Math.max(0, Math.min(player.duration || 0, player.currentTime + seconds));
   }
 };
 
-// Play or Pause the native video player dynamically
+// Play or Pause the video player dynamically
 window.togglePlayPause = function() {
   const player = document.getElementById('video-player');
   const btn = document.getElementById('custom-control-playpause');
+  
+  if (ytPlayer && typeof ytPlayer.getPlayerState === 'function') {
+    const state = ytPlayer.getPlayerState();
+    if (state === 1) { // playing
+      ytPlayer.pauseVideo();
+      if (btn) btn.textContent = '▶ Play';
+    } else {
+      ytPlayer.playVideo();
+      if (btn) btn.textContent = '⏸ Pause';
+    }
+    return;
+  }
+
   if (player && btn) {
     if (player.paused) {
       player.play().catch(e => console.log(e));
@@ -2008,26 +2116,32 @@ window.togglePlayPause = function() {
 
 // Adjust playback speed rate
 window.changePlaybackSpeed = function(val) {
+  const rate = parseFloat(val);
+  if (ytPlayer && typeof ytPlayer.setPlaybackRate === 'function') {
+    ytPlayer.setPlaybackRate(rate);
+    return;
+  }
   const player = document.getElementById('video-player');
   if (player) {
-    player.playbackRate = parseFloat(val);
+    player.playbackRate = rate;
   }
 };
 
 // Adjust visual video quality using contrast/blur filters
 window.changeVideoQuality = function(val) {
+  if (ytPlayer && typeof ytPlayer.setPlaybackQuality === 'function') {
+    ytPlayer.setPlaybackQuality(val === 'auto' ? 'default' : val);
+    return;
+  }
   const player = document.getElementById('video-player');
   if (!player) return;
-  if (val === '1080') {
+  if (val === '1080' || val === 'auto') {
     player.style.filter = 'none';
   } else if (val === '720') {
     player.style.filter = 'contrast(1.02)';
   } else if (val === '480') {
     player.style.filter = 'blur(0.6px) contrast(0.97)';
-  } else {
-    player.style.filter = 'none';
   }
-  console.log(`Resolution changed to: ${val === 'auto' ? 'Auto' : val + 'p'}`);
 };
 
 // Render invited/authorized team members
