@@ -1339,6 +1339,7 @@ window.runModalCode = function() {
     } else {
       consoleLogs.textContent += `\n⚠ SOME ASSERTIONS FAILED.`;
       consoleLogs.style.color = '#fb7185';
+      triggerModalAIDebug();
     }
   } catch (err) {
     consoleLogs.textContent = `${err.name}: ${err.message}`;
@@ -2377,7 +2378,8 @@ async function handleCreateAssignment(e) {
   const hint = document.getElementById('assign-hint').value;
   const language = document.getElementById('assign-lang').value;
   const boilerplate_code = document.getElementById('assign-boilerplate').value;
-  const test_cases = document.getElementById('assign-testcases').value;
+  const inputVal = document.getElementById('assign-input').value.trim();
+  const outputVal = document.getElementById('assign-output').value.trim();
   const order_index = document.getElementById('assign-order').value;
 
   if (!courseId) {
@@ -2385,10 +2387,9 @@ async function handleCreateAssignment(e) {
     return;
   }
 
-  try {
-    // Validate JSON testcases format
-    JSON.parse(test_cases || '[]');
+  const test_cases = JSON.stringify([{ input: inputVal, output: outputVal }]);
 
+  try {
     const res = await API.createAssignment(courseId, {
       lecture_id: lectureId || null,
       title,
@@ -2396,7 +2397,7 @@ async function handleCreateAssignment(e) {
       hint,
       language,
       boilerplate_code,
-      test_cases: test_cases || '[]',
+      test_cases,
       order_index
     });
 
@@ -2408,7 +2409,7 @@ async function handleCreateAssignment(e) {
       loadAdminAssignments();
     }
   } catch (err) {
-    if (alerts) alerts.innerHTML = `<div class="alert alert-error">Invalid Test Cases JSON format. Must be an array of objects.</div>`;
+    if (alerts) alerts.innerHTML = `<div class="alert alert-error">Failed to save assignment.</div>`;
   }
 }
 
@@ -3199,7 +3200,8 @@ window.showInlineAddAssignmentForm = function(lectureId, courseId) {
           <option value="html">HTML Frontend</option>
         </select>
         <textarea class="form-input" id="inline-assign-boilerplate-${lectureId}" placeholder="Starter Boilerplate Code" style="height: 60px; padding: 0.4rem 0.6rem; font-size: 0.8rem; resize: vertical; font-family: monospace;"></textarea>
-        <textarea class="form-input" id="inline-assign-testcases-${lectureId}" placeholder="Test Cases JSON array e.g. [{\\"input\\":\\"5\\",\\"output\\":\\"25\\"}]" style="height: 50px; padding: 0.4rem 0.6rem; font-size: 0.8rem; resize: vertical; font-family: monospace;"></textarea>
+        <input class="form-input" type="text" id="inline-assign-input-${lectureId}" placeholder="Test Case Input (e.g. [1, 2, 3] or 5)" style="padding: 0.4rem 0.6rem; font-size: 0.8rem;">
+        <input class="form-input" type="text" id="inline-assign-output-${lectureId}" placeholder="Expected Test Case Output (e.g. 6 or 25)" style="padding: 0.4rem 0.6rem; font-size: 0.8rem;">
         <div style="display: flex; gap: 0.5rem; justify-content: flex-end;">
           <button class="btn btn-logout" onclick="hideInlineAddAssignmentForm(${lectureId})" style="padding: 0.25rem 0.5rem; font-size: 0.75rem;">Cancel</button>
           <button class="btn btn-primary" onclick="saveInlineAssignment(${lectureId}, ${courseId})" style="padding: 0.25rem 0.5rem; font-size: 0.75rem; background: var(--sidebar-active);">Save & Link</button>
@@ -3223,21 +3225,15 @@ window.saveInlineAssignment = async function(lectureId, courseId) {
   const hint = document.getElementById(`inline-assign-hint-${lectureId}`).value.trim();
   const lang = document.getElementById(`inline-assign-lang-${lectureId}`).value;
   const boilerplate = document.getElementById(`inline-assign-boilerplate-${lectureId}`).value.trim();
-  const testcasesStr = document.getElementById(`inline-assign-testcases-${lectureId}`).value.trim() || '[]';
+  const inputVal = document.getElementById(`inline-assign-input-${lectureId}`).value.trim();
+  const outputVal = document.getElementById(`inline-assign-output-${lectureId}`).value.trim();
 
-  if (!title || !desc) {
-    alert("Please enter a title and instructions.");
+  if (!title || !desc || !outputVal) {
+    alert("Please enter title, instructions, and expected output.");
     return;
   }
 
-  let testCases = [];
-  try {
-    testCases = JSON.parse(testcasesStr);
-    if (!Array.isArray(testCases)) throw new Error();
-  } catch (e) {
-    alert("Test cases must be a valid JSON array of objects.");
-    return;
-  }
+  const testCases = [{ input: inputVal, output: outputVal }];
 
   try {
     const res = await API.createAssignment(courseId, {
