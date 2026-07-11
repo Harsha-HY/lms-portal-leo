@@ -829,9 +829,21 @@ let selectedModalQuizOptions = {};
 let ytPlayer = null;
 let ytTimer = null;
 
+function getYouTubeId(url) {
+  if (!url) return '';
+  if (url.length === 11 && !url.includes('/') && !url.includes('.') && !url.includes('=')) {
+    return url;
+  }
+  const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
+  const match = url.match(regExp);
+  return (match && match[2].length === 11) ? match[2] : url;
+}
+
 // YouTube Iframe API Loader
-function loadYTVideo(youtubeId, lectureId) {
+function loadYTVideo(rawYoutubeId, lectureId) {
   if (ytTimer) clearInterval(ytTimer);
+  
+  const youtubeId = getYouTubeId(rawYoutubeId);
 
   const oldElement = document.getElementById('video-iframe');
   if (oldElement) {

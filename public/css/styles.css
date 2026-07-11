@@ -1500,3 +1500,13 @@ body.theme-dark-slate {
   padding-bottom: 1.5rem;
   margin-bottom: 1rem;
 }
+
+.timeline-item.completed {
+  border-color: rgba(16, 185, 129, 0.3) !important;
+  background: rgba(16, 185, 129, 0.03) !important;
+}
+
+.timeline-item.completed:hover {
+  border-color: var(--success) !important;
+  box-shadow: 0 0 15px rgba(16, 185, 129, 0.12) !important;
+}
