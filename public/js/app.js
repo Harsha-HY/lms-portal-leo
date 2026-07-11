@@ -338,6 +338,29 @@ function renderHomeDates() {
   }
 }
 
+// Helper to check if a lecture milestone is fully completed (video, quiz, and coding solved)
+function isLectureCompleted(lecId, courseId) {
+  if (!completedLectureIds.includes(lecId)) return false;
+
+  const linkedMCQs = (courseMCQsMap[courseId] || []).filter(q => q.lecture_id === lecId);
+  if (linkedMCQs.length > 0) {
+    const allMCQsSolved = linkedMCQs.every(q => 
+      submissionsCache.some(s => s.type === 'mcq' && s.reference_id === q.id && s.is_correct === 1)
+    );
+    if (!allMCQsSolved) return false;
+  }
+
+  const linkedAssignments = (courseAssignmentsMap[courseId] || []).filter(a => a.lecture_id === lecId);
+  if (linkedAssignments.length > 0) {
+    const allAssignmentsSolved = linkedAssignments.every(a => 
+      submissionsCache.some(s => s.type === 'assignment' && s.reference_id === a.id && s.is_correct === 1)
+    );
+    if (!allAssignmentsSolved) return false;
+  }
+
+  return true;
+}
+
 // Render widgets and ongoing cycle listing on Home tab
 function renderHomeScreen() {
   // Update progress widgets
@@ -460,8 +483,8 @@ function renderHomeScreen() {
       <!-- Connective Milestone Sequence Timeline -->
       <div class="timeline-container">
         ${lecs.slice(0, 4).map((lec, lecIdx) => {
-          const isLecCompleted = completedLectureIds.includes(lec.id);
-          const isLocked = lecIdx > 0 && !completedLectureIds.includes(lecs[lecIdx - 1].id);
+          const isLecCompleted = isLectureCompleted(lec.id, course.id);
+          const isLocked = lecIdx > 0 && !isLectureCompleted(lecs[lecIdx - 1].id, course.id);
           
           const badgeType = (lec.content_type || 'Video Lecture').toUpperCase();
           const duration = lec.duration || '15 mins';
@@ -660,8 +683,8 @@ function renderJourneyScreen() {
       </div>
       <div class="timeline-container">
         ${lecs.map((lec, lecIdx) => {
-          const isLecCompleted = completedLectureIds.includes(lec.id);
-          const isLocked = lecIdx > 0 && !completedLectureIds.includes(lecs[lecIdx - 1].id);
+          const isLecCompleted = isLectureCompleted(lec.id, course.id);
+          const isLocked = lecIdx > 0 && !isLectureCompleted(lecs[lecIdx - 1].id, course.id);
           
           const badgeType = (lec.content_type || 'Video Lecture').toUpperCase();
           const duration = lec.duration || '15 mins';
