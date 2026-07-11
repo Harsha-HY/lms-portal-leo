@@ -154,11 +154,13 @@ function initializeDatabase() {
     db.run(`CREATE TABLE IF NOT EXISTS assignments (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       course_id INTEGER NOT NULL,
+      lecture_id INTEGER,
       title TEXT NOT NULL,
       description TEXT NOT NULL,
       language TEXT DEFAULT 'javascript',
       boilerplate_code TEXT,
       test_cases TEXT,
+      hint TEXT,
       order_index INTEGER DEFAULT 1,
       FOREIGN KEY (course_id) REFERENCES courses(id) ON DELETE CASCADE
     )`);
@@ -167,6 +169,7 @@ function initializeDatabase() {
     db.run(`CREATE TABLE IF NOT EXISTS mcqs (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       course_id INTEGER NOT NULL,
+      lecture_id INTEGER,
       question TEXT NOT NULL,
       option_a TEXT NOT NULL,
       option_b TEXT NOT NULL,
@@ -198,6 +201,15 @@ function initializeDatabase() {
       // Ignored if column already exists
     });
     db.run(`ALTER TABLE lectures ADD COLUMN content_type TEXT DEFAULT 'Video Lecture'`, (err) => {
+      // Ignored if column already exists
+    });
+    db.run(`ALTER TABLE assignments ADD COLUMN lecture_id INTEGER`, (err) => {
+      // Ignored if column already exists
+    });
+    db.run(`ALTER TABLE assignments ADD COLUMN hint TEXT`, (err) => {
+      // Ignored if column already exists
+    });
+    db.run(`ALTER TABLE mcqs ADD COLUMN lecture_id INTEGER`, (err) => {
       // Ignored if column already exists
     });
 
@@ -690,13 +702,13 @@ app.get('/api/courses/:courseId/assignments', requireLogin, (req, res) => {
 
 app.post('/api/courses/:courseId/assignments', requireAdminOrFaculty, (req, res) => {
   const courseId = req.params.courseId;
-  const { title, description, language, boilerplate_code, test_cases, order_index } = req.body;
+  const { lecture_id, title, description, language, boilerplate_code, test_cases, hint, order_index } = req.body;
   if (!title || !description) {
     return res.status(400).json({ error: 'Title and description are required.' });
   }
   db.run(
-    `INSERT INTO assignments (course_id, title, description, language, boilerplate_code, test_cases, order_index) VALUES (?, ?, ?, ?, ?, ?, ?)`,
-    [courseId, title, description, language || 'javascript', boilerplate_code || '', test_cases || '[]', order_index || 1],
+    `INSERT INTO assignments (course_id, lecture_id, title, description, language, boilerplate_code, test_cases, hint, order_index) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    [courseId, lecture_id || null, title, description, language || 'javascript', boilerplate_code || '', test_cases || '[]', hint || '', order_index || 1],
     function (err) {
       if (err) return res.status(500).json({ error: 'Failed to create assignment.' });
       res.status(201).json({ success: true, assignmentId: this.lastID });
@@ -722,13 +734,13 @@ app.get('/api/courses/:courseId/mcqs', requireLogin, (req, res) => {
 
 app.post('/api/courses/:courseId/mcqs', requireAdminOrFaculty, (req, res) => {
   const courseId = req.params.courseId;
-  const { question, option_a, option_b, option_c, option_d, correct_option, explanation, order_index } = req.body;
+  const { lecture_id, question, option_a, option_b, option_c, option_d, correct_option, explanation, order_index } = req.body;
   if (!question || !option_a || !option_b || !option_c || !option_d || !correct_option) {
     return res.status(400).json({ error: 'All question options and correct answer are required.' });
   }
   db.run(
-    `INSERT INTO mcqs (course_id, question, option_a, option_b, option_c, option_d, correct_option, explanation, order_index) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-    [courseId, question, option_a, option_b, option_c, option_d, correct_option.toUpperCase(), explanation || '', order_index || 1],
+    `INSERT INTO mcqs (course_id, lecture_id, question, option_a, option_b, option_c, option_d, correct_option, explanation, order_index) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    [courseId, lecture_id || null, question, option_a, option_b, option_c, option_d, correct_option.toUpperCase(), explanation || '', order_index || 1],
     function (err) {
       if (err) return res.status(500).json({ error: 'Failed to create MCQ.' });
       res.status(201).json({ success: true, mcqId: this.lastID });

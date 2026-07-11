@@ -1492,5 +1492,11 @@ body.theme-dark-slate {
 
 .quiz-opt-btn:hover:not(:disabled) {
   border-color: var(--primary-light) !important;
-  background-color: rgba(255, 255, 255, 0.04) !important;
+  background-color: rgba(59, 130, 246, 0.05) !important;
+}
+
+.quiz-question-block {
+  border-bottom: 1px solid var(--card-border);
+  padding-bottom: 1.5rem;
+  margin-bottom: 1rem;
 }
