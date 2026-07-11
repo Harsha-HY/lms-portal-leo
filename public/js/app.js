@@ -459,9 +459,9 @@ function renderHomeScreen() {
       
       <!-- Connective Milestone Sequence Timeline -->
       <div class="timeline-container">
-        ${lectures.slice(0, 4).map((lec, lecIdx) => {
+        ${lecs.slice(0, 4).map((lec, lecIdx) => {
           const isLecCompleted = completedLectureIds.includes(lec.id);
-          const isLocked = lecIdx > 0 && !completedLectureIds.includes(lectures[lecIdx - 1].id);
+          const isLocked = lecIdx > 0 && !completedLectureIds.includes(lecs[lecIdx - 1].id);
           
           const badgeType = (lec.content_type || 'Video Lecture').toUpperCase();
           const duration = lec.duration || '15 mins';
@@ -659,9 +659,9 @@ function renderJourneyScreen() {
         <div class="growth-cycle-progress-fill" style="width: ${progressPct}%; background-color: var(--success);"></div>
       </div>
       <div class="timeline-container">
-        ${lectures.map((lec, lecIdx) => {
+        ${lecs.map((lec, lecIdx) => {
           const isLecCompleted = completedLectureIds.includes(lec.id);
-          const isLocked = lecIdx > 0 && !completedLectureIds.includes(lectures[lecIdx - 1].id);
+          const isLocked = lecIdx > 0 && !completedLectureIds.includes(lecs[lecIdx - 1].id);
           
           const badgeType = (lec.content_type || 'Video Lecture').toUpperCase();
           const duration = lec.duration || '15 mins';
