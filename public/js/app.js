@@ -263,6 +263,21 @@ async function loadDashboardData() {
     
     renderHomeScreen();
     renderHomeDates(); // Refresh calendar dates matching dynamic completions
+    
+    // Dynamically re-render the active tab if it matches a custom list view
+    const activeLink = document.querySelector('.sidebar-link.active');
+    if (activeLink) {
+      const onclickText = activeLink.getAttribute('onclick') || '';
+      if (onclickText.includes('journey')) {
+        renderJourneyScreen();
+      } else if (onclickText.includes('courses')) {
+        renderCoursesGrid();
+      } else if (onclickText.includes('assignments')) {
+        loadStudentAssignments();
+      } else if (onclickText.includes('quizzes')) {
+        loadStudentQuizzes();
+      }
+    }
   } catch (err) {
     console.error('Error fetching dashboard progress data:', err);
   }
