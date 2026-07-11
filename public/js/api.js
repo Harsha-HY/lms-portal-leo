@@ -142,5 +142,68 @@ const API = {
     return this.fetchJSON(`/api/admin/team/${userId}`, {
       method: 'DELETE'
     });
+  },
+
+  // Assignments API client
+  getAssignments(courseId) {
+    return this.fetchJSON(`/api/courses/${courseId}/assignments`);
+  },
+  createAssignment(courseId, assignmentData) {
+    return this.fetchJSON(`/api/courses/${courseId}/assignments`, {
+      method: 'POST',
+      body: JSON.stringify(assignmentData)
+    });
+  },
+  deleteAssignment(id) {
+    return this.fetchJSON(`/api/assignments/${id}`, {
+      method: 'DELETE'
+    });
+  },
+
+  // MCQs API client
+  getMCQs(courseId) {
+    return this.fetchJSON(`/api/courses/${courseId}/mcqs`);
+  },
+  createMCQ(courseId, mcqData) {
+    return this.fetchJSON(`/api/courses/${courseId}/mcqs`, {
+      method: 'POST',
+      body: JSON.stringify(mcqData)
+    });
+  },
+  deleteMCQ(id) {
+    return this.fetchJSON(`/api/mcqs/${id}`, {
+      method: 'DELETE'
+    });
+  },
+
+  // Submissions API client
+  getSubmissions() {
+    return this.fetchJSON('/api/submissions');
+  },
+  submitAnswer(submissionPayload) {
+    return this.fetchJSON('/api/submissions', {
+      method: 'POST',
+      body: JSON.stringify(submissionPayload)
+    });
+  },
+
+  // PDF & AI Generators
+  parsePdfMCQ(formData) {
+    return fetch('/api/admin/parse-pdf-mcq', {
+      method: 'POST',
+      body: formData
+    }).then(res => {
+      if (res.status === 401) {
+        window.location.href = 'index.html';
+        return { error: 'Unauthorized session.' };
+      }
+      return res.json();
+    });
+  },
+  generateAiMCQ(topic) {
+    return this.fetchJSON('/api/admin/generate-ai-mcq', {
+      method: 'POST',
+      body: JSON.stringify({ topic })
+    });
   }
 };

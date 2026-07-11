@@ -31,6 +31,36 @@
           Manage Lectures
         </button>
 
+        <!-- Delete Batch inline inside sidebar-nav -->
+        <div id="delete-batch-sidebar-section" style="width: 100%; display: flex; flex-direction: column;">
+          <button class="sidebar-link" id="delete-batch-toggle" style="justify-content: space-between;">
+            <span style="display: flex; align-items: center; gap: 0.5rem;">
+              <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" style="width: 20px; height: 20px;">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+              </svg>
+              Delete Batch
+            </span>
+            <span id="delete-batch-arrow" style="font-size: 0.65rem;">▼</span>
+          </button>
+          <div id="delete-batch-courses" style="display: none; flex-direction: column; gap: 0.35rem; padding: 0.25rem 0.5rem 0.5rem 2rem; max-height: 200px; overflow-y: auto; width: 100%;">
+            <!-- Loaded dynamically via JS -->
+          </div>
+        </div>
+
+        <button class="sidebar-link" id="assignments-nav-btn" onclick="switchAdminTab('assignments', this)">
+          <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+          </svg>
+          Manage Assignments
+        </button>
+
+        <button class="sidebar-link" id="mcqs-nav-btn" onclick="switchAdminTab('mcqs', this)">
+          <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+          </svg>
+          Manage MCQs
+        </button>
+
         <button class="sidebar-link" id="invite-nav-btn" onclick="switchAdminTab('access', this)">
           <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
             <path stroke-linecap="round" stroke-linejoin="round" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"></path>
@@ -54,21 +84,7 @@
         </a>
       </nav>
 
-      <!-- Delete Batch Collapsible Sidebar Monitor -->
-      <div id="delete-batch-sidebar-section" style="border-top: 1px solid var(--card-border); margin-top: auto; padding: 1rem 0.5rem 0.5rem 0.5rem; display: flex; flex-direction: column;">
-        <button id="delete-batch-toggle" style="width: 100%; border: none; background: transparent; display: flex; justify-content: space-between; align-items: center; cursor: pointer; color: var(--text-main); font-weight: 700; font-size: 0.85rem; padding: 0.5rem 0.75rem; border-radius: var(--radius-sm); text-transform: uppercase; letter-spacing: 0.05em; text-align: left;">
-          <span style="display: flex; align-items: center; gap: 0.5rem;">
-            <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" style="width: 16px; height: 16px;">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
-            </svg>
-            Delete Batch
-          </span>
-          <span id="delete-batch-arrow" style="font-size: 0.65rem;">▼</span>
-        </button>
-        <div id="delete-batch-courses" style="display: none; flex-direction: column; gap: 0.5rem; margin-top: 0.5rem; max-height: 250px; overflow-y: auto; padding: 0 0.5rem;">
-          <!-- Loaded dynamically via JS -->
-        </div>
-      </div>
+
 
       <div class="sidebar-footer">
         <div class="user-profile-badge">
@@ -245,8 +261,187 @@
         </div>
       </section>
 
-      <!-- 3. ACCESS CONTROLS (Invite coordinators) -->
-      <section id="tab-admin-access" class="admin-tab-view" style="display: none;">
+         <!-- 2B. ASSIGNMENTS MANAGEMENT -->
+         <section id="tab-admin-assignments" class="admin-tab-view" style="display: none;">
+           <div id="admin-assignments-alerts"></div>
+           <div class="admin-grid" style="grid-template-columns: 1fr 1.2fr; gap: 2rem;">
+             <!-- Create Assignment Form -->
+             <div class="admin-panel-card" style="margin-top: 0; height: fit-content;">
+               <h3>Create Coding Assignment</h3>
+               <form onsubmit="handleCreateAssignment(event)" class="auth-form">
+                 <div class="form-group">
+                   <label class="form-label" for="assign-course-select">Select Course</label>
+                   <select class="form-input" id="assign-course-select" required>
+                     <!-- Courses will load here -->
+                   </select>
+                 </div>
+                 <div class="form-group">
+                   <label class="form-label" for="assign-title">Assignment Title</label>
+                   <input class="form-input" type="text" id="assign-title" required placeholder="e.g. Array Summation Challenge">
+                 </div>
+                 <div class="form-group">
+                   <label class="form-label" for="assign-desc">Description / Instructions</label>
+                   <textarea class="form-input" id="assign-desc" style="height: 100px; resize: none;" required placeholder="Write instructions, expected outputs, and constraints..."></textarea>
+                 </div>
+                 <div class="form-group">
+                   <label class="form-label" for="assign-lang">Programming Language</label>
+                   <select class="form-input" id="assign-lang" required>
+                     <option value="javascript">JavaScript</option>
+                     <option value="python">Python 3</option>
+                     <option value="html">HTML / CSS Live Sandbox</option>
+                     <option value="sql">SQL Sandbox</option>
+                   </select>
+                 </div>
+                 <div class="form-group">
+                   <label class="form-label" for="assign-boilerplate">Boilerplate / Starter Code</label>
+                   <textarea class="form-input" id="assign-boilerplate" style="height: 120px; font-family: monospace; font-size: 0.85rem;" placeholder="function solve(arr) {\n  // Write your code here\n  return;\n}"></textarea>
+                 </div>
+                 <div class="form-group">
+                   <label class="form-label" for="assign-testcases">Test Cases (JSON Format)</label>
+                   <textarea class="form-input" id="assign-testcases" style="height: 80px; font-family: monospace; font-size: 0.85rem;" placeholder='[{"input": "[1, 2, 3]", "output": "6"}, {"input": "[10, -2]", "output": "8"}]'></textarea>
+                 </div>
+                 <div class="form-group">
+                   <label class="form-label" for="assign-order">Sequence Order Index</label>
+                   <input class="form-input" type="number" id="assign-order" value="1" min="1">
+                 </div>
+                 <button type="submit" class="btn btn-primary btn-block">Add Assignment</button>
+               </form>
+             </div>
+
+             <!-- Uploaded Assignments list -->
+             <div class="admin-panel-card" style="margin-top: 0;">
+               <h3>Active Assignments</h3>
+               <p style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 1.25rem;">
+                 Select a course below to view and delete its active programming tasks.
+               </p>
+               <div class="form-group" style="margin-bottom: 1.5rem;">
+                 <label class="form-label" for="assign-filter-course">Filter Course</label>
+                 <select class="form-input" id="assign-filter-course">
+                   <!-- Loaded dynamically -->
+                 </select>
+               </div>
+               <div id="admin-assignments-list" style="display: flex; flex-direction: column; gap: 0.75rem; max-height: 550px; overflow-y: auto;">
+                 <span style="color: var(--text-muted); font-size: 0.85rem; font-style: italic;">Select a course to load active assignments.</span>
+               </div>
+             </div>
+           </div>
+         </section>
+
+         <!-- 2C. MCQS MANAGEMENT -->
+         <section id="tab-admin-mcqs" class="admin-tab-view" style="display: none;">
+           <div id="admin-mcqs-alerts"></div>
+           <div class="admin-grid" style="grid-template-columns: 1.2fr 1fr; gap: 2rem;">
+             <!-- Create/AI/PDF MCQ Form -->
+             <div class="admin-panel-card" style="margin-top: 0; height: fit-content;">
+               <h3>Create Practice Quiz Question</h3>
+               
+               <!-- Mode switch headers -->
+               <div style="display: flex; gap: 0.5rem; margin-bottom: 1.5rem; border-bottom: 1px solid var(--card-border); padding-bottom: 0.75rem;">
+                 <button class="btn btn-primary" id="btn-mcq-manual" onclick="setMCQMode('manual')" style="padding: 0.35rem 0.75rem; font-size: 0.8rem;">Manual Form</button>
+                 <button class="btn btn-logout" id="btn-mcq-ai" onclick="setMCQMode('ai')" style="padding: 0.35rem 0.75rem; font-size: 0.8rem; background: rgba(255,255,255,0.05); color: var(--text-main);">AI Generator</button>
+                 <button class="btn btn-logout" id="btn-mcq-pdf" onclick="setMCQMode('pdf')" style="padding: 0.35rem 0.75rem; font-size: 0.8rem; background: rgba(255,255,255,0.05); color: var(--text-main);">PDF Scraper</button>
+               </div>
+
+               <!-- 1. Manual Form -->
+               <form id="form-mcq-manual" onsubmit="handleCreateMCQ(event)" class="auth-form">
+                 <div class="form-group">
+                   <label class="form-label" for="mcq-course-select">Select Course</label>
+                   <select class="form-input" id="mcq-course-select" required>
+                     <!-- Courses will load here -->
+                   </select>
+                 </div>
+                 <div class="form-group">
+                   <label class="form-label" for="mcq-question">Question Prompt</label>
+                   <textarea class="form-input" id="mcq-question" style="height: 80px; resize: none;" required placeholder="e.g. Which algorithm does DNS use?"></textarea>
+                 </div>
+                 <div class="form-group" style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem;">
+                   <div>
+                     <label class="form-label" for="mcq-opt-a">Option A</label>
+                     <input class="form-input" type="text" id="mcq-opt-a" required placeholder="Option A">
+                   </div>
+                   <div>
+                     <label class="form-label" for="mcq-opt-b">Option B</label>
+                     <input class="form-input" type="text" id="mcq-opt-b" required placeholder="Option B">
+                   </div>
+                   <div>
+                     <label class="form-label" for="mcq-opt-c">Option C</label>
+                     <input class="form-input" type="text" id="mcq-opt-c" required placeholder="Option C">
+                   </div>
+                   <div>
+                     <label class="form-label" for="mcq-opt-d">Option D</label>
+                     <input class="form-input" type="text" id="mcq-opt-d" required placeholder="Option D">
+                   </div>
+                 </div>
+                 <div class="form-group">
+                   <label class="form-label" for="mcq-correct">Correct Option</label>
+                   <select class="form-input" id="mcq-correct" required>
+                     <option value="A">Option A</option>
+                     <option value="B">Option B</option>
+                     <option value="C">Option C</option>
+                     <option value="D">Option D</option>
+                   </select>
+                 </div>
+                 <div class="form-group">
+                   <label class="form-label" for="mcq-explanation">Explanation / Solution Details</label>
+                   <textarea class="form-input" id="mcq-explanation" style="height: 60px; resize: none;" placeholder="Explain why this choice is correct..."></textarea>
+                 </div>
+                 <div class="form-group">
+                   <label class="form-label" for="mcq-order">Sequence Order Index</label>
+                   <input class="form-input" type="number" id="mcq-order" value="1" min="1">
+                 </div>
+                 <button type="submit" class="btn btn-primary btn-block">Add Quiz Question</button>
+               </form>
+
+               <!-- 2. AI Generator -->
+               <div id="form-mcq-ai" class="auth-form" style="display: none;">
+                 <div class="form-group">
+                   <label class="form-label" for="mcq-ai-topic">Enter Quiz Topic / Paste Lecture Script</label>
+                   <textarea class="form-input" id="mcq-ai-topic" style="height: 120px;" placeholder="e.g., Recursion in JavaScript or paste your video transcript here..."></textarea>
+                 </div>
+                 <button type="button" onclick="triggerAIMCQGeneration()" class="btn btn-primary btn-block" id="btn-mcq-ai-generate">✨ Generate Topic Quiz via AI</button>
+                 <div id="ai-mcq-preview-container" style="display: none; margin-top: 1.5rem; border-top: 1px solid var(--card-border); padding-top: 1rem;">
+                   <h4 style="margin-bottom: 0.75rem;">AI Generated Questions Preview</h4>
+                   <div id="ai-mcq-preview-list" style="display: flex; flex-direction: column; gap: 0.5rem; max-height: 250px; overflow-y: auto; margin-bottom: 1rem;"></div>
+                   <button type="button" onclick="saveAllGeneratedMCQs()" class="btn btn-success btn-block">✓ Add All to Selected Course</button>
+                 </div>
+               </div>
+
+               <!-- 3. PDF Scraper -->
+               <div id="form-mcq-pdf" class="auth-form" style="display: none;">
+                 <div class="form-group">
+                   <label class="form-label" for="mcq-pdf-file">Upload PDF Quiz Document</label>
+                   <input class="form-input" type="file" id="mcq-pdf-file" accept="application/pdf">
+                 </div>
+                 <button type="button" onclick="triggerPDFMCQParsing()" class="btn btn-primary btn-block" id="btn-mcq-pdf-parse">📄 Scrape PDF Quiz Questions</button>
+                 <div id="pdf-mcq-preview-container" style="display: none; margin-top: 1.5rem; border-top: 1px solid var(--card-border); padding-top: 1rem;">
+                   <h4 style="margin-bottom: 0.75rem;">Scraped Questions Preview</h4>
+                   <div id="pdf-mcq-preview-list" style="display: flex; flex-direction: column; gap: 0.5rem; max-height: 250px; overflow-y: auto; margin-bottom: 1rem;"></div>
+                   <button type="button" onclick="saveAllScrapedMCQs()" class="btn btn-success btn-block">✓ Add All to Selected Course</button>
+                 </div>
+               </div>
+             </div>
+
+             <!-- Uploaded MCQs list -->
+             <div class="admin-panel-card" style="margin-top: 0;">
+               <h3>Active Practice Quizzes</h3>
+               <p style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 1.25rem;">
+                 Select a course below to view and delete its active practice multiple-choice questions.
+               </p>
+               <div class="form-group" style="margin-bottom: 1.5rem;">
+                 <label class="form-label" for="mcq-filter-course">Filter Course</label>
+                 <select class="form-input" id="mcq-filter-course">
+                   <!-- Loaded dynamically -->
+                 </select>
+               </div>
+               <div id="admin-mcqs-list" style="display: flex; flex-direction: column; gap: 0.75rem; max-height: 550px; overflow-y: auto;">
+                 <span style="color: var(--text-muted); font-size: 0.85rem; font-style: italic;">Select a course to load active practice quizzes.</span>
+               </div>
+             </div>
+           </div>
+         </section>
+
+       <!-- 3. ACCESS CONTROLS (Invite coordinators) -->
+       <section id="tab-admin-access" class="admin-tab-view" style="display: none;">
         <div id="admin-access-alerts"></div>
 
         <div class="admin-grid" style="grid-template-columns: 1.5fr 1fr;">

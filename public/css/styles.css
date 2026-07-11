@@ -1473,3 +1473,24 @@ body.theme-dark-slate {
   --shadow-md: 0 8px 30px rgba(0, 0, 0, 0.4);
   --shadow-lg: 0 16px 40px rgba(0, 0, 0, 0.5);
 }
+
+/* Locked Timeline Items styling */
+.locked-timeline-item {
+  opacity: 0.45;
+  cursor: not-allowed !important;
+  pointer-events: none;
+  filter: grayscale(0.5);
+  background-color: rgba(255, 255, 255, 0.02) !important;
+  border-color: rgba(255, 255, 255, 0.05) !important;
+}
+
+/* Compiler and Quiz custom styles */
+.student-assign-card:hover:not(.locked-timeline-item) {
+  border-color: var(--primary) !important;
+  background-color: rgba(255, 255, 255, 0.05) !important;
+}
+
+.quiz-opt-btn:hover:not(:disabled) {
+  border-color: var(--primary-light) !important;
+  background-color: rgba(255, 255, 255, 0.04) !important;
+}
