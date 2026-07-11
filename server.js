@@ -784,7 +784,8 @@ app.post('/api/admin/parse-pdf-mcq', requireAdminOrFaculty, memoryMulter.single(
     return res.status(400).json({ error: 'No PDF file uploaded.' });
   }
   try {
-    const data = await pdfParse(req.file.buffer);
+    const parser = new pdfParse.PDFParse(new Uint8Array(req.file.buffer));
+    const data = await parser.getText();
     const text = data.text;
     const questions = [];
     const blocks = text.split(/\n\s*(?=\d+[\.\)\:]\s+)/);

@@ -9,6 +9,8 @@ let allCourses = [];
 let rawProgress = [];
 let completedLectureIds = [];
 let courseLecturesMap = {}; // courseId -> array of lectures
+let courseAssignmentsMap = {}; // courseId -> array of assignments
+let courseMCQsMap = {}; // courseId -> array of MCQs
 let activeModalLectureId = null;
 let enrolledCourseIds = [];
 
@@ -245,11 +247,18 @@ async function loadDashboardData() {
     enrolledCourseIds = await API.getEnrollments();
     rawProgress = await API.getProgress();
     completedLectureIds = rawProgress.map(r => r.lecture_id);
+    submissionsCache = await API.getSubmissions();
     
-    // Map lectures for each course
+    // Map lectures, assignments, and MCQs for each course
     for (const course of allCourses) {
       const lectures = await API.getLectures(course.id);
       courseLecturesMap[course.id] = lectures;
+
+      const assignments = await API.getAssignments(course.id);
+      courseAssignmentsMap[course.id] = assignments;
+
+      const mcqs = await API.getMCQs(course.id);
+      courseMCQsMap[course.id] = mcqs;
     }
     
     renderHomeScreen();
@@ -406,12 +415,18 @@ function renderHomeScreen() {
   }
 
   enrolledCourses.forEach((course, index) => {
-    const lectures = courseLecturesMap[course.id] || [];
-    const totalLectures = lectures.length;
-    if (totalLectures === 0) return;
+    const lecs = courseLecturesMap[course.id] || [];
+    const assigns = courseAssignmentsMap[course.id] || [];
+    const quizCount = courseMCQsMap[course.id] || [];
 
-    const completedInCourse = lectures.filter(l => completedLectureIds.includes(l.id)).length;
-    const progressPct = totalLectures > 0 ? Math.round((completedInCourse / totalLectures) * 100) : 0;
+    const totalInCourse = lecs.length + assigns.length + quizCount.length;
+    if (totalInCourse === 0) return;
+
+    const completedInCourse = lecs.filter(l => completedLectureIds.includes(l.id)).length +
+      assigns.filter(a => submissionsCache.some(s => s.type === 'assignment' && s.reference_id === a.id && s.is_correct === 1)).length +
+      quizCount.filter(q => submissionsCache.some(s => s.type === 'mcq' && s.reference_id === q.id && s.is_correct === 1)).length;
+
+    const progressPct = totalInCourse > 0 ? Math.round((completedInCourse / totalInCourse) * 100) : 0;
 
     const block = document.createElement('div');
     block.className = 'growth-cycle-block';
@@ -484,14 +499,28 @@ function navigateToJourneyTab() {
 
 // Recalculate and redraw progress trackers
 function updateProgressWidgets() {
-  let totalLecturesCount = 0;
-  let totalCompletedCount = completedLectureIds.length;
+  let totalMilestonesCount = 0;
+  let totalCompletedCount = 0;
 
-  Object.values(courseLecturesMap).forEach(lectures => {
-    totalLecturesCount += lectures.length;
+  const enrolled = allCourses.filter(c => enrolledCourseIds.includes(c.id));
+  enrolled.forEach(course => {
+    const lecs = courseLecturesMap[course.id] || [];
+    const assigns = courseAssignmentsMap[course.id] || [];
+    const quizCount = courseMCQsMap[course.id] || [];
+
+    totalMilestonesCount += lecs.length + assigns.length + quizCount.length;
+    
+    // Completed videos
+    totalCompletedCount += lecs.filter(l => completedLectureIds.includes(l.id)).length;
+    
+    // Completed assignments
+    totalCompletedCount += assigns.filter(a => submissionsCache.some(s => s.type === 'assignment' && s.reference_id === a.id && s.is_correct === 1)).length;
+    
+    // Completed MCQs
+    totalCompletedCount += quizCount.filter(q => submissionsCache.some(s => s.type === 'mcq' && s.reference_id === q.id && s.is_correct === 1)).length;
   });
 
-  const dailyPct = totalLecturesCount > 0 ? Math.round((totalCompletedCount / totalLecturesCount) * 100) : 0;
+  const dailyPct = totalMilestonesCount > 0 ? Math.round((totalCompletedCount / totalMilestonesCount) * 100) : 0;
   
   // Daily circular indicator
   const circleVal = document.getElementById('daily-progress-val');
@@ -589,10 +618,16 @@ function renderJourneyScreen() {
   }
 
   enrolledCourses.forEach((course, index) => {
-    const lectures = courseLecturesMap[course.id] || [];
-    const totalLectures = lectures.length;
-    const completedInCourse = lectures.filter(l => completedLectureIds.includes(l.id)).length;
-    const progressPct = totalLectures > 0 ? Math.round((completedInCourse / totalLectures) * 100) : 0;
+    const lecs = courseLecturesMap[course.id] || [];
+    const assigns = courseAssignmentsMap[course.id] || [];
+    const quizCount = courseMCQsMap[course.id] || [];
+
+    const totalInCourse = lecs.length + assigns.length + quizCount.length;
+    const completedInCourse = lecs.filter(l => completedLectureIds.includes(l.id)).length +
+      assigns.filter(a => submissionsCache.some(s => s.type === 'assignment' && s.reference_id === a.id && s.is_correct === 1)).length +
+      quizCount.filter(q => submissionsCache.some(s => s.type === 'mcq' && s.reference_id === q.id && s.is_correct === 1)).length;
+
+    const progressPct = totalInCourse > 0 ? Math.round((completedInCourse / totalInCourse) * 100) : 0;
 
     const block = document.createElement('div');
     block.className = 'growth-cycle-block';
@@ -950,28 +985,35 @@ async function loadAdminData() {
 
 // Populate admin course selectors
 async function populateCourseSelects() {
-  const select = document.getElementById('lecture-course-select');
-  if (!select) return;
-
+  const selects = ['lecture-course-select', 'assign-course-select', 'assign-filter-course', 'mcq-course-select', 'mcq-filter-course'];
   try {
     const courses = await API.getCourses();
-    select.innerHTML = '';
     
-    if (courses.length === 0) {
-      select.innerHTML = `<option value="">No courses created yet</option>`;
-      loadAdminLecturesList('');
-    } else {
-      courses.forEach(course => {
-        const opt = document.createElement('option');
-        opt.value = course.id;
-        opt.textContent = course.title;
-        select.appendChild(opt);
+    // 1. Populate all dropdown selectors
+    selects.forEach(id => {
+      const select = document.getElementById(id);
+      if (!select) return;
+      
+      const currentVal = select.value;
+      select.innerHTML = '<option value="">Select a Course...</option>';
+      courses.forEach(c => {
+        select.innerHTML += `<option value="${c.id}">${c.title}</option>`;
       });
-      // Load lectures of the first course by default
+      
+      if (currentVal) {
+        select.value = currentVal;
+      } else if (courses.length > 0 && id === 'lecture-course-select') {
+        select.value = courses[0].id;
+      }
+    });
+
+    if (courses.length > 0) {
       loadAdminLecturesList(courses[0].id);
+    } else {
+      loadAdminLecturesList('');
     }
 
-    // Populate active courses list in collapsible Delete Batch panel
+    // 2. Populate active courses list in collapsible Delete Batch panel
     const deleteBatchList = document.getElementById('delete-batch-courses');
     if (deleteBatchList) {
       deleteBatchList.innerHTML = '';
@@ -1006,8 +1048,21 @@ async function populateCourseSelects() {
         });
       }
     }
+
+    // Add listeners to filter selects
+    const assignFilter = document.getElementById('assign-filter-course');
+    if (assignFilter && !assignFilter.dataset.listenerSet) {
+      assignFilter.addEventListener('change', loadAdminAssignments);
+      assignFilter.dataset.listenerSet = 'true';
+    }
+
+    const mcqFilter = document.getElementById('mcq-filter-course');
+    if (mcqFilter && !mcqFilter.dataset.listenerSet) {
+      mcqFilter.addEventListener('change', loadAdminMCQs);
+      mcqFilter.dataset.listenerSet = 'true';
+    }
   } catch (err) {
-    console.error('Failed to populate course selects & delete list:', err);
+    console.error('Error populating course selectors:', err);
   }
 }
 
@@ -1622,54 +1677,20 @@ let activeStudentQuiz = null;
 let selectedStudentQuizOption = null;
 let submissionsCache = [];
 
-// Populate Course Select options in student dashboard
+// Populate Course Select options in student dashboard (Enrolled Courses only)
 async function populateStudentCourseSelects(selectId) {
   const select = document.getElementById(selectId);
   if (!select) return;
   
   try {
     const courses = await API.getCourses();
+    const enrolled = courses.filter(c => enrolledCourseIds.includes(c.id));
     select.innerHTML = '<option value="">Select a Course...</option>';
-    courses.forEach(c => {
+    enrolled.forEach(c => {
       select.innerHTML += `<option value="${c.id}">${c.title}</option>`;
     });
   } catch (err) {
     console.error('Error populating course selects:', err);
-  }
-}
-
-// Populate Course Select options in admin panel
-async function populateCourseSelects() {
-  const selects = ['lecture-course-select', 'assign-course-select', 'assign-filter-course', 'mcq-course-select', 'mcq-filter-course'];
-  try {
-    const courses = await API.getCourses();
-    selects.forEach(id => {
-      const select = document.getElementById(id);
-      if (!select) return;
-      
-      const currentVal = select.value;
-      select.innerHTML = '<option value="">Select a Course...</option>';
-      courses.forEach(c => {
-        select.innerHTML += `<option value="${c.id}">${c.title}</option>`;
-      });
-      
-      if (currentVal) select.value = currentVal;
-    });
-
-    // Add listeners to filter selects
-    const assignFilter = document.getElementById('assign-filter-course');
-    if (assignFilter && !assignFilter.dataset.listenerSet) {
-      assignFilter.addEventListener('change', loadAdminAssignments);
-      assignFilter.dataset.listenerSet = 'true';
-    }
-
-    const mcqFilter = document.getElementById('mcq-filter-course');
-    if (mcqFilter && !mcqFilter.dataset.listenerSet) {
-      mcqFilter.addEventListener('change', loadAdminMCQs);
-      mcqFilter.dataset.listenerSet = 'true';
-    }
-  } catch (err) {
-    console.error('Error populating course selectors:', err);
   }
 }
 
