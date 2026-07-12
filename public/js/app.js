@@ -1692,12 +1692,15 @@ async function handleUploadLecture(e) {
   const content_type = document.getElementById('lecture-type').value;
   const duration = document.getElementById('lecture-duration').value;
 
+  const notes = document.getElementById('lecture-notes').value.trim();
+
   const formData = new FormData();
   formData.append('title', title);
   formData.append('order_index', order_index);
   formData.append('content_type', content_type);
   formData.append('duration', duration);
   formData.append('video_file', file);
+  formData.append('notes', notes);
 
   const xhr = new XMLHttpRequest();
   xhr.open('POST', `/api/courses/${courseId}/lectures`, true);

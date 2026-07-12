@@ -404,7 +404,7 @@ app.get('/api/courses/:id/lectures', requireLogin, (req, res) => {
 // Create lecture (Admin / Faculty)
 app.post('/api/courses/:id/lectures', requireAdminOrFaculty, upload.single('video_file'), (req, res) => {
   const courseId = req.params.id;
-  const { title, order_index, duration, content_type } = req.body;
+  const { title, order_index, duration, content_type, notes } = req.body;
   
   if (!title) {
     return res.status(400).json({ error: 'Title is required.' });
@@ -426,8 +426,8 @@ app.post('/api/courses/:id/lectures', requireAdminOrFaculty, upload.single('vide
   const cType = content_type || 'Video Lecture';
 
   db.run(
-    `INSERT INTO lectures (course_id, title, video_url, order_index, duration, content_type) VALUES (?, ?, ?, ?, ?, ?)`,
-    [courseId, title, video_url, order, dur, cType],
+    `INSERT INTO lectures (course_id, title, video_url, order_index, duration, content_type, notes) VALUES (?, ?, ?, ?, ?, ?, ?)`,
+    [courseId, title, video_url, order, dur, cType, notes || ''],
     function (err) {
       if (err) {
         console.error(err);
