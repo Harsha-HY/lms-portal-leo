@@ -915,7 +915,7 @@ function loadYTVideo(rawYoutubeId, lectureId) {
 
 // Switch between tabs in Milestone Workspace
 window.switchModalTab = function(tabName) {
-  const tabs = ['video', 'quiz', 'coding'];
+  const tabs = ['video', 'notes', 'quiz', 'coding'];
   tabs.forEach(t => {
     const btn = document.getElementById(`tab-btn-${t}`);
     const sec = document.getElementById(`modal-sec-${t}`);
@@ -975,17 +975,28 @@ window.playLecture = async function(lectureId, title, courseTitle, videoUrl) {
 
   // Setup tab buttons visibility
   const tabVideo = document.getElementById('tab-btn-video');
+  const tabNotes = document.getElementById('tab-btn-notes');
   const tabQuiz = document.getElementById('tab-btn-quiz');
   const tabCoding = document.getElementById('tab-btn-coding');
 
   // Check visibility flags
   const hasVideo = !!videoUrl && videoUrl !== 'null' && videoUrl !== 'undefined';
+  const hasNotes = !!lec.notes && lec.notes.trim() !== '';
   const hasQuiz = linkedMCQs.length > 0;
   const hasCoding = linkedAssignments.length > 0;
 
   if (tabVideo) tabVideo.style.display = hasVideo ? 'inline-block' : 'none';
+  if (tabNotes) tabNotes.style.display = hasNotes ? 'inline-block' : 'none';
   if (tabQuiz) tabQuiz.style.display = hasQuiz ? 'inline-block' : 'none';
   if (tabCoding) tabCoding.style.display = hasCoding ? 'inline-block' : 'none';
+
+  // Setup Notes if visible
+  if (hasNotes) {
+    const notesContent = document.getElementById('modal-notes-content');
+    if (notesContent) {
+      notesContent.textContent = lec.notes;
+    }
+  }
 
   // Setup Video player if visible
   if (hasVideo) {
@@ -2044,6 +2055,15 @@ async function loadAdminLecturesList(courseId) {
             `).join('') || '<span style="font-size: 0.75rem; color: var(--text-muted); font-style: italic;">No practice quiz questions linked.</span>'}
           </div>
           <div id="inline-mcq-form-wrapper-${lec.id}" style="display: none; margin-top: 0.75rem; border-top: 1px dashed var(--card-border); padding-top: 0.75rem;"></div>
+        </div>
+
+        <div style="margin-top: 1rem; border-top: 1px dashed var(--card-border); padding-top: 1rem;">
+          <h4 style="font-size: 0.8rem; font-weight: 700; color: var(--text-main); margin: 0 0 0.5rem 0;">📖 LECTURE NOTES & STUDY MATERIAL</h4>
+          <textarea class="form-input" id="inline-lecture-notes-${lec.id}" style="height: 80px; resize: vertical; font-size: 0.8rem; padding: 0.4rem 0.6rem; margin-bottom: 0.5rem; font-family: inherit;" placeholder="Paste text or markdown notes for this lecture milestone...">${lec.notes || ''}</textarea>
+          <div style="display: flex; gap: 0.5rem; justify-content: flex-end;">
+            ${lec.notes ? `<button class="btn btn-logout" onclick="deleteInlineNotes(${lec.id}, ${courseId})" style="padding: 0.25rem 0.5rem; font-size: 0.75rem; color: #f43f5e; background: rgba(244, 63, 94, 0.05); border: none; cursor: pointer;">Delete Notes</button>` : ''}
+            <button class="btn btn-primary" onclick="saveInlineNotes(${lec.id}, ${courseId})" style="padding: 0.25rem 0.5rem; font-size: 0.75rem; background: var(--sidebar-active);">Save Notes</button>
+          </div>
         </div>
       `;
       wrapper.appendChild(assetsPanel);
@@ -3353,5 +3373,40 @@ window.saveInlineMCQ = async function(lectureId, courseId) {
     }
   } catch (err) {
     console.error(err);
+  }
+};
+
+window.saveInlineNotes = async function(lectureId, courseId) {
+  const notesText = document.getElementById(`inline-lecture-notes-${lectureId}`).value.trim();
+  
+  try {
+    const res = await API.saveLectureNotes(lectureId, notesText);
+    if (res.error) {
+      alert(res.error);
+    } else {
+      alert("Lecture notes updated successfully!");
+      await loadAdminLecturesList(courseId);
+    }
+  } catch (err) {
+    console.error(err);
+    alert("Failed to update notes.");
+  }
+};
+
+window.deleteInlineNotes = async function(lectureId, courseId) {
+  const confirmed = confirm("Are you sure you want to delete all notes for this lecture?");
+  if (!confirmed) return;
+
+  try {
+    const res = await API.saveLectureNotes(lectureId, "");
+    if (res.error) {
+      alert(res.error);
+    } else {
+      alert("Lecture notes deleted successfully!");
+      await loadAdminLecturesList(courseId);
+    }
+  } catch (err) {
+    console.error(err);
+    alert("Failed to delete notes.");
   }
 };

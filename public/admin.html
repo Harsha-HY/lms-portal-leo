@@ -348,6 +348,19 @@
              <!-- Create/AI/PDF MCQ Form -->
              <div class="admin-panel-card" style="margin-top: 0; height: fit-content;">
                <h3>Create Practice Quiz Question</h3>
+
+               <div class="form-group" style="margin-top: 1rem;">
+                 <label class="form-label" for="mcq-course-select">Select Target Course</label>
+                 <select class="form-input" id="mcq-course-select" onchange="populateLectureSelect('mcq-course-select', 'mcq-lecture-select')" required>
+                   <!-- Courses will load here -->
+                 </select>
+               </div>
+               <div class="form-group">
+                 <label class="form-label" for="mcq-lecture-select">Link to Lecture Video / Milestone</label>
+                 <select class="form-input" id="mcq-lecture-select">
+                   <option value="">Independent Milestone (No parent lecture)</option>
+                 </select>
+               </div>
                
                <!-- Mode switch headers -->
                <div style="display: flex; gap: 0.5rem; margin-bottom: 1.5rem; border-bottom: 1px solid var(--card-border); padding-bottom: 0.75rem;">
@@ -358,18 +371,6 @@
 
                <!-- 1. Manual Form -->
                <form id="form-mcq-manual" onsubmit="handleCreateMCQ(event)" class="auth-form">
-                 <div class="form-group">
-                   <label class="form-label" for="mcq-course-select">Select Course</label>
-                   <select class="form-input" id="mcq-course-select" onchange="populateLectureSelect('mcq-course-select', 'mcq-lecture-select')" required>
-                     <!-- Courses will load here -->
-                   </select>
-                 </div>
-                 <div class="form-group">
-                   <label class="form-label" for="mcq-lecture-select">Link to Lecture Video / Milestone</label>
-                   <select class="form-input" id="mcq-lecture-select">
-                     <option value="">Independent Milestone (No parent lecture)</option>
-                   </select>
-                 </div>
                  <div class="form-group">
                    <label class="form-label" for="mcq-question">Question Prompt</label>
                    <textarea class="form-input" id="mcq-question" style="height: 80px; resize: none;" required placeholder="e.g. Which algorithm does DNS use?"></textarea>

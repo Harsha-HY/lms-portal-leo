@@ -649,6 +649,7 @@
         <h3 class="modal-title" id="modal-lecture-title">Milestone Workspace</h3>
         <div style="display: flex; gap: 0.5rem; margin-left: 2rem;" id="modal-workspace-tabs">
           <button class="btn btn-primary" id="tab-btn-video" onclick="switchModalTab('video')" style="padding: 0.25rem 0.75rem; font-size: 0.8rem;">🎥 Lecture Video</button>
+          <button class="btn btn-logout" id="tab-btn-notes" onclick="switchModalTab('notes')" style="padding: 0.25rem 0.75rem; font-size: 0.8rem; background: rgba(255,255,255,0.05); color: var(--text-main);">📖 Lecture Notes</button>
           <button class="btn btn-logout" id="tab-btn-quiz" onclick="switchModalTab('quiz')" style="padding: 0.25rem 0.75rem; font-size: 0.8rem; background: rgba(255,255,255,0.05); color: var(--text-main);">📝 Quiz Sheet</button>
           <button class="btn btn-logout" id="tab-btn-coding" onclick="switchModalTab('coding')" style="padding: 0.25rem 0.75rem; font-size: 0.8rem; background: rgba(255,255,255,0.05); color: var(--text-main);">💻 Code Challenge</button>
         </div>
@@ -684,8 +685,20 @@
             </select>
           </div>
         </div>
+        
+        <!-- B. Lecture Notes Frame -->
+        <div id="modal-sec-notes" style="display: none; width: 100%;">
+          <div class="admin-panel-card" style="margin-top: 0; background: rgba(255,255,255,0.01); border: 1px solid var(--card-border); padding: 1.5rem;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem; border-bottom: 1px solid var(--card-border); padding-bottom: 0.5rem;">
+              <h3 style="margin: 0; font-size: 1.2rem; color: var(--text-main);">📖 Lecture Notes & Study Guide</h3>
+            </div>
+            <div id="modal-notes-content" style="font-size: 0.95rem; line-height: 1.6; color: var(--text-main); font-weight: normal; text-align: left; padding: 0.25rem; white-space: pre-wrap; font-family: var(--font-primary);">
+              No notes uploaded for this lecture video milestone yet.
+            </div>
+          </div>
+        </div>
 
-        <!-- B. Sheet-Based MCQ Quiz Frame -->
+        <!-- C. Sheet-Based MCQ Quiz Frame -->
         <div id="modal-sec-quiz" style="display: none; width: 100%;">
           <div class="admin-panel-card" style="margin-top: 0; background: rgba(255,255,255,0.01); border: 1px solid var(--card-border); padding: 1.5rem;">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem; border-bottom: 1px solid var(--card-border); padding-bottom: 0.5rem;">

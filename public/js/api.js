@@ -205,5 +205,11 @@ const API = {
       method: 'POST',
       body: JSON.stringify({ topic })
     });
+  },
+  saveLectureNotes(lectureId, notes) {
+    return this.fetchJSON(`/api/lectures/${lectureId}/notes`, {
+      method: 'POST',
+      body: JSON.stringify({ notes })
+    });
   }
 };

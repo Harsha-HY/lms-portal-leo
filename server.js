@@ -203,6 +203,9 @@ function initializeDatabase() {
     db.run(`ALTER TABLE lectures ADD COLUMN content_type TEXT DEFAULT 'Video Lecture'`, (err) => {
       // Ignored if column already exists
     });
+    db.run(`ALTER TABLE lectures ADD COLUMN notes TEXT`, (err) => {
+      // Ignored if column already exists
+    });
     db.run(`ALTER TABLE assignments ADD COLUMN lecture_id INTEGER`, (err) => {
       // Ignored if column already exists
     });
@@ -662,6 +665,19 @@ app.delete('/api/lectures/:id', requireAdmin, (req, res) => {
     }
     res.json({ success: true, message: 'Lecture deleted successfully.' });
   });
+});
+
+// Update notes for a particular lecture milestone
+app.post('/api/lectures/:lectureId/notes', requireAdminOrFaculty, (req, res) => {
+  const { notes } = req.body;
+  db.run(
+    `UPDATE lectures SET notes = ? WHERE id = ?`,
+    [notes || '', req.params.lectureId],
+    (err) => {
+      if (err) return res.status(500).json({ error: 'Failed to update lecture notes.' });
+      res.json({ success: true });
+    }
+  );
 });
 
 // Get all invited/authorized team members (Admin only)
