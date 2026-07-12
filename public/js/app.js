@@ -186,7 +186,7 @@ function switchTab(tabId, button) {
 
 function switchAdminTab(tabId, button) {
   if (currentUser && currentUser.role === 'faculty') {
-    if (tabId === 'content' || tabId === 'access' || tabId === 'assignments' || tabId === 'mcqs') {
+    if (tabId === 'content' || tabId === 'access' || tabId === 'assignments' || tabId === 'mcqs' || tabId === 'linking') {
       alert('Access Denied: You do not have permission to view this tab.');
       return;
     }
@@ -215,6 +215,11 @@ function switchAdminTab(tabId, button) {
     titleEl.textContent = 'Curriculum & Lectures Manager';
     subEl.textContent = 'Publish courses and upload multi-stage educational videos.';
     populateCourseSelects();
+  } else if (tabId === 'linking') {
+    titleEl.textContent = 'Milestone Asset Linking Workspace';
+    subEl.textContent = 'Spaciously configure coding challenges, practice quizzes, and lecture notes side-by-side.';
+    populateCourseSelects();
+    populateLinkingCourseSelect();
   } else if (tabId === 'assignments') {
     titleEl.textContent = 'Manage Coding Assignments';
     subEl.textContent = 'Design coding challenges, configure boilerplates and test cases.';
@@ -3411,5 +3416,342 @@ window.deleteInlineNotes = async function(lectureId, courseId) {
   } catch (err) {
     console.error(err);
     alert("Failed to delete notes.");
+  }
+};
+
+/* ==========================================================================
+   MILESTONE ASSET LINKING WORKSPACE PANEL (ADMIN)
+   ========================================================================== */
+let activeLinkingLecture = null;
+let activeLinkingCourseId = null;
+let linkingSubTab = 'notes';
+
+window.populateLinkingCourseSelect = function() {
+  const select = document.getElementById('linking-course-select');
+  if (!select) return;
+  select.innerHTML = '<option value="">-- Choose Course --</option>';
+  allCourses.forEach(c => {
+    select.innerHTML += `<option value="${c.id}">${c.title}</option>`;
+  });
+};
+
+window.loadLinkingLecturesList = async function() {
+  const courseId = document.getElementById('linking-course-select').value;
+  const container = document.getElementById('linking-lectures-container');
+  if (!container) return;
+
+  // Reset workspace
+  document.getElementById('linking-empty-state').style.display = 'flex';
+  document.getElementById('linking-workspace-content').style.display = 'none';
+  activeLinkingLecture = null;
+  activeLinkingCourseId = courseId;
+
+  if (!courseId) {
+    container.innerHTML = '<span style="color: var(--text-muted); font-size: 0.85rem; font-style: italic;">Select a course to view available milestones.</span>';
+    return;
+  }
+
+  container.innerHTML = '<span style="color: var(--text-muted); font-size: 0.85rem;">Loading milestones...</span>';
+
+  try {
+    const lectures = await API.getLectures(courseId);
+    container.innerHTML = '';
+    
+    if (lectures.length === 0) {
+      container.innerHTML = '<span style="color: var(--text-muted); font-size: 0.85rem; font-style: italic;">No lectures/milestones found in this course.</span>';
+      return;
+    }
+
+    lectures.forEach(lec => {
+      const card = document.createElement('div');
+      card.className = 'lecture-row';
+      card.style.cssText = 'padding: 0.75rem 1rem; border-radius: var(--radius-sm); border: 1px solid var(--card-border); background-color: rgba(255, 255, 255, 0.01); cursor: pointer; text-align: left; transition: all 0.2s; margin-bottom: 0.5rem;';
+      card.id = `linking-card-${lec.id}`;
+      
+      card.innerHTML = `
+        <div style="font-weight: 700; font-size: 0.85rem; color: var(--text-main); margin-bottom: 0.25rem;">${lec.title}</div>
+        <div style="display: flex; gap: 0.5rem; align-items: center;">
+          <span class="lecture-badge badge-green" style="font-size: 0.6rem; padding: 0.1rem 0.35rem;">${(lec.content_type || 'Video Lecture').toUpperCase()}</span>
+          <span style="font-size: 0.7rem; color: var(--text-muted);">⏱ ${lec.duration || '15 mins'}</span>
+        </div>
+      `;
+
+      card.addEventListener('click', () => {
+        // Toggle active styling
+        document.querySelectorAll('#linking-lectures-container .lecture-row').forEach(c => {
+          c.style.borderColor = 'var(--card-border)';
+          c.style.backgroundColor = 'rgba(255, 255, 255, 0.01)';
+        });
+        card.style.borderColor = 'var(--primary)';
+        card.style.backgroundColor = 'rgba(59, 130, 246, 0.04)';
+        
+        selectLinkingLecture(lec);
+      });
+
+      container.appendChild(card);
+    });
+  } catch (err) {
+    console.error(err);
+    container.innerHTML = '<span style="color: var(--text-muted); font-size: 0.85rem;">Failed to load lectures list.</span>';
+  }
+};
+
+window.selectLinkingLecture = async function(lecture) {
+  activeLinkingLecture = lecture;
+  
+  // Hide empty state, show workspace content
+  document.getElementById('linking-empty-state').style.display = 'none';
+  document.getElementById('linking-workspace-content').style.display = 'flex';
+  
+  // Update header text
+  document.getElementById('linking-active-title').textContent = lecture.title;
+  const course = allCourses.find(c => c.id == activeLinkingCourseId);
+  document.getElementById('linking-active-subtitle').textContent = `Course: ${course ? course.title : 'Selected'}`;
+  document.getElementById('linking-active-badge').textContent = (lecture.content_type || 'Video Lecture').toUpperCase();
+  
+  // Populate Notes Editor
+  document.getElementById('workspace-lecture-notes').value = lecture.notes || '';
+  
+  // Render linked assets lists
+  await reloadWorkspaceAssets();
+  
+  // Go to subtab
+  switchLinkingSubTab(linkingSubTab);
+};
+
+window.switchLinkingSubTab = function(subTabName) {
+  linkingSubTab = subTabName;
+  const subTabs = ['notes', 'coding', 'mcqs'];
+  
+  subTabs.forEach(t => {
+    const btn = document.getElementById(`btn-subtab-${t}`);
+    const sec = document.getElementById(`sec-subtab-${t}`);
+    if (btn) {
+      if (t === subTabName) {
+        btn.className = 'btn btn-primary';
+        btn.style.background = '';
+        btn.style.color = '';
+      } else {
+        btn.className = 'btn btn-logout';
+        btn.style.background = 'rgba(255,255,255,0.05)';
+        btn.style.color = 'var(--text-main)';
+      }
+    }
+    if (sec) sec.style.display = (t === subTabName) ? 'block' : 'none';
+  });
+};
+
+window.reloadWorkspaceAssets = async function() {
+  if (!activeLinkingLecture) return;
+  const lectureId = activeLinkingLecture.id;
+  const courseId = activeLinkingCourseId;
+
+  try {
+    const assignments = await API.getAssignments(courseId);
+    const mcqs = await API.getMCQs(courseId);
+    
+    const linkedAssignments = assignments.filter(a => a.lecture_id === lectureId);
+    const linkedMCQs = mcqs.filter(m => m.lecture_id === lectureId);
+
+    // Render Assignments List
+    const assignContainer = document.getElementById('workspace-assignments-list');
+    assignContainer.innerHTML = '';
+    if (linkedAssignments.length === 0) {
+      assignContainer.innerHTML = '<span style="font-size: 0.8rem; color: var(--text-muted); font-style: italic;">No coding challenges linked to this milestone yet.</span>';
+    } else {
+      linkedAssignments.forEach(a => {
+        assignContainer.innerHTML += `
+          <div style="display: flex; justify-content: space-between; align-items: center; background: rgba(255,255,255,0.02); padding: 0.6rem 0.85rem; border-radius: var(--radius-sm); border: 1px solid var(--card-border); font-size: 0.8rem; width: 100%;">
+            <div style="text-align: left;">
+              <span style="font-weight: 700; color: var(--text-main); display: block;">${a.title}</span>
+              <span class="lecture-badge badge-blue" style="font-size: 0.6rem; text-transform: uppercase; margin-top: 0.2rem;">${a.language}</span>
+            </div>
+            <button onclick="deleteWorkspaceAssignment(${a.id})" class="btn btn-logout" style="padding: 0.25rem 0.5rem; font-size: 0.75rem; background: rgba(244, 63, 94, 0.1); color: #f43f5e; border: none; cursor: pointer;">Delete</button>
+          </div>
+        `;
+      });
+    }
+
+    // Render MCQs List
+    const mcqContainer = document.getElementById('workspace-mcqs-list');
+    mcqContainer.innerHTML = '';
+    if (linkedMCQs.length === 0) {
+      mcqContainer.innerHTML = '<span style="font-size: 0.8rem; color: var(--text-muted); font-style: italic;">No practice quiz questions linked to this milestone yet.</span>';
+    } else {
+      linkedMCQs.forEach((q, idx) => {
+        mcqContainer.innerHTML += `
+          <div style="display: flex; justify-content: space-between; align-items: center; background: rgba(255,255,255,0.02); padding: 0.6rem 0.85rem; border-radius: var(--radius-sm); border: 1px solid var(--card-border); font-size: 0.8rem; width: 100%;">
+            <div style="text-align: left; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; max-width: 80%;">
+              <span style="font-weight: 700; color: var(--text-main);">${idx + 1}. ${q.question}</span>
+            </div>
+            <button onclick="deleteWorkspaceMCQ(${q.id})" class="btn btn-logout" style="padding: 0.25rem 0.5rem; font-size: 0.75rem; background: rgba(244, 63, 94, 0.1); color: #f43f5e; border: none; cursor: pointer;">Delete</button>
+          </div>
+        `;
+      });
+    }
+  } catch (err) {
+    console.error(err);
+  }
+};
+
+window.saveWorkspaceNotes = async function(deleteFlag) {
+  if (!activeLinkingLecture) return;
+  const lectureId = activeLinkingLecture.id;
+  const notesText = deleteFlag ? "" : document.getElementById('workspace-lecture-notes').value.trim();
+
+  try {
+    const res = await API.saveLectureNotes(lectureId, notesText);
+    if (res.error) {
+      alert(res.error);
+    } else {
+      alert(deleteFlag ? "Lecture notes deleted!" : "Lecture notes updated!");
+      activeLinkingLecture.notes = notesText; // update local cache
+      document.getElementById('workspace-lecture-notes').value = notesText;
+    }
+  } catch (err) {
+    console.error(err);
+  }
+};
+
+// --- WORKSPACE CODING ASSIGNMENT FORM LifeCycle ---
+window.showWorkspaceAddAssignmentForm = function() {
+  document.getElementById('workspace-assignment-form-wrapper').style.display = 'block';
+};
+window.hideWorkspaceAddAssignmentForm = function() {
+  document.getElementById('workspace-assignment-form-wrapper').style.display = 'none';
+  document.getElementById('w-assign-title').value = '';
+  document.getElementById('w-assign-desc').value = '';
+  document.getElementById('w-assign-hint').value = '';
+  document.getElementById('w-assign-boilerplate').value = '';
+  document.getElementById('w-assign-input').value = '';
+  document.getElementById('w-assign-output').value = '';
+};
+window.saveWorkspaceAssignment = async function() {
+  if (!activeLinkingLecture) return;
+  const courseId = activeLinkingCourseId;
+  const lectureId = activeLinkingLecture.id;
+  
+  const title = document.getElementById('w-assign-title').value.trim();
+  const desc = document.getElementById('w-assign-desc').value.trim();
+  const hint = document.getElementById('w-assign-hint').value.trim();
+  const lang = document.getElementById('w-assign-lang').value;
+  const boilerplate = document.getElementById('w-assign-boilerplate').value.trim();
+  const inputVal = document.getElementById('w-assign-input').value.trim();
+  const outputVal = document.getElementById('w-assign-output').value.trim();
+
+  if (!title || !desc || !outputVal) {
+    alert("Please fill title, instructions, and expected output.");
+    return;
+  }
+
+  const testCases = [{ input: inputVal, output: outputVal }];
+
+  try {
+    const res = await API.createAssignment(courseId, {
+      lecture_id: lectureId,
+      title: title,
+      description: desc,
+      language: lang,
+      boilerplate_code: boilerplate,
+      test_cases: JSON.stringify(testCases),
+      hint: hint,
+      order_index: 1
+    });
+
+    if (res.error) {
+      alert(res.error);
+    } else {
+      alert("Assignment linked successfully!");
+      hideWorkspaceAddAssignmentForm();
+      await reloadWorkspaceAssets();
+    }
+  } catch (err) {
+    console.error(err);
+  }
+};
+window.deleteWorkspaceAssignment = async function(id) {
+  const confirmed = confirm("Are you sure you want to unlink and delete this assignment?");
+  if (!confirmed) return;
+
+  try {
+    const res = await API.deleteAssignment(id);
+    if (res.error) {
+      alert(res.error);
+    } else {
+      await reloadWorkspaceAssets();
+    }
+  } catch (err) {
+    console.error(err);
+  }
+};
+
+// --- WORKSPACE MCQ FORM LifeCycle ---
+window.showWorkspaceAddMCQForm = function() {
+  document.getElementById('workspace-mcq-form-wrapper').style.display = 'block';
+};
+window.hideWorkspaceAddMCQForm = function() {
+  document.getElementById('workspace-mcq-form-wrapper').style.display = 'none';
+  document.getElementById('w-mcq-question').value = '';
+  document.getElementById('w-mcq-a').value = '';
+  document.getElementById('w-mcq-b').value = '';
+  document.getElementById('w-mcq-c').value = '';
+  document.getElementById('w-mcq-d').value = '';
+  document.getElementById('w-mcq-explanation').value = '';
+};
+window.saveWorkspaceMCQ = async function() {
+  if (!activeLinkingLecture) return;
+  const courseId = activeLinkingCourseId;
+  const lectureId = activeLinkingLecture.id;
+
+  const question = document.getElementById('w-mcq-question').value.trim();
+  const optionA = document.getElementById('w-mcq-a').value.trim();
+  const optionB = document.getElementById('w-mcq-b').value.trim();
+  const optionC = document.getElementById('w-mcq-c').value.trim();
+  const optionD = document.getElementById('w-mcq-d').value.trim();
+  const correct = document.getElementById('w-mcq-correct').value;
+  const explanation = document.getElementById('w-mcq-explanation').value.trim();
+
+  if (!question || !optionA || !optionB || !optionC || !optionD) {
+    alert("Please fill out the question and all four options.");
+    return;
+  }
+
+  try {
+    const res = await API.createMCQ(courseId, {
+      lecture_id: lectureId,
+      question: question,
+      option_a: optionA,
+      option_b: optionB,
+      option_c: optionC,
+      option_d: optionD,
+      correct_option: correct,
+      explanation: explanation,
+      order_index: 1
+    });
+
+    if (res.error) {
+      alert(res.error);
+    } else {
+      alert("Practice MCQ linked successfully!");
+      hideWorkspaceAddMCQForm();
+      await reloadWorkspaceAssets();
+    }
+  } catch (err) {
+    console.error(err);
+  }
+};
+window.deleteWorkspaceMCQ = async function(id) {
+  const confirmed = confirm("Are you sure you want to unlink and delete this MCQ question?");
+  if (!confirmed) return;
+
+  try {
+    const res = await API.deleteMCQ(id);
+    if (res.error) {
+      alert(res.error);
+    } else {
+      await reloadWorkspaceAssets();
+    }
+  } catch (err) {
+    console.error(err);
   }
 };

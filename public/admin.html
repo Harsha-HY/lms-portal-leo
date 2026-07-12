@@ -31,6 +31,13 @@
           Manage Lectures
         </button>
 
+        <button class="sidebar-link" id="linking-nav-btn" onclick="switchAdminTab('linking', this)">
+          <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"></path>
+          </svg>
+          Linking
+        </button>
+
         <!-- Delete Batch inline inside sidebar-nav -->
         <div id="delete-batch-sidebar-section" style="width: 100%; display: flex; flex-direction: column;">
           <button class="sidebar-link" id="delete-batch-toggle" style="justify-content: space-between;">
@@ -265,7 +272,187 @@
         </div>
       </section>
 
-         <!-- 2B. ASSIGNMENTS MANAGEMENT -->
+      <!-- 2B. MILESTONE ASSET LINKING WORKSPACE -->
+      <section id="tab-admin-linking" class="admin-tab-view" style="display: none;">
+        <div id="admin-linking-alerts"></div>
+        <div class="admin-grid" style="grid-template-columns: 1fr 1.6fr; gap: 2rem;">
+          
+          <!-- Left Column: Lecture milestones list selection -->
+          <div class="admin-panel-card" style="margin-top: 0; height: fit-content; max-height: 85vh; display: flex; flex-direction: column; overflow: hidden;">
+            <h3>Select Lecture Milestone</h3>
+            <p style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 1.25rem;">
+              Choose a course, then select a lecture to configure its assignments, quizzes, and study material.
+            </p>
+            <div class="form-group" style="margin-bottom: 1rem;">
+              <label class="form-label" for="linking-course-select">Active Course</label>
+              <select class="form-input" id="linking-course-select" onchange="loadLinkingLecturesList()" required>
+                <!-- Loaded dynamically -->
+              </select>
+            </div>
+            
+            <div style="flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 0.6rem;" id="linking-lectures-container">
+              <span style="color: var(--text-muted); font-size: 0.85rem; font-style: italic;">Select a course to view available milestones.</span>
+            </div>
+          </div>
+
+          <!-- Right Column: Wide workspace panel for linking -->
+          <div class="admin-panel-card" style="margin-top: 0; min-height: 70vh; display: flex; flex-direction: column;" id="linking-workspace-card">
+            <div id="linking-empty-state" style="margin: auto; text-align: center; color: var(--text-muted); padding: 2rem;">
+              <span style="font-size: 3rem; display: block; margin-bottom: 1rem;">🔗</span>
+              <h4>No Milestone Selected</h4>
+              <p style="font-size: 0.85rem; max-width: 320px; margin: 0.5rem auto 0 auto;">Select a lecture milestone from the left column to link coding challenges, quizzes, or upload study notes.</p>
+            </div>
+            
+            <!-- Dynamic workspace content hidden by default -->
+            <div id="linking-workspace-content" style="display: none; flex-direction: column; height: 100%;">
+              <div style="border-bottom: 1px solid var(--card-border); padding-bottom: 1rem; margin-bottom: 1.25rem; display: flex; justify-content: space-between; align-items: center;">
+                <div>
+                  <h3 id="linking-active-title" style="margin: 0;">Configure Lecture Assets</h3>
+                  <span id="linking-active-subtitle" style="font-size: 0.8rem; color: var(--text-muted);">Course: Database Design</span>
+                </div>
+                <span class="lecture-badge badge-green" id="linking-active-badge">VIDEO LECTURE</span>
+              </div>
+              
+              <!-- Tab Switcher for assets configuration -->
+              <div style="display: flex; gap: 0.5rem; margin-bottom: 1.5rem; border-bottom: 1px solid var(--card-border); padding-bottom: 0.75rem;">
+                <button class="btn btn-primary" id="btn-subtab-notes" onclick="switchLinkingSubTab('notes')" style="padding: 0.35rem 0.75rem; font-size: 0.8rem;">📖 Lecture Notes</button>
+                <button class="btn btn-logout" id="btn-subtab-coding" onclick="switchLinkingSubTab('coding')" style="padding: 0.35rem 0.75rem; font-size: 0.8rem; background: rgba(255,255,255,0.05); color: var(--text-main);">💻 Coding Challenge</button>
+                <button class="btn btn-logout" id="btn-subtab-mcqs" onclick="switchLinkingSubTab('mcqs')" style="padding: 0.35rem 0.75rem; font-size: 0.8rem; background: rgba(255,255,255,0.05); color: var(--text-main);">📝 Quizzes / MCQs</button>
+              </div>
+              
+              <!-- Sub-Tab 1: Large notes editor workspace -->
+              <div id="sec-subtab-notes" style="display: block; flex: 1;">
+                <h4 style="margin: 0 0 0.5rem 0; font-size: 0.9rem; color: var(--text-main); font-weight: 700;">Lecture Study Guide & Notes</h4>
+                <p style="color: var(--text-muted); font-size: 0.8rem; margin-bottom: 1rem;">This text block will be shown to candidates inside their milestone workspace under the notes tab.</p>
+                <textarea class="form-input" id="workspace-lecture-notes" style="width: 100%; height: 320px; font-family: inherit; font-size: 0.9rem; line-height: 1.5; resize: vertical;" placeholder="Type or paste lecture summary, cheat-sheets, links, or instructions here..."></textarea>
+                <div style="display: flex; gap: 0.75rem; justify-content: flex-end; margin-top: 1rem;">
+                  <button class="btn btn-logout" id="btn-workspace-notes-delete" onclick="saveWorkspaceNotes(true)" style="background: rgba(244, 63, 94, 0.1); color: #f43f5e; border: none; padding: 0.5rem 1rem;">Delete Notes</button>
+                  <button class="btn btn-primary" onclick="saveWorkspaceNotes(false)" style="padding: 0.5rem 1.25rem;">✓ Save Lecture Notes</button>
+                </div>
+              </div>
+              
+              <!-- Sub-Tab 2: Coding assignments list & creation form -->
+              <div id="sec-subtab-coding" style="display: none; flex: 1;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                  <h4 style="margin: 0; font-size: 0.9rem; color: var(--text-main); font-weight: 700;">Linked Coding Challenge</h4>
+                  <button class="btn btn-primary" id="btn-workspace-add-assignment" onclick="showWorkspaceAddAssignmentForm()" style="padding: 0.3rem 0.6rem; font-size: 0.75rem;">+ Create Coding Assignment</button>
+                </div>
+                
+                <div id="workspace-assignments-list" style="display: flex; flex-direction: column; gap: 0.5rem; margin-bottom: 1rem;">
+                  <!-- Lists linked assignment -->
+                </div>
+                
+                <div id="workspace-assignment-form-wrapper" style="display: none; border-top: 1px dashed var(--card-border); padding-top: 1rem;">
+                  <!-- Wide coding assignment builder form -->
+                  <h5 style="margin: 0 0 0.75rem 0; font-size: 0.85rem; color: var(--text-main);">Build New Coding Challenge</h5>
+                  <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 0.75rem;">
+                    <div class="form-group">
+                      <label class="form-label" style="font-size: 0.75rem;">Challenge Title</label>
+                      <input class="form-input" type="text" id="w-assign-title" placeholder="e.g. Find Max Element">
+                    </div>
+                    <div class="form-group">
+                      <label class="form-label" style="font-size: 0.75rem;">Target Programming Language</label>
+                      <select class="form-input" id="w-assign-lang">
+                        <option value="javascript">JavaScript</option>
+                        <option value="python">Python 3</option>
+                        <option value="sql">SQLite SQL</option>
+                        <option value="html">HTML Frontend</option>
+                      </select>
+                    </div>
+                  </div>
+                  <div class="form-group" style="margin-bottom: 0.75rem;">
+                    <label class="form-label" style="font-size: 0.75rem;">Instructions & Specifications</label>
+                    <textarea class="form-input" id="w-assign-desc" style="height: 80px;" placeholder="Write clear instructions, inputs, expected outputs, and constraints..."></textarea>
+                  </div>
+                  <div class="form-group" style="margin-bottom: 0.75rem;">
+                    <label class="form-label" style="font-size: 0.75rem;">Hint (Optional)</label>
+                    <textarea class="form-input" id="w-assign-hint" style="height: 50px;" placeholder="Provide a hint for the student..."></textarea>
+                  </div>
+                  <div class="form-group" style="margin-bottom: 0.75rem;">
+                    <label class="form-label" style="font-size: 0.75rem;">Boilerplate Code</label>
+                    <textarea class="form-input" id="w-assign-boilerplate" style="height: 100px; font-family: monospace; font-size: 0.8rem;" placeholder="e.g. function solve(arr) { ... }"></textarea>
+                  </div>
+                  <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
+                    <div class="form-group">
+                      <label class="form-label" style="font-size: 0.75rem;">Test Case Input</label>
+                      <input class="form-input" type="text" id="w-assign-input" placeholder="e.g. [1, 2, 3]">
+                    </div>
+                    <div class="form-group">
+                      <label class="form-label" style="font-size: 0.75rem;">Expected Output</label>
+                      <input class="form-input" type="text" id="w-assign-output" placeholder="e.g. 6">
+                    </div>
+                  </div>
+                  <div style="display: flex; gap: 0.5rem; justify-content: flex-end;">
+                    <button class="btn btn-logout" onclick="hideWorkspaceAddAssignmentForm()">Cancel</button>
+                    <button class="btn btn-primary" onclick="saveWorkspaceAssignment()">Link Coding Challenge</button>
+                  </div>
+                </div>
+              </div>
+              
+              <!-- Sub-Tab 3: Practice MCQs list & creation form -->
+              <div id="sec-subtab-mcqs" style="display: none; flex: 1;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                  <h4 style="margin: 0; font-size: 0.9rem; color: var(--text-main); font-weight: 700;">Linked Practice Quizzes (MCQs)</h4>
+                  <button class="btn btn-primary" id="btn-workspace-add-mcq" onclick="showWorkspaceAddMCQForm()" style="padding: 0.35rem 0.65rem; font-size: 0.75rem;">+ Create Practice MCQ</button>
+                </div>
+                
+                <div id="workspace-mcqs-list" style="display: flex; flex-direction: column; gap: 0.5rem; max-height: 250px; overflow-y: auto; margin-bottom: 1rem;">
+                  <!-- Lists linked MCQs -->
+                </div>
+                
+                <div id="workspace-mcq-form-wrapper" style="display: none; border-top: 1px dashed var(--card-border); padding-top: 1rem;">
+                  <!-- Wide MCQ builder form -->
+                  <h5 style="margin: 0 0 0.75rem 0; font-size: 0.85rem; color: var(--text-main);">Build New MCQ Question</h5>
+                  <div class="form-group" style="margin-bottom: 0.75rem;">
+                    <label class="form-label" style="font-size: 0.75rem;">Question Prompt</label>
+                    <input class="form-input" type="text" id="w-mcq-question" placeholder="e.g. What is the complexity of binary search?">
+                  </div>
+                  <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; margin-bottom: 0.75rem;">
+                    <div class="form-group">
+                      <label class="form-label" style="font-size: 0.75rem;">Option A</label>
+                      <input class="form-input" type="text" id="w-mcq-a" placeholder="Option A">
+                    </div>
+                    <div class="form-group">
+                      <label class="form-label" style="font-size: 0.75rem;">Option B</label>
+                      <input class="form-input" type="text" id="w-mcq-b" placeholder="Option B">
+                    </div>
+                    <div class="form-group">
+                      <label class="form-label" style="font-size: 0.75rem;">Option C</label>
+                      <input class="form-input" type="text" id="w-mcq-c" placeholder="Option C">
+                    </div>
+                    <div class="form-group">
+                      <label class="form-label" style="font-size: 0.75rem;">Option D</label>
+                      <input class="form-input" type="text" id="w-mcq-d" placeholder="Option D">
+                    </div>
+                  </div>
+                  <div style="display: grid; grid-template-columns: 1fr 1.5fr; gap: 1rem; margin-bottom: 1rem;">
+                    <div class="form-group">
+                      <label class="form-label" style="font-size: 0.75rem;">Correct Option</label>
+                      <select class="form-input" id="w-mcq-correct">
+                        <option value="A">Option A</option>
+                        <option value="B">Option B</option>
+                        <option value="C">Option C</option>
+                        <option value="D">Option D</option>
+                      </select>
+                    </div>
+                    <div class="form-group">
+                      <label class="form-label" style="font-size: 0.75rem;">AI Conceptual Explanation (revealed to student)</label>
+                      <input class="form-input" type="text" id="w-mcq-explanation" placeholder="Provide conceptual explanation here...">
+                    </div>
+                  </div>
+                  <div style="display: flex; gap: 0.5rem; justify-content: flex-end;">
+                    <button class="btn btn-logout" onclick="hideWorkspaceAddMCQForm()">Cancel</button>
+                    <button class="btn btn-primary" onclick="saveWorkspaceMCQ()">Link MCQ Question</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+        </div>
+      </section>
+
+      <!-- 2C. ASSIGNMENTS MANAGEMENT -->
          <section id="tab-admin-assignments" class="admin-tab-view" style="display: none;">
            <div id="admin-assignments-alerts"></div>
            <div class="admin-grid" style="grid-template-columns: 1fr 1.2fr; gap: 2rem;">
