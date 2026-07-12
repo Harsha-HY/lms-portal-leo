@@ -1548,7 +1548,7 @@ async function loadAdminData() {
 
 // Populate admin course selectors
 async function populateCourseSelects() {
-  const selects = ['lecture-course-select', 'assign-course-select', 'assign-filter-course', 'mcq-course-select', 'mcq-filter-course'];
+  const selects = ['lecture-course-select', 'assign-course-select', 'assign-filter-course', 'mcq-course-select', 'mcq-filter-course', 'linking-course-select'];
   try {
     const courses = await API.getCourses();
     
@@ -3172,13 +3172,18 @@ let activeLinkingLecture = null;
 let activeLinkingCourseId = null;
 let linkingSubTab = 'notes';
 
-window.populateLinkingCourseSelect = function() {
+window.populateLinkingCourseSelect = async function() {
   const select = document.getElementById('linking-course-select');
   if (!select) return;
-  select.innerHTML = '<option value="">-- Choose Course --</option>';
-  allCourses.forEach(c => {
-    select.innerHTML += `<option value="${c.id}">${c.title}</option>`;
-  });
+  try {
+    const courses = await API.getCourses();
+    select.innerHTML = '<option value="">-- Choose Course --</option>';
+    courses.forEach(c => {
+      select.innerHTML += `<option value="${c.id}">${c.title}</option>`;
+    });
+  } catch (err) {
+    console.error('Failed to populate linking courses:', err);
+  }
 };
 
 window.loadLinkingLecturesList = async function() {
