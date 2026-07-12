@@ -1997,15 +1997,12 @@ async function loadAdminLecturesList(courseId) {
     }
     
     lectures.forEach(lec => {
-      const linkedAssignments = assignments.filter(a => a.lecture_id === lec.id);
-      const linkedMCQs = mcqs.filter(m => m.lecture_id === lec.id);
-
       const wrapper = document.createElement('div');
-      wrapper.style.cssText = 'display: flex; flex-direction: column; margin-bottom: 0.75rem;';
+      wrapper.style.cssText = 'display: flex; flex-direction: column; margin-bottom: 0.5rem;';
 
       const row = document.createElement('div');
       row.className = 'lecture-row';
-      row.style.cssText = 'display: flex; justify-content: space-between; align-items: center; padding: 0.75rem 1rem; border-radius: var(--radius-sm); border: 1px solid var(--card-border); background-color: rgba(255, 255, 255, 0.01); width: 100%; border-bottom-left-radius: 0; border-bottom-right-radius: 0;';
+      row.style.cssText = 'display: flex; justify-content: space-between; align-items: center; padding: 0.75rem 1rem; border-radius: var(--radius-sm); border: 1px solid var(--card-border); background-color: rgba(255, 255, 255, 0.01); width: 100%;';
       
       const typeBadge = (lec.content_type || 'Video Lecture').toUpperCase();
       
@@ -2018,64 +2015,12 @@ async function loadAdminLecturesList(courseId) {
           </div>
         </div>
         <div style="display: flex; gap: 0.5rem; align-items: center; flex-shrink: 0;">
-          <button class="btn btn-logout" id="btn-toggle-assets-${lec.id}" onclick="toggleLectureAssets(${lec.id})" style="padding: 0.35rem 0.65rem; font-size: 0.8rem; background: rgba(255,255,255,0.05); border-radius: var(--radius-sm); border: none; cursor: pointer; color: var(--text-main);">
-            ▼ Manage Assets
-          </button>
           <button class="btn btn-logout" onclick="deleteLecture(${lec.id}, '${lec.title.replace(/'/g, "\\'")}', ${courseId})" style="padding: 0.35rem 0.65rem; font-size: 0.8rem; background: rgba(244, 63, 94, 0.15); border-radius: var(--radius-sm); border: none; cursor: pointer; color: #f43f5e;" title="Delete Video">
             Delete
           </button>
         </div>
       `;
       wrapper.appendChild(row);
-
-      const assetsPanel = document.createElement('div');
-      assetsPanel.id = `lecture-assets-panel-${lec.id}`;
-      assetsPanel.style.cssText = 'display: none; padding: 1rem; border: 1px solid var(--card-border); border-top: none; background: rgba(0,0,0,0.15); border-bottom-left-radius: var(--radius-sm); border-bottom-right-radius: var(--radius-sm); width: 100%;';
-      
-      assetsPanel.innerHTML = `
-        <div style="margin-bottom: 1rem;">
-          <h4 style="font-size: 0.8rem; font-weight: 700; color: var(--text-main); margin: 0 0 0.5rem 0; display: flex; justify-content: space-between; align-items: center; width: 100%;">
-            <span>💻 CODING ASSIGNMENTS</span>
-            ${linkedAssignments.length === 0 ? `<button class="btn btn-primary" onclick="showInlineAddAssignmentForm(${lec.id}, ${courseId})" style="padding: 0.2rem 0.4rem; font-size: 0.65rem; background: var(--sidebar-active);">+ Link Assignment</button>` : ''}
-          </h4>
-          <div id="inline-assignment-list-${lec.id}" style="display: flex; flex-direction: column; gap: 0.35rem;">
-            ${linkedAssignments.map(a => `
-              <div style="display: flex; justify-content: space-between; align-items: center; background: rgba(255,255,255,0.02); padding: 0.4rem 0.6rem; border-radius: var(--radius-sm); border: 1px solid var(--card-border); font-size: 0.75rem;">
-                <span style="font-family: monospace;">[${a.language.toUpperCase()}] ${a.title}</span>
-                <button onclick="deleteAssignment(${a.id}, ${courseId})" style="background: none; border: none; color: #f43f5e; cursor: pointer; font-size: 0.75rem; font-weight: 700;">Delete</button>
-              </div>
-            `).join('') || '<span style="font-size: 0.75rem; color: var(--text-muted); font-style: italic;">No coding challenges linked.</span>'}
-          </div>
-          <div id="inline-assignment-form-wrapper-${lec.id}" style="display: none; margin-top: 0.75rem; border-top: 1px dashed var(--card-border); padding-top: 0.75rem;"></div>
-        </div>
-
-        <div>
-          <h4 style="font-size: 0.8rem; font-weight: 700; color: var(--text-main); margin: 0 0 0.5rem 0; display: flex; justify-content: space-between; align-items: center; width: 100%;">
-            <span>📝 PRACTICE QUIZZES (MCQS)</span>
-            <button class="btn btn-primary" onclick="showInlineAddMCQForm(${lec.id}, ${courseId})" style="padding: 0.2rem 0.4rem; font-size: 0.65rem; background: var(--sidebar-active);">+ Link MCQ</button>
-          </h4>
-          <div id="inline-mcq-list-${lec.id}" style="display: flex; flex-direction: column; gap: 0.35rem;">
-            ${linkedMCQs.map((q, idx) => `
-              <div style="display: flex; justify-content: space-between; align-items: center; background: rgba(255,255,255,0.02); padding: 0.4rem 0.6rem; border-radius: var(--radius-sm); border: 1px solid var(--card-border); font-size: 0.75rem; overflow: hidden; width: 100%;">
-                <span style="text-overflow: ellipsis; overflow: hidden; white-space: nowrap; max-width: 80%;">${idx+1}. ${q.question}</span>
-                <button onclick="deleteMCQ(${q.id}, ${courseId})" style="background: none; border: none; color: #f43f5e; cursor: pointer; font-size: 0.75rem; font-weight: 700;">Delete</button>
-              </div>
-            `).join('') || '<span style="font-size: 0.75rem; color: var(--text-muted); font-style: italic;">No practice quiz questions linked.</span>'}
-          </div>
-          <div id="inline-mcq-form-wrapper-${lec.id}" style="display: none; margin-top: 0.75rem; border-top: 1px dashed var(--card-border); padding-top: 0.75rem;"></div>
-        </div>
-
-        <div style="margin-top: 1rem; border-top: 1px dashed var(--card-border); padding-top: 1rem;">
-          <h4 style="font-size: 0.8rem; font-weight: 700; color: var(--text-main); margin: 0 0 0.5rem 0;">📖 LECTURE NOTES & STUDY MATERIAL</h4>
-          <textarea class="form-input" id="inline-lecture-notes-${lec.id}" style="height: 80px; resize: vertical; font-size: 0.8rem; padding: 0.4rem 0.6rem; margin-bottom: 0.5rem; font-family: inherit;" placeholder="Paste text or markdown notes for this lecture milestone...">${lec.notes || ''}</textarea>
-          <div style="display: flex; gap: 0.5rem; justify-content: flex-end;">
-            ${lec.notes ? `<button class="btn btn-logout" onclick="deleteInlineNotes(${lec.id}, ${courseId})" style="padding: 0.25rem 0.5rem; font-size: 0.75rem; color: #f43f5e; background: rgba(244, 63, 94, 0.05); border: none; cursor: pointer;">Delete Notes</button>` : ''}
-            <button class="btn btn-primary" onclick="saveInlineNotes(${lec.id}, ${courseId})" style="padding: 0.25rem 0.5rem; font-size: 0.75rem; background: var(--sidebar-active);">Save Notes</button>
-          </div>
-        </div>
-      `;
-      wrapper.appendChild(assetsPanel);
-
       listContainer.appendChild(wrapper);
     });
   } catch (err) {
@@ -3217,207 +3162,8 @@ function isTimelineItemLocked(type, orderIndex, courseId) {
 }
 
 /* ==========================================================================
-   INLINE ASSET LINKING FOR LECTURE MILESTONES (ADMIN)
+   DEPRECATED INLINE ASSET LINKING (All migrated to dedicated Linking tab)
    ========================================================================== */
-window.toggleLectureAssets = function(lectureId) {
-  const panel = document.getElementById(`lecture-assets-panel-${lectureId}`);
-  const btn = document.getElementById(`btn-toggle-assets-${lectureId}`);
-  if (panel) {
-    if (panel.style.display === 'none') {
-      panel.style.display = 'block';
-      if (btn) btn.textContent = '▲ Close Assets';
-    } else {
-      panel.style.display = 'none';
-      if (btn) btn.textContent = '▼ Manage Assets';
-    }
-  }
-};
-
-window.showInlineAddAssignmentForm = function(lectureId, courseId) {
-  const wrapper = document.getElementById(`inline-assignment-form-wrapper-${lectureId}`);
-  if (!wrapper) return;
-  wrapper.style.display = 'block';
-  wrapper.innerHTML = `
-    <div style="background: rgba(255,255,255,0.02); padding: 0.75rem; border-radius: var(--radius-sm); border: 1px solid var(--card-border);">
-      <h5 style="margin: 0 0 0.5rem 0; font-size: 0.8rem; color: var(--text-main); font-weight: 700;">Link New Coding Assignment</h5>
-      <div style="display: flex; flex-direction: column; gap: 0.5rem;">
-        <input class="form-input" type="text" id="inline-assign-title-${lectureId}" placeholder="Assignment Title" style="padding: 0.4rem 0.6rem; font-size: 0.8rem;">
-        <textarea class="form-input" id="inline-assign-desc-${lectureId}" placeholder="Instructions / Expected Outputs" style="height: 60px; padding: 0.4rem 0.6rem; font-size: 0.8rem; resize: vertical;"></textarea>
-        <textarea class="form-input" id="inline-assign-hint-${lectureId}" placeholder="Assignment Hint (Optional)" style="height: 40px; padding: 0.4rem 0.6rem; font-size: 0.8rem; resize: vertical;"></textarea>
-        <select class="form-input" id="inline-assign-lang-${lectureId}" style="padding: 0.4rem 0.6rem; font-size: 0.8rem; height: auto; width: 100%;">
-          <option value="javascript">JavaScript</option>
-          <option value="python">Python 3</option>
-          <option value="sql">SQLite SQL</option>
-          <option value="html">HTML Frontend</option>
-        </select>
-        <textarea class="form-input" id="inline-assign-boilerplate-${lectureId}" placeholder="Starter Boilerplate Code" style="height: 60px; padding: 0.4rem 0.6rem; font-size: 0.8rem; resize: vertical; font-family: monospace;"></textarea>
-        <input class="form-input" type="text" id="inline-assign-input-${lectureId}" placeholder="Test Case Input (e.g. [1, 2, 3] or 5)" style="padding: 0.4rem 0.6rem; font-size: 0.8rem;">
-        <input class="form-input" type="text" id="inline-assign-output-${lectureId}" placeholder="Expected Test Case Output (e.g. 6 or 25)" style="padding: 0.4rem 0.6rem; font-size: 0.8rem;">
-        <div style="display: flex; gap: 0.5rem; justify-content: flex-end;">
-          <button class="btn btn-logout" onclick="hideInlineAddAssignmentForm(${lectureId})" style="padding: 0.25rem 0.5rem; font-size: 0.75rem;">Cancel</button>
-          <button class="btn btn-primary" onclick="saveInlineAssignment(${lectureId}, ${courseId})" style="padding: 0.25rem 0.5rem; font-size: 0.75rem; background: var(--sidebar-active);">Save & Link</button>
-        </div>
-      </div>
-    </div>
-  `;
-};
-
-window.hideInlineAddAssignmentForm = function(lectureId) {
-  const wrapper = document.getElementById(`inline-assignment-form-wrapper-${lectureId}`);
-  if (wrapper) {
-    wrapper.style.display = 'none';
-    wrapper.innerHTML = '';
-  }
-};
-
-window.saveInlineAssignment = async function(lectureId, courseId) {
-  const title = document.getElementById(`inline-assign-title-${lectureId}`).value.trim();
-  const desc = document.getElementById(`inline-assign-desc-${lectureId}`).value.trim();
-  const hint = document.getElementById(`inline-assign-hint-${lectureId}`).value.trim();
-  const lang = document.getElementById(`inline-assign-lang-${lectureId}`).value;
-  const boilerplate = document.getElementById(`inline-assign-boilerplate-${lectureId}`).value.trim();
-  const inputVal = document.getElementById(`inline-assign-input-${lectureId}`).value.trim();
-  const outputVal = document.getElementById(`inline-assign-output-${lectureId}`).value.trim();
-
-  if (!title || !desc || !outputVal) {
-    alert("Please enter title, instructions, and expected output.");
-    return;
-  }
-
-  const testCases = [{ input: inputVal, output: outputVal }];
-
-  try {
-    const res = await API.createAssignment(courseId, {
-      lecture_id: lectureId,
-      title: title,
-      description: desc,
-      language: lang,
-      boilerplate_code: boilerplate,
-      test_cases: JSON.stringify(testCases),
-      hint: hint,
-      order_index: 1
-    });
-
-    if (res.error) {
-      alert(res.error);
-    } else {
-      alert("Assignment saved and linked successfully!");
-      await loadAdminLecturesList(courseId);
-    }
-  } catch (err) {
-    console.error(err);
-  }
-};
-
-window.showInlineAddMCQForm = function(lectureId, courseId) {
-  const wrapper = document.getElementById(`inline-mcq-form-wrapper-${lectureId}`);
-  if (!wrapper) return;
-  wrapper.style.display = 'block';
-  wrapper.innerHTML = `
-    <div style="background: rgba(255,255,255,0.02); padding: 0.75rem; border-radius: var(--radius-sm); border: 1px solid var(--card-border);">
-      <h5 style="margin: 0 0 0.5rem 0; font-size: 0.8rem; color: var(--text-main); font-weight: 700;">Link New MCQ Question</h5>
-      <div style="display: flex; flex-direction: column; gap: 0.5rem;">
-        <input class="form-input" type="text" id="inline-mcq-question-${lectureId}" placeholder="Enter Question Prompt" style="padding: 0.4rem 0.6rem; font-size: 0.8rem;">
-        <input class="form-input" type="text" id="inline-mcq-a-${lectureId}" placeholder="Option A" style="padding: 0.4rem 0.6rem; font-size: 0.8rem;">
-        <input class="form-input" type="text" id="inline-mcq-b-${lectureId}" placeholder="Option B" style="padding: 0.4rem 0.6rem; font-size: 0.8rem;">
-        <input class="form-input" type="text" id="inline-mcq-c-${lectureId}" placeholder="Option C" style="padding: 0.4rem 0.6rem; font-size: 0.8rem;">
-        <input class="form-input" type="text" id="inline-mcq-d-${lectureId}" placeholder="Option D" style="padding: 0.4rem 0.6rem; font-size: 0.8rem;">
-        <select class="form-input" id="inline-mcq-correct-${lectureId}" style="padding: 0.4rem 0.6rem; font-size: 0.8rem; height: auto; width: 100%;">
-          <option value="A">Correct: Option A</option>
-          <option value="B">Correct: Option B</option>
-          <option value="C">Correct: Option C</option>
-          <option value="D">Correct: Option D</option>
-        </select>
-        <textarea class="form-input" id="inline-mcq-explanation-${lectureId}" placeholder="AI Conceptual Explanation (revealed to student)" style="height: 50px; padding: 0.4rem 0.6rem; font-size: 0.8rem; resize: vertical;"></textarea>
-        <div style="display: flex; gap: 0.5rem; justify-content: flex-end;">
-          <button class="btn btn-logout" onclick="hideInlineAddMCQForm(${lectureId})" style="padding: 0.25rem 0.5rem; font-size: 0.75rem;">Cancel</button>
-          <button class="btn btn-primary" onclick="saveInlineMCQ(${lectureId}, ${courseId})" style="padding: 0.25rem 0.5rem; font-size: 0.75rem; background: var(--sidebar-active);">Save & Link</button>
-        </div>
-      </div>
-    </div>
-  `;
-};
-
-window.hideInlineAddMCQForm = function(lectureId) {
-  const wrapper = document.getElementById(`inline-mcq-form-wrapper-${lectureId}`);
-  if (wrapper) {
-    wrapper.style.display = 'none';
-    wrapper.innerHTML = '';
-  }
-};
-
-window.saveInlineMCQ = async function(lectureId, courseId) {
-  const question = document.getElementById(`inline-mcq-question-${lectureId}`).value.trim();
-  const optionA = document.getElementById(`inline-mcq-a-${lectureId}`).value.trim();
-  const optionB = document.getElementById(`inline-mcq-b-${lectureId}`).value.trim();
-  const optionC = document.getElementById(`inline-mcq-c-${lectureId}`).value.trim();
-  const optionD = document.getElementById(`inline-mcq-d-${lectureId}`).value.trim();
-  const correct = document.getElementById(`inline-mcq-correct-${lectureId}`).value;
-  const explanation = document.getElementById(`inline-mcq-explanation-${lectureId}`).value.trim();
-
-  if (!question || !optionA || !optionB || !optionC || !optionD) {
-    alert("Please fill out the question and all four options.");
-    return;
-  }
-
-  try {
-    const res = await API.createMCQ(courseId, {
-      lecture_id: lectureId,
-      question: question,
-      option_a: optionA,
-      option_b: optionB,
-      option_c: optionC,
-      option_d: optionD,
-      correct_option: correct,
-      explanation: explanation,
-      order_index: 1
-    });
-
-    if (res.error) {
-      alert(res.error);
-    } else {
-      alert("Practice MCQ saved and linked successfully!");
-      await loadAdminLecturesList(courseId);
-    }
-  } catch (err) {
-    console.error(err);
-  }
-};
-
-window.saveInlineNotes = async function(lectureId, courseId) {
-  const notesText = document.getElementById(`inline-lecture-notes-${lectureId}`).value.trim();
-  
-  try {
-    const res = await API.saveLectureNotes(lectureId, notesText);
-    if (res.error) {
-      alert(res.error);
-    } else {
-      alert("Lecture notes updated successfully!");
-      await loadAdminLecturesList(courseId);
-    }
-  } catch (err) {
-    console.error(err);
-    alert("Failed to update notes.");
-  }
-};
-
-window.deleteInlineNotes = async function(lectureId, courseId) {
-  const confirmed = confirm("Are you sure you want to delete all notes for this lecture?");
-  if (!confirmed) return;
-
-  try {
-    const res = await API.saveLectureNotes(lectureId, "");
-    if (res.error) {
-      alert(res.error);
-    } else {
-      alert("Lecture notes deleted successfully!");
-      await loadAdminLecturesList(courseId);
-    }
-  } catch (err) {
-    console.error(err);
-    alert("Failed to delete notes.");
-  }
-};
 
 /* ==========================================================================
    MILESTONE ASSET LINKING WORKSPACE PANEL (ADMIN)
