@@ -781,7 +781,7 @@
                 <h4 style="font-size: 1rem; margin-bottom: 0.75rem; color: var(--text-main); display: flex; align-items: center; gap: 0.5rem;">
                   <span>✅</span> Completed Video Lectures
                 </h4>
-                <div style="max-height: 200px; overflow-y: auto; padding-right: 0.25rem; border: 1px solid var(--card-border); border-radius: var(--radius-sm); background: var(--bg-page);">
+                <div style="max-height: 180px; overflow-y: auto; padding-right: 0.25rem; border: 1px solid var(--card-border); border-radius: var(--radius-sm); background: var(--bg-page); margin-bottom: 1.25rem;">
                   <table class="data-table" style="font-size: 0.85rem; width: 100%;">
                     <thead>
                       <tr>
@@ -791,6 +791,72 @@
                       </tr>
                     </thead>
                     <tbody id="audit-progress-logs-body">
+                      <!-- Filled via JS -->
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+              <!-- Current Progression Milestones -->
+              <div>
+                <h4 style="font-size: 1rem; margin-bottom: 0.75rem; color: var(--text-main); display: flex; align-items: center; gap: 0.5rem;">
+                  <span>📍</span> Current Progression Milestones
+                </h4>
+                <div style="max-height: 180px; overflow-y: auto; padding-right: 0.25rem; border: 1px solid var(--card-border); border-radius: var(--radius-sm); background: var(--bg-page); margin-bottom: 1.25rem;">
+                  <table class="data-table" style="font-size: 0.85rem; width: 100%;">
+                    <thead>
+                      <tr>
+                        <th>Course Name</th>
+                        <th>Current Lecture Milestone</th>
+                        <th>Milestone Status</th>
+                      </tr>
+                    </thead>
+                    <tbody id="audit-current-milestones-body">
+                      <!-- Filled via JS -->
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+              <!-- MCQ Submissions History -->
+              <div>
+                <h4 style="font-size: 1rem; margin-bottom: 0.75rem; color: var(--text-main); display: flex; align-items: center; gap: 0.5rem;">
+                  <span>📝</span> Practice Quizzes (MCQ) Attempt Logs
+                </h4>
+                <div style="max-height: 180px; overflow-y: auto; padding-right: 0.25rem; border: 1px solid var(--card-border); border-radius: var(--radius-sm); background: var(--bg-page); margin-bottom: 1.25rem;">
+                  <table class="data-table" style="font-size: 0.85rem; width: 100%;">
+                    <thead>
+                      <tr>
+                        <th>Lecture</th>
+                        <th>Quiz Question</th>
+                        <th>Selected Answer</th>
+                        <th>Correct Answer</th>
+                        <th>Result</th>
+                      </tr>
+                    </thead>
+                    <tbody id="audit-mcq-logs-body">
+                      <!-- Filled via JS -->
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+              <!-- Coding Submissions History -->
+              <div>
+                <h4 style="font-size: 1rem; margin-bottom: 0.75rem; color: var(--text-main); display: flex; align-items: center; gap: 0.5rem;">
+                  <span>💻</span> Coding Challenge Submission History
+                </h4>
+                <div style="max-height: 180px; overflow-y: auto; padding-right: 0.25rem; border: 1px solid var(--card-border); border-radius: var(--radius-sm); background: var(--bg-page);">
+                  <table class="data-table" style="font-size: 0.85rem; width: 100%;">
+                    <thead>
+                      <tr>
+                        <th>Lecture</th>
+                        <th>Coding Assignment Title</th>
+                        <th>Language</th>
+                        <th>Result Status</th>
+                      </tr>
+                    </thead>
+                    <tbody id="audit-coding-logs-body">
                       <!-- Filled via JS -->
                     </tbody>
                   </table>

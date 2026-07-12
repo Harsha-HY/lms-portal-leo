@@ -19,6 +19,8 @@ let historyStudents = [];
 let historyLogs = [];
 let historyProgress = [];
 let historyEnrollments = [];
+let historySubmissions = [];
+let historyLectures = [];
 let selectedStudentId = null;
 
 window.changeTheme = function(themeName) {
@@ -1795,6 +1797,8 @@ async function loadStudentHistoryData() {
     historyLogs = data.logs || [];
     historyProgress = data.progress || [];
     historyEnrollments = data.enrollments || [];
+    historySubmissions = data.submissions || [];
+    historyLectures = data.lectures || [];
     
     renderHistoryStudentList();
   } catch (err) {
@@ -1939,6 +1943,98 @@ function selectAuditStudent(studentId) {
           <td>${dateStr}</td>
         `;
         progressBody.appendChild(row);
+      });
+    }
+  }
+
+  // Calculate and render current milestones per enrolled course
+  const milestonesBody = document.getElementById('audit-current-milestones-body');
+  if (milestonesBody) {
+    milestonesBody.innerHTML = '';
+    if (studentEnrollments.length === 0) {
+      milestonesBody.innerHTML = `<tr><td colspan="3" style="text-align: center; color: var(--text-muted); font-style: italic;">No enrolled courses.</td></tr>`;
+    } else {
+      studentEnrollments.forEach(e => {
+        // Find all lectures for this course
+        const courseLectures = historyLectures.filter(l => l.course_id === e.course_id);
+        
+        // Find first incomplete lecture
+        let currentMilestoneTitle = 'Completed all milestones of this course! 🎉';
+        let statusText = `<span class="lecture-badge badge-green">COMPLETED</span>`;
+        
+        const incompleteLec = courseLectures.find(l => 
+          !studentProgress.some(p => p.lecture_id === l.id)
+        );
+        
+        if (incompleteLec) {
+          currentMilestoneTitle = `Lec #${incompleteLec.order_index}: ${incompleteLec.title}`;
+          statusText = `<span class="lecture-badge badge-yellow">IN PROGRESS</span>`;
+        } else if (courseLectures.length === 0) {
+          currentMilestoneTitle = 'No lectures added yet.';
+          statusText = '<span style="color: var(--text-muted);">N/A</span>';
+        }
+
+        const row = document.createElement('tr');
+        row.innerHTML = `
+          <td style="font-weight: 700; color: var(--text-main);">${e.course_title}</td>
+          <td>${currentMilestoneTitle}</td>
+          <td>${statusText}</td>
+        `;
+        milestonesBody.appendChild(row);
+      });
+    }
+  }
+
+  // Filter student-specific submissions
+  const studentSubmissions = historySubmissions.filter(s => s.user_id === studentId);
+
+  // Render Quiz (MCQ) Attempt Logs
+  const mcqBody = document.getElementById('audit-mcq-logs-body');
+  if (mcqBody) {
+    mcqBody.innerHTML = '';
+    const studentMCQs = studentSubmissions.filter(s => s.type === 'mcq');
+    if (studentMCQs.length === 0) {
+      mcqBody.innerHTML = `<tr><td colspan="5" style="text-align: center; color: var(--text-muted); font-style: italic;">No quiz submissions recorded.</td></tr>`;
+    } else {
+      studentMCQs.forEach(sub => {
+        const row = document.createElement('tr');
+        const isCorrectText = sub.is_correct === 1 
+          ? `<span style="color: #34d399; font-weight: bold;">✓ Correct</span>`
+          : `<span style="color: #f87171; font-weight: bold;">✗ Incorrect</span>`;
+        
+        row.innerHTML = `
+          <td style="font-size: 0.8rem; color: var(--text-muted); max-width: 140px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${sub.lecture_title || ''}">${sub.lecture_title || 'N/A'}</td>
+          <td style="max-width: 250px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${sub.title}">${sub.title}</td>
+          <td style="font-weight: 700; text-align: center; color: var(--primary-light);">${sub.submitted_answer}</td>
+          <td style="font-weight: 700; text-align: center; color: var(--text-muted);">${sub.correct_or_lang}</td>
+          <td>${isCorrectText}</td>
+        `;
+        mcqBody.appendChild(row);
+      });
+    }
+  }
+
+  // Render Coding Challenge Submission History
+  const codingBody = document.getElementById('audit-coding-logs-body');
+  if (codingBody) {
+    codingBody.innerHTML = '';
+    const studentCoding = studentSubmissions.filter(s => s.type === 'assignment');
+    if (studentCoding.length === 0) {
+      codingBody.innerHTML = `<tr><td colspan="4" style="text-align: center; color: var(--text-muted); font-style: italic;">No coding challenge submissions recorded.</td></tr>`;
+    } else {
+      studentCoding.forEach(sub => {
+        const row = document.createElement('tr');
+        const isCorrectText = sub.is_correct === 1 
+          ? `<span style="color: #34d399; font-weight: bold;">✓ Solved & Passed</span>`
+          : `<span style="color: #f87171; font-weight: bold;">✗ Incomplete / Failed</span>`;
+        
+        row.innerHTML = `
+          <td style="font-size: 0.8rem; color: var(--text-muted); max-width: 140px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${sub.lecture_title || ''}">${sub.lecture_title || 'N/A'}</td>
+          <td style="font-weight: 700; color: var(--text-main);">${sub.title}</td>
+          <td><span class="lecture-badge badge-blue" style="font-size: 0.65rem; text-transform: uppercase;">${sub.correct_or_lang}</span></td>
+          <td>${isCorrectText}</td>
+        `;
+        codingBody.appendChild(row);
       });
     }
   }

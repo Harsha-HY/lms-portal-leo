@@ -618,6 +618,39 @@ app.get('/api/admin/student-history', requireAdminOrFaculty, (req, res) => {
     FROM enrollments e 
     JOIN courses c ON c.id = e.course_id
   `;
+  const querySubmissions = `
+    SELECT s.user_id, s.type, s.reference_id, s.submitted_answer, s.is_correct, s.created_at,
+           CASE 
+             WHEN s.type = 'mcq' THEN m.question 
+             ELSE a.title 
+           END as title,
+           CASE 
+             WHEN s.type = 'mcq' THEN m.correct_option 
+             ELSE a.language 
+           END as correct_or_lang,
+           CASE 
+             WHEN s.type = 'mcq' THEN c_m.title 
+             ELSE c_a.title 
+           END as course_title,
+           CASE 
+             WHEN s.type = 'mcq' THEN l_m.title 
+             ELSE l_a.title 
+           END as lecture_title
+    FROM submissions s
+    LEFT JOIN mcqs m ON m.id = s.reference_id AND s.type = 'mcq'
+    LEFT JOIN courses c_m ON c_m.id = m.course_id AND s.type = 'mcq'
+    LEFT JOIN lectures l_m ON l_m.id = m.lecture_id AND s.type = 'mcq'
+    LEFT JOIN assignments a ON a.id = s.reference_id AND s.type = 'assignment'
+    LEFT JOIN courses c_a ON c_a.id = a.course_id AND s.type = 'assignment'
+    LEFT JOIN lectures l_a ON l_a.id = a.lecture_id AND s.type = 'assignment'
+    ORDER BY s.created_at DESC
+  `;
+  const queryAllLectures = `
+    SELECT l.id, l.course_id, l.title, l.order_index, c.title as course_title 
+    FROM lectures l 
+    JOIN courses c ON c.id = l.course_id
+    ORDER BY l.course_id, l.order_index ASC
+  `;
 
   db.all(queryStudents, [], (err, students) => {
     if (err) return res.status(500).json({ error: 'Failed to fetch students.' });
@@ -631,11 +664,21 @@ app.get('/api/admin/student-history', requireAdminOrFaculty, (req, res) => {
         db.all(queryEnrollments, [], (err, enrollments) => {
           if (err) return res.status(500).json({ error: 'Failed to fetch enrollments details.' });
 
-          res.json({
-            students,
-            logs,
-            progress,
-            enrollments
+          db.all(querySubmissions, [], (err, submissions) => {
+            if (err) return res.status(500).json({ error: 'Failed to fetch submissions details.' });
+
+            db.all(queryAllLectures, [], (err, lectures) => {
+              if (err) return res.status(500).json({ error: 'Failed to fetch lectures details.' });
+
+              res.json({
+                students,
+                logs,
+                progress,
+                enrollments,
+                submissions,
+                lectures
+              });
+            });
           });
         });
       });
