@@ -1165,25 +1165,58 @@ app.get('/api/admin/assessments', requireLogin, (req, res) => {
 
 // Admin: Create a timed mock assessment
 app.post('/api/admin/assessments', requireAdminOrFaculty, (req, res) => {
-  const { title, course_id, duration, questions } = req.body; // questions: [{type: 'mcq'/'assignment', id: 123}]
-  if (!title || !course_id || !duration || !questions || !Array.isArray(questions)) {
+  const { title, course_id, duration, questions, dynamic_mcqs } = req.body;
+  if (!title || !course_id || !duration) {
     return res.status(400).json({ error: 'Missing assessment parameters.' });
   }
 
-  db.serialize(() => {
-    db.run(`INSERT INTO assessments (course_id, title, duration) VALUES (?, ?, ?)`, [course_id, title, duration], function(err) {
-      if (err) return res.status(500).json({ error: 'Failed to create assessment.' });
-      
-      const assessmentId = this.lastID;
-      const stmt = db.prepare(`INSERT INTO assessment_questions (assessment_id, question_type, question_id, order_index) VALUES (?, ?, ?, ?)`);
-      questions.forEach((q, idx) => {
-        stmt.run(assessmentId, q.type, q.id, idx);
+  const finalQuestions = Array.isArray(questions) ? [...questions] : [];
+  const mcqsToCreate = Array.isArray(dynamic_mcqs) ? dynamic_mcqs : [];
+
+  db.serialize(async () => {
+    try {
+      // 1. Create dynamic MCQs first
+      for (const d of mcqsToCreate) {
+        if (!d.question || !d.option_a || !d.option_b || !d.option_c || !d.option_d || !d.correct_option) {
+          continue; // skip incomplete fields
+        }
+        
+        const newMcqId = await new Promise((resolve, reject) => {
+          db.run(`
+            INSERT INTO mcqs (course_id, question, option_a, option_b, option_c, option_d, correct_option, explanation)
+            VALUES (?, ?, ?, ?, ?, ?, ?, 'Mock Exam MCQ')
+          `, [course_id, d.question, d.option_a, d.option_b, d.option_c, d.option_d, d.correct_option], function(err) {
+            if (err) reject(err);
+            else resolve(this.lastID);
+          });
+        });
+        finalQuestions.push({ type: 'mcq', id: newMcqId });
+      }
+
+      if (finalQuestions.length === 0) {
+        return res.status(400).json({ error: 'Assessment must contain at least one question.' });
+      }
+
+      // 2. Create the assessment record
+      db.run(`INSERT INTO assessments (course_id, title, duration) VALUES (?, ?, ?)`, [course_id, title, duration], function(err) {
+        if (err) return res.status(500).json({ error: 'Failed to create assessment.' });
+        
+        const assessmentId = this.lastID;
+        const stmt = db.prepare(`INSERT INTO assessment_questions (assessment_id, question_type, question_id, order_index) VALUES (?, ?, ?, ?)`);
+        
+        finalQuestions.forEach((q, idx) => {
+          stmt.run(assessmentId, q.type, q.id, idx);
+        });
+        
+        stmt.finalize((err2) => {
+          if (err2) return res.status(500).json({ error: 'Failed to link assessment questions.' });
+          res.json({ success: true, assessmentId });
+        });
       });
-      stmt.finalize((err2) => {
-        if (err2) return res.status(500).json({ error: 'Failed to link assessment questions.' });
-        res.json({ success: true, assessmentId });
-      });
-    });
+    } catch (e) {
+      console.error(e);
+      res.status(500).json({ error: 'Failed to save dynamic exam questions.' });
+    }
   });
 });
 
@@ -1355,6 +1388,75 @@ app.post('/api/student/assessments/:id/submit', requireLogin, (req, res) => {
           totalQuestions,
           status,
           submissionId: this.lastID
+        });
+      });
+    });
+  });
+});
+
+// Student: Review assessment results and answers
+app.get('/api/student/assessments/:id/review', requireLogin, (req, res) => {
+  const assessmentId = req.params.id;
+  const userId = req.session.userId;
+
+  // 1. Verify student has submitted this exam
+  db.get(`SELECT * FROM assessment_submissions WHERE user_id = ? AND assessment_id = ?`, [userId, assessmentId], (err, submission) => {
+    if (err || !submission) {
+      return res.status(403).json({ error: 'Access denied: You must complete the exam before reviewing correct answers.' });
+    }
+
+    // 2. Fetch assessment details and linked questions
+    db.get(`SELECT * FROM assessments WHERE id = ?`, [assessmentId], (err, assessment) => {
+      if (err || !assessment) return res.status(404).json({ error: 'Assessment not found.' });
+
+      db.all(`SELECT question_type, question_id FROM assessment_questions WHERE assessment_id = ? ORDER BY order_index`, [assessmentId], async (err, linkedItems) => {
+        if (err) return res.status(500).json({ error: 'Failed to retrieve review questions.' });
+
+        const questions = [];
+        const studentAnswers = {};
+
+        for (const item of linkedItems) {
+          // Fetch questions content including correct answers
+          if (item.question_type === 'mcq') {
+            const mcq = await new Promise((resolve) => {
+              db.get(`SELECT id, question, option_a, option_b, option_c, option_d, correct_option FROM mcqs WHERE id = ?`, [item.question_id], (e, r) => resolve(r));
+            });
+            if (mcq) questions.push({ type: 'mcq', data: mcq });
+
+            // Fetch what student submitted
+            const sub = await new Promise((resolve) => {
+              db.get(`
+                SELECT submitted_answer, is_correct FROM submissions 
+                WHERE user_id = ? AND type = 'mcq' AND reference_id = ? 
+                ORDER BY created_at DESC LIMIT 1
+              `, [userId, item.question_id], (e, r) => resolve(r));
+            });
+            studentAnswers[`mcq_${item.question_id}`] = sub || { submitted_answer: null, is_correct: 0 };
+
+          } else if (item.question_type === 'assignment') {
+            const coding = await new Promise((resolve) => {
+              db.get(`SELECT id, title, description, boilerplate_code, test_cases, hint FROM assignments WHERE id = ?`, [item.question_id], (e, r) => resolve(r));
+            });
+            if (coding) questions.push({ type: 'assignment', data: coding });
+
+            // Fetch what student submitted
+            const sub = await new Promise((resolve) => {
+              db.get(`
+                SELECT submitted_answer, is_correct FROM submissions 
+                WHERE user_id = ? AND type = 'assignment' AND reference_id = ? 
+                ORDER BY created_at DESC LIMIT 1
+              `, [userId, item.question_id], (e, r) => resolve(r));
+            });
+            studentAnswers[`assignment_${item.question_id}`] = sub || { submitted_answer: null, is_correct: 0 };
+          }
+        }
+
+        res.json({
+          success: true,
+          assessment,
+          submission,
+          questions,
+          studentAnswers
         });
       });
     });

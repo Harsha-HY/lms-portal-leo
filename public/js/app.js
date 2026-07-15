@@ -4130,17 +4130,27 @@ window.loadStudentAssessments = async function() {
         if (exam.attempt_status === 'disqualified') {
           statusBadge = `<span class="lecture-badge" style="width: max-content; background: rgba(239, 68, 68, 0.15); color: #f87171;">Disqualified</span>`;
           footerBlock = `
-            <div style="font-size: 0.85rem; color: #f87171; text-align: center; font-weight: 700; border: 1px solid rgba(239, 68, 68, 0.2); padding: 0.5rem; border-radius: var(--radius-sm);">
-              Violated Tab Rules (${exam.tab_switch_count} switches)
+            <div style="display: flex; flex-direction: column; gap: 0.5rem; margin-top: 0.5rem;">
+              <div style="font-size: 0.85rem; color: #f87171; text-align: center; font-weight: 700; border: 1px solid rgba(239, 68, 68, 0.2); padding: 0.5rem; border-radius: var(--radius-sm);">
+                Violated Tab Rules (${exam.tab_switch_count} switches)
+              </div>
+              <button class="btn btn-logout" onclick="openExamReview(${exam.id})" style="padding: 0.45rem; font-size: 0.8rem; font-weight: bold; background: rgba(239,68,68,0.08); border: 1px solid #ef4444; color: #f87171; width: 100%;">
+                🔍 Review Violations & OA
+              </button>
             </div>
           `;
         } else {
           const pct = Math.round((exam.score / exam.total_questions) * 100) || 0;
           statusBadge = `<span class="lecture-badge" style="width: max-content; background: rgba(16, 185, 129, 0.15); color: #34d399;">Passed (${pct}%)</span>`;
           footerBlock = `
-            <div style="font-size: 0.85rem; text-align: center; border: 1px solid var(--card-border); padding: 0.5rem; border-radius: var(--radius-sm); display: flex; flex-direction: column; gap: 0.1rem;">
-              <span style="color: var(--text-main); font-weight: 700;">Score: ${exam.score} / ${exam.total_questions} correct</span>
-              <span style="font-size: 0.75rem; color: var(--text-muted);">Attempted: ${new Date(exam.attempted_at).toLocaleDateString()}</span>
+            <div style="display: flex; flex-direction: column; gap: 0.5rem; margin-top: 0.5rem;">
+              <div style="font-size: 0.85rem; text-align: center; border: 1px solid var(--card-border); padding: 0.5rem; border-radius: var(--radius-sm); display: flex; flex-direction: column; gap: 0.1rem; background: rgba(255,255,255,0.01);">
+                <span style="color: var(--text-main); font-weight: 700;">Score: ${exam.score} / ${exam.total_questions} correct</span>
+                <span style="font-size: 0.75rem; color: var(--text-muted);">Attempted: ${new Date(exam.attempted_at).toLocaleDateString()}</span>
+              </div>
+              <button class="btn btn-logout" onclick="openExamReview(${exam.id})" style="padding: 0.45rem; font-size: 0.8rem; font-weight: bold; background: rgba(59,130,246,0.08); border: 1px solid #3b82f6; color: #60a5fa; width: 100%;">
+                🔍 Review Solutions
+              </button>
             </div>
           `;
         }
@@ -4539,8 +4549,10 @@ window.createMockExam = async function(event) {
   const duration = document.getElementById('exam-duration-input').value;
 
   const checkedBoxes = document.querySelectorAll('input[name="exam_question_key"]:checked');
-  if (checkedBoxes.length === 0) {
-    showAdminAlert('admin-exams-alerts', 'error', 'Please select at least one task or MCQ to include in this exam!');
+  const dynamicCards = document.querySelectorAll('.exam-dynamic-mcq-card');
+
+  if (checkedBoxes.length === 0 && dynamicCards.length === 0) {
+    showAdminAlert('admin-exams-alerts', 'error', 'Please select at least one task or construct a dynamic MCQ question!');
     return;
   }
 
@@ -4549,12 +4561,24 @@ window.createMockExam = async function(event) {
     return { type: parts[0], id: parseInt(parts[1]) };
   });
 
+  const dynamic_mcqs = [];
+  dynamicCards.forEach(card => {
+    const question = card.querySelector('.dynamic-mcq-q').value;
+    const option_a = card.querySelector('.dynamic-mcq-a').value;
+    const option_b = card.querySelector('.dynamic-mcq-b').value;
+    const option_c = card.querySelector('.dynamic-mcq-c').value;
+    const option_d = card.querySelector('.dynamic-mcq-d').value;
+    const correct_option = card.querySelector('.dynamic-mcq-correct').value;
+    dynamic_mcqs.push({ question, option_a, option_b, option_c, option_d, correct_option });
+  });
+
   try {
     const res = await API.createAdminAssessment({
       course_id: parseInt(course_id),
       title,
       duration: parseInt(duration),
-      questions
+      questions,
+      dynamic_mcqs
     });
 
     if (res.error) {
@@ -4564,6 +4588,7 @@ window.createMockExam = async function(event) {
       document.getElementById('exam-title-input').value = '';
       document.getElementById('exam-duration-input').value = '';
       document.getElementById('exam-course-select').value = '';
+      document.getElementById('exam-dynamic-questions-container').innerHTML = '';
       loadExamCourseQuestions();
       loadAdminAssessmentsList();
     }
@@ -4674,4 +4699,171 @@ window.loadAdminAssessmentResultsList = async function() {
     console.error(err);
     body.innerHTML = '<tr><td colspan="6" style="text-align: center; color: var(--text-muted);">Failed to query candidate assessment results.</td></tr>';
   }
+};
+
+/* ==========================================================================
+   DYNAMIC MCQ CREATION & EXAM SOLUTIONS REVIEW MODULES
+   ========================================================================== */
+let dynamicMCQCounter = 0;
+
+window.addExamDynamicMCQBlock = function() {
+  const container = document.getElementById('exam-dynamic-questions-container');
+  if (!container) return;
+
+  const index = dynamicMCQCounter++;
+  const card = document.createElement('div');
+  card.className = 'exam-dynamic-mcq-card';
+  card.id = `dynamic-mcq-block-${index}`;
+  card.style.cssText = 'background: rgba(255,255,255,0.02); border: 1px dashed var(--card-border); border-radius: var(--radius-sm); padding: 1rem; display: flex; flex-direction: column; gap: 0.75rem; position: relative;';
+
+  card.innerHTML = `
+    <button type="button" class="btn btn-delete" onclick="removeExamDynamicMCQBlock(${index})" 
+            style="position: absolute; top: 0.75rem; right: 0.75rem; padding: 0.2rem 0.5rem; font-size: 0.7rem; font-weight: bold;">Remove</button>
+    <div style="font-weight: 700; font-size: 0.8rem; color: var(--primary); text-align: left;">NEW MCQ QUESTION #${container.children.length + 1}</div>
+    
+    <div class="form-group" style="margin: 0; text-align: left;">
+      <label class="form-label" style="font-size: 0.75rem;">Question Prompt</label>
+      <textarea class="form-input dynamic-mcq-q" style="height: 55px; resize: none; font-size: 0.8rem;" required placeholder="e.g. Which of the following is linear?"></textarea>
+    </div>
+
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem;">
+      <div class="form-group" style="margin: 0; text-align: left;">
+        <label class="form-label" style="font-size: 0.7rem;">Option A</label>
+        <input class="form-input dynamic-mcq-a" type="text" style="padding: 0.35rem 0.5rem; font-size: 0.8rem;" required placeholder="Option A">
+      </div>
+      <div class="form-group" style="margin: 0; text-align: left;">
+        <label class="form-label" style="font-size: 0.7rem;">Option B</label>
+        <input class="form-input dynamic-mcq-b" type="text" style="padding: 0.35rem 0.5rem; font-size: 0.8rem;" required placeholder="Option B">
+      </div>
+      <div class="form-group" style="margin: 0; text-align: left;">
+        <label class="form-label" style="font-size: 0.7rem;">Option C</label>
+        <input class="form-input dynamic-mcq-c" type="text" style="padding: 0.35rem 0.5rem; font-size: 0.8rem;" required placeholder="Option C">
+      </div>
+      <div class="form-group" style="margin: 0; text-align: left;">
+        <label class="form-label" style="font-size: 0.7rem;">Option D</label>
+        <input class="form-input dynamic-mcq-d" type="text" style="padding: 0.35rem 0.5rem; font-size: 0.8rem;" required placeholder="Option D">
+      </div>
+    </div>
+
+    <div class="form-group" style="margin: 0; text-align: left; max-width: 150px;">
+      <label class="form-label" style="font-size: 0.75rem;">Right Option</label>
+      <select class="form-input dynamic-mcq-correct" style="padding: 0.35rem 0.5rem; font-size: 0.8rem;" required>
+        <option value="A">Option A</option>
+        <option value="B">Option B</option>
+        <option value="C">Option C</option>
+        <option value="D">Option D</option>
+      </select>
+    </div>
+  `;
+  container.appendChild(card);
+};
+
+window.removeExamDynamicMCQBlock = function(index) {
+  const card = document.getElementById(`dynamic-mcq-block-${index}`);
+  if (card) card.remove();
+  
+  const container = document.getElementById('exam-dynamic-questions-container');
+  if (container) {
+    Array.from(container.children).forEach((child, idx) => {
+      const header = child.querySelector('div');
+      if (header) header.textContent = `NEW MCQ QUESTION #${idx + 1}`;
+    });
+  }
+};
+
+window.openExamReview = async function(examId) {
+  const overlay = document.getElementById('exam-review-overlay');
+  const container = document.getElementById('review-questions-container');
+  if (!overlay || !container) return;
+
+  container.innerHTML = '<span style="color: var(--text-muted); padding: 1rem; display: block; text-align: center;">Loading answers review...</span>';
+  overlay.style.display = 'block';
+
+  try {
+    const data = await API.getStudentAssessmentReview(examId);
+    
+    document.getElementById('review-exam-title').textContent = `${data.assessment.title} - Solutions Review`;
+    document.getElementById('review-score-val').textContent = `${data.submission.score} / ${data.submission.total_questions}`;
+    
+    const pct = Math.round((data.submission.score / data.submission.total_questions) * 100) || 0;
+    document.getElementById('review-accuracy-val').textContent = `${pct}%`;
+    document.getElementById('review-switches-val').textContent = data.submission.tab_switch_count;
+
+    container.innerHTML = '';
+
+    data.questions.forEach((q, idx) => {
+      const qBlock = document.createElement('div');
+      qBlock.style.cssText = 'border: 1px solid var(--card-border); border-radius: var(--radius-sm); padding: 1.25rem; display: flex; flex-direction: column; gap: 0.75rem; background: rgba(255,255,255,0.01);';
+
+      const key = `${q.type}_${q.data.id}`;
+      const sub = data.studentAnswers[key] || { submitted_answer: null, is_correct: 0 };
+      const gotCorrect = sub.is_correct === 1;
+
+      if (q.type === 'mcq') {
+        const optionHighlight = (opt) => {
+          const isCorrectOpt = q.data.correct_option === opt;
+          const isSelectedOpt = sub.submitted_answer === opt;
+          
+          let borderStyle = 'border: 1px solid var(--card-border); background: transparent;';
+          if (isCorrectOpt) {
+            borderStyle = 'border: 1px solid #10b981; background: rgba(16, 185, 129, 0.05); color: #10b981; font-weight: 700;';
+          } else if (isSelectedOpt && !gotCorrect) {
+            borderStyle = 'border: 1px solid #ef4444; background: rgba(239, 68, 68, 0.05); color: #ef4444; font-weight: 700;';
+          }
+          
+          return `
+            <div style="padding: 0.65rem 1rem; border-radius: var(--radius-sm); font-size: 0.85rem; display: flex; align-items: center; justify-content: space-between; ${borderStyle}">
+              <span><strong>${opt}.</strong> ${q.data['option_' + opt.toLowerCase()]}</span>
+              <span>
+                ${isCorrectOpt ? '✅ Correct Answer' : ''}
+                ${isSelectedOpt && !gotCorrect ? '❌ Your Selection' : ''}
+                ${isSelectedOpt && gotCorrect ? '⭐ Your Selection (Correct)' : ''}
+              </span>
+            </div>
+          `;
+        };
+
+        qBlock.innerHTML = `
+          <div style="display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--card-border); padding-bottom: 0.5rem;">
+            <strong style="color: var(--primary); font-size: 0.85rem;">Task #${idx + 1}: MCQ</strong>
+            <span style="font-size: 0.8rem; font-weight: 700; color: ${gotCorrect ? '#10b981' : '#ef4444'};">
+              ${gotCorrect ? 'CORRECT' : 'INCORRECT'}
+            </span>
+          </div>
+          <h4 style="margin: 0.25rem 0; font-size: 0.95rem; color: var(--text-main); font-weight: 600;">${q.data.question}</h4>
+          <div style="display: flex; flex-direction: column; gap: 0.5rem; margin-top: 0.5rem;">
+            ${optionHighlight('A')}
+            ${optionHighlight('B')}
+            ${optionHighlight('C')}
+            ${optionHighlight('D')}
+          </div>
+        `;
+      } else if (q.type === 'assignment') {
+        qBlock.innerHTML = `
+          <div style="display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--card-border); padding-bottom: 0.5rem;">
+            <strong style="color: var(--primary); font-size: 0.85rem;">Task #${idx + 1}: Coding Challenge</strong>
+            <span style="font-size: 0.8rem; font-weight: 700; color: ${gotCorrect ? '#10b981' : '#ef4444'};">
+              ${gotCorrect ? 'CORRECT' : 'INCORRECT'}
+            </span>
+          </div>
+          <h4 style="margin: 0.25rem 0; font-size: 0.95rem; color: var(--text-main); font-weight: 600;">${q.data.title}</h4>
+          <div style="margin-top: 0.5rem;">
+            <strong style="font-size: 0.8rem; color: var(--text-muted);">Your Submitted Code:</strong>
+            <pre style="background: #0c1017; border: 1px solid var(--card-border); padding: 0.85rem; border-radius: var(--radius-sm); font-family: monospace; font-size: 0.8rem; color: #c9d1d9; white-space: pre-wrap; margin-top: 0.35rem;">${sub.submitted_answer || 'No solution submitted.'}</pre>
+          </div>
+        `;
+      }
+
+      container.appendChild(qBlock);
+    });
+
+  } catch (err) {
+    console.error(err);
+    container.innerHTML = '<span style="color: var(--text-muted);">Failed to query attempts review details.</span>';
+  }
+};
+
+window.closeExamReview = function() {
+  const overlay = document.getElementById('exam-review-overlay');
+  if (overlay) overlay.style.display = 'none';
 };

@@ -110,6 +110,10 @@ const API = {
     });
   },
 
+  getStudentAssessmentReview(id) {
+    return this.fetchJSON(`/api/student/assessments/${id}/review`);
+  },
+
   updateProgress(lectureId, completed) {
     return this.fetchJSON('/api/student/progress', {
       method: 'POST',
