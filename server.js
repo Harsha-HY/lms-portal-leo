@@ -457,6 +457,19 @@ app.get('/api/student/progress', requireLogin, (req, res) => {
   );
 });
 
+// Get user login logs for streaks / heatmap calculations
+app.get('/api/student/logs', requireLogin, (req, res) => {
+  const userId = req.session.userId;
+  db.all(
+    `SELECT login_time FROM login_logs WHERE user_id = ? ORDER BY login_time ASC`,
+    [userId],
+    (err, rows) => {
+      if (err) return res.status(500).json({ error: 'Failed to fetch logs.' });
+      res.json(rows);
+    }
+  );
+});
+
 // Toggle lecture progress (mark complete / incomplete)
 app.post('/api/student/progress', requireLogin, (req, res) => {
   const userId = req.session.userId;

@@ -87,6 +87,10 @@ const API = {
     return this.fetchJSON('/api/student/progress');
   },
 
+  getLoginLogs() {
+    return this.fetchJSON('/api/student/logs');
+  },
+
   updateProgress(lectureId, completed) {
     return this.fetchJSON('/api/student/progress', {
       method: 'POST',

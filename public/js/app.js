@@ -232,6 +232,10 @@ function switchAdminTab(tabId, button) {
     subEl.textContent = 'Create multiple-choice questions manually, scrap from PDF, or generate with AI.';
     populateCourseSelects();
     loadAdminMCQs();
+  } else if (tabId === 'analytics') {
+    titleEl.textContent = 'Student Activity Analytics Hub';
+    subEl.textContent = 'Audit student daily login streaks, interactive GitHub-style contribution heatmaps, and course metrics.';
+    loadStudentHistoryData();
   } else if (tabId === 'access') {
     titleEl.textContent = 'Grant Portal Access';
     subEl.textContent = 'Setup login credentials for observers, instructors, and faculty.';
@@ -256,6 +260,13 @@ async function loadDashboardData() {
     completedLectureIds = rawProgress.map(r => r.lecture_id);
     submissionsCache = await API.getSubmissions();
     
+    let loginLogs = [];
+    try {
+      loginLogs = await API.getLoginLogs();
+    } catch (e) {
+      console.error(e);
+    }
+    
     // Map lectures, assignments, and MCQs for each course
     for (const course of allCourses) {
       const lectures = await API.getLectures(course.id);
@@ -270,6 +281,7 @@ async function loadDashboardData() {
     
     renderHomeScreen();
     renderHomeDates(); // Refresh calendar dates matching dynamic completions
+    renderStudentActivityWidgets(loginLogs, rawProgress, submissionsCache, enrolledCourseIds);
     
     // Dynamically re-render the active tab if it matches a custom list view
     const activeLink = document.querySelector('.sidebar-link.active');
@@ -1801,6 +1813,7 @@ async function loadStudentHistoryData() {
     historyLectures = data.lectures || [];
     
     renderHistoryStudentList();
+    renderAnalyticsStudentList();
   } catch (err) {
     console.error('Failed to load student history details:', err);
   }
@@ -3601,4 +3614,298 @@ window.deleteWorkspaceMCQ = async function(id) {
   } catch (err) {
     console.error(err);
   }
+};
+
+/* ==========================================================================
+   STUDENT ACTIVITY HEATMAP & STREAKS DRAWING UTILITIES
+   ========================================================================== */
+window.renderStudentActivityWidgets = function(loginLogs, progress, submissions, enrollments) {
+  drawActivityHeatmapAndRings(
+    loginLogs, 
+    progress, 
+    submissions, 
+    enrollments, 
+    'activity-heatmap-grid', 
+    'course-progress-rings-container', 
+    'streak-flame-txt', 
+    'heatmap-summary-txt'
+  );
+};
+
+window.drawActivityHeatmapAndRings = function(logs, progress, submissions, enrollments, gridId, ringsId, streakId, summaryId) {
+  const grid = document.getElementById(gridId);
+  const ringsContainer = document.getElementById(ringsId);
+  const streakFlame = document.getElementById(streakId);
+  const summaryText = document.getElementById(summaryId);
+
+  if (!grid) return;
+
+  // 1. Gather all activity dates
+  const activityMap = {};
+  let totalActions = 0;
+
+  // helper to get YYYY-MM-DD
+  const formatDateStr = (dateObj) => {
+    const y = dateObj.getFullYear();
+    const m = String(dateObj.getMonth() + 1).padStart(2, '0');
+    const d = String(dateObj.getDate()).padStart(2, '0');
+    return `${y}-${m}-${d}`;
+  };
+
+  // Add Logins
+  logs.forEach(log => {
+    const dateStr = formatDateStr(new Date(log.login_time));
+    activityMap[dateStr] = (activityMap[dateStr] || 0) + 1;
+    totalActions++;
+  });
+
+  // Add video completions
+  progress.forEach(prog => {
+    if (prog.completed || prog.completed === 1) {
+      const dateStr = formatDateStr(new Date(prog.updated_at));
+      activityMap[dateStr] = (activityMap[dateStr] || 0) + 1;
+      totalActions++;
+    }
+  });
+
+  // Add MCQ & Coding submissions
+  submissions.forEach(sub => {
+    const dateStr = formatDateStr(new Date(sub.created_at || sub.updated_at));
+    activityMap[dateStr] = (activityMap[dateStr] || 0) + 1;
+    totalActions++;
+  });
+
+  if (summaryText) {
+    summaryText.textContent = `${totalActions} submissions & actions in the last year`;
+  }
+
+  // 2. Calculate Streak
+  let currentStreak = 0;
+  const today = new Date();
+  let checkDate = new Date(today);
+
+  // Check today first
+  let dateKey = formatDateStr(checkDate);
+  if (activityMap[dateKey] > 0) {
+    currentStreak++;
+    // go back day-by-day
+    while (true) {
+      checkDate.setDate(checkDate.getDate() - 1);
+      dateKey = formatDateStr(checkDate);
+      if (activityMap[dateKey] > 0) {
+        currentStreak++;
+      } else {
+        break;
+      }
+    }
+  } else {
+    // Check if yesterday had activity, to maintain streak if today is not finished yet
+    checkDate.setDate(checkDate.getDate() - 1);
+    dateKey = formatDateStr(checkDate);
+    if (activityMap[dateKey] > 0) {
+      currentStreak++;
+      while (true) {
+        checkDate.setDate(checkDate.getDate() - 1);
+        dateKey = formatDateStr(checkDate);
+        if (activityMap[dateKey] > 0) {
+          currentStreak++;
+        } else {
+          break;
+        }
+      }
+    }
+  }
+
+  if (streakFlame) {
+    streakFlame.textContent = `${currentStreak} Day Streak`;
+  }
+
+  // 3. Render 53-week Heatmap Grid
+  grid.innerHTML = '';
+  // Start from Sunday 364 days ago
+  const startDay = new Date();
+  startDay.setDate(startDay.getDate() - 364);
+  const dayOfWeek = startDay.getDay(); // 0 is Sunday, 1 is Monday...
+  startDay.setDate(startDay.getDate() - dayOfWeek); // back to starting Sunday
+
+  // Draw 371 cells (53 weeks * 7 days)
+  const cellDate = new Date(startDay);
+  for (let i = 0; i < 371; i++) {
+    const cellKey = formatDateStr(cellDate);
+    const count = activityMap[cellKey] || 0;
+    
+    const cell = document.createElement('div');
+    cell.style.width = '10px';
+    cell.style.height = '10px';
+    cell.style.borderRadius = '2px';
+    cell.style.transition = 'all 0.2s';
+    
+    // Future guard
+    if (cellDate > today) {
+      cell.style.backgroundColor = 'transparent';
+    } else {
+      // Color scale based on actions count
+      if (count === 0) {
+        cell.style.backgroundColor = 'rgba(255, 255, 255, 0.03)';
+      } else if (count === 1) {
+        cell.style.backgroundColor = 'rgba(59, 130, 246, 0.2)';
+      } else if (count === 2) {
+        cell.style.backgroundColor = 'rgba(59, 130, 246, 0.4)';
+      } else if (count === 3) {
+        cell.style.backgroundColor = 'rgba(59, 130, 246, 0.7)';
+      } else {
+        cell.style.backgroundColor = 'var(--primary)'; // High visibility blue/purple
+      }
+      
+      const formattedDateLabel = cellDate.toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' });
+      cell.title = `${count} activity actions on ${formattedDateLabel}`;
+    }
+    
+    grid.appendChild(cell);
+    cellDate.setDate(cellDate.getDate() + 1);
+  }
+
+  // 4. Render Circular Progress Rings
+  if (!ringsContainer) return;
+  ringsContainer.innerHTML = '';
+
+  if (!enrollments || enrollments.length === 0) {
+    ringsContainer.innerHTML = '<span style="font-size: 0.85rem; color: var(--text-muted); font-style: italic;">Not enrolled in any courses yet.</span>';
+    return;
+  }
+
+  enrollments.forEach(enroll => {
+    // Determine course ID
+    const courseId = enroll.course_id || enroll; // can be course_id object or integer
+    const course = allCourses.find(c => c.id == courseId);
+    if (!course) return;
+
+    // Get course assets from cache
+    const lectures = courseLecturesMap[courseId] || [];
+    const assignments = courseAssignmentsMap[courseId] || [];
+    const mcqs = courseMCQsMap[courseId] || [];
+
+    // Filter completions
+    const completedLectures = progress.filter(p => (p.completed || p.completed === 1) && lectures.some(l => l.id === p.lecture_id));
+    const completedMCQs = submissions.filter(s => s.type === 'mcq' && s.is_correct === 1 && mcqs.some(m => m.id === s.reference_id));
+    const completedAssignments = submissions.filter(s => s.type === 'assignment' && s.is_correct === 1 && assignments.some(a => a.id === s.reference_id));
+
+    // Calculate rates
+    const videoRate = lectures.length > 0 ? Math.round((completedLectures.length / lectures.length) * 100) : 0;
+    const mcqRate = mcqs.length > 0 ? Math.round((completedMCQs.length / mcqs.length) * 100) : 0;
+    const assignRate = assignments.length > 0 ? Math.round((completedAssignments.length / assignments.length) * 100) : 0;
+
+    // Build Circular SVG ring HTML helper
+    const buildRingSVG = (percentage, label, color) => {
+      const radius = 18;
+      const circ = Math.round(2 * Math.PI * radius);
+      const strokeOffset = circ - (percentage / 100) * circ;
+      return `
+        <div style="display: flex; flex-direction: column; align-items: center; gap: 0.25rem;">
+          <div style="position: relative; width: 48px; height: 48px;">
+            <svg style="width: 48px; height: 48px; transform: rotate(-90deg);">
+              <circle cx="24" cy="24" r="${radius}" fill="transparent" stroke="rgba(255,255,255,0.03)" stroke-width="4.5" />
+              <circle cx="24" cy="24" r="${radius}" fill="transparent" stroke="${color}" stroke-width="4.5" 
+                      stroke-dasharray="${circ}" stroke-dashoffset="${strokeOffset}" stroke-linecap="round" style="transition: stroke-dashoffset 0.35s;" />
+            </svg>
+            <div style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; font-size: 0.7rem; font-weight: 800; color: var(--text-main);">${percentage}%</div>
+          </div>
+          <span style="font-size: 0.65rem; color: var(--text-muted); font-weight: 700; text-transform: uppercase;">${label}</span>
+        </div>
+      `;
+    };
+
+    const card = document.createElement('div');
+    card.style.cssText = 'background: rgba(255, 255, 255, 0.01); border: 1px solid var(--card-border); border-radius: var(--radius-sm); padding: 1rem; text-align: left; display: flex; flex-direction: column; gap: 0.85rem;';
+    card.innerHTML = `
+      <div style="font-weight: 700; font-size: 0.85rem; color: var(--text-main); line-height: 1.25;">${course.title}</div>
+      <div style="display: flex; justify-content: space-around; align-items: center; gap: 0.5rem;">
+        ${buildRingSVG(videoRate, 'Videos', '#10b981')}
+        ${buildRingSVG(mcqRate, 'Quizzes', '#f59e0b')}
+        ${buildRingSVG(assignRate, 'Coding', '#3b82f6')}
+      </div>
+    `;
+    ringsContainer.appendChild(card);
+  });
+};
+
+/* ==========================================================================
+   ADMIN STUDENT ANALYTICS WORKSPACE CONTROLLERS
+   ========================================================================== */
+let selectedAnalyticsStudentId = null;
+
+window.renderAnalyticsStudentList = function() {
+  const container = document.getElementById('analytics-student-list');
+  if (!container) return;
+  container.innerHTML = '';
+
+  if (historyStudents.length === 0) {
+    container.innerHTML = '<span style="color: var(--text-muted); font-size: 0.85rem; padding: 1rem;">No students registered yet.</span>';
+    return;
+  }
+
+  historyStudents.forEach(student => {
+    const isSelected = selectedAnalyticsStudentId === student.id;
+    const row = document.createElement('div');
+    row.className = 'lecture-row';
+    row.style.cssText = `
+      padding: 0.85rem 1rem; 
+      border-radius: var(--radius-sm); 
+      margin-bottom: 0.35rem; 
+      cursor: pointer;
+      display: flex;
+      flex-direction: column;
+      gap: 0.15rem;
+      border: 1px solid ${isSelected ? 'var(--primary)' : 'transparent'};
+      background-color: ${isSelected ? 'var(--sidebar-hover)' : 'rgba(255, 255, 255, 0.01)'};
+    `;
+    
+    row.innerHTML = `
+      <span style="font-weight: 700; color: ${isSelected ? 'var(--primary)' : 'var(--text-main)'}; font-size: 0.95rem; text-align: left;">${student.name}</span>
+      <span style="font-size: 0.75rem; color: var(--text-muted); text-align: left;">${student.email}</span>
+    `;
+    
+    row.onclick = () => {
+      selectedAnalyticsStudentId = student.id;
+      renderAnalyticsStudentList();
+      selectAnalyticsStudent(student.id);
+    };
+    
+    container.appendChild(row);
+  });
+};
+
+window.selectAnalyticsStudent = function(studentId) {
+  const student = historyStudents.find(s => s.id === studentId);
+  if (!student) return;
+
+  const emptyState = document.getElementById('analytics-empty-state');
+  const auditContent = document.getElementById('analytics-audit-content');
+
+  if (emptyState) emptyState.style.display = 'none';
+  if (auditContent) auditContent.style.display = 'flex';
+
+  // Set Profile details
+  const initials = student.name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
+  document.getElementById('analytics-student-avatar').textContent = initials;
+  document.getElementById('analytics-student-name').textContent = student.name;
+  document.getElementById('analytics-student-email').textContent = student.email;
+
+  // Filter logs for this student
+  const studentLogs = historyLogs.filter(l => l.user_id === studentId);
+  const studentProgress = historyProgress.filter(p => p.user_id === studentId);
+  const studentSubmissions = historySubmissions.filter(s => s.user_id === studentId);
+  const studentEnrollments = historyEnrollments.filter(e => e.user_id === studentId);
+
+  // Render heatmap and progress rings using core draw utility
+  drawActivityHeatmapAndRings(
+    studentLogs,
+    studentProgress,
+    studentSubmissions,
+    studentEnrollments,
+    'analytics-heatmap-grid',
+    'analytics-progress-rings-container',
+    'analytics-streak-val',
+    'analytics-actions-val'
+  );
 };
