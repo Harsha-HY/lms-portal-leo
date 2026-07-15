@@ -1428,7 +1428,7 @@ app.post('/api/student/assessments/:id/submit', requireLogin, (req, res) => {
             db.run(`
               INSERT INTO submissions (user_id, course_id, type, reference_id, submitted_answer, is_correct)
               VALUES (?, ?, 'assignment', ?, ?, 0)
-            `, [userId, assessment.course_id, item.question_id, submitted || '', 0]);
+            `, [userId, assessment.course_id, item.question_id, submitted || '']);
           }
         }
       }
