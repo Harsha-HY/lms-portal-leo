@@ -216,6 +216,10 @@ function initializeDatabase() {
       // Ignored if column already exists
     });
 
+    db.run(`ALTER TABLE progress ADD COLUMN watched_seconds INTEGER DEFAULT 0`, (err) => {
+      // Ignored if column already exists
+    });
+
     // 10. XP Settings table
     db.run(`CREATE TABLE IF NOT EXISTS xp_settings (
       key TEXT PRIMARY KEY,
@@ -225,7 +229,7 @@ function initializeDatabase() {
       db.get(`SELECT COUNT(*) as count FROM xp_settings`, [], (err, row) => {
         if (!err && row && row.count === 0) {
           db.run(`INSERT INTO xp_settings (key, value) VALUES ('video_xp', 50)`);
-          db.run(`INSERT INTO xp_settings (key, value) VALUES ('mcq_xp', 20)`);
+          db.run(`INSERT INTO xp_settings (key, value) VALUES ('mcq_xp', 25)`);
           db.run(`INSERT INTO xp_settings (key, value) VALUES ('assignment_xp', 100)`);
         }
       });
@@ -538,6 +542,32 @@ app.post('/api/student/progress', requireLogin, (req, res) => {
       res.json({ success: true });
     }
   );
+});
+
+// Update student video watch progression ticks
+app.post('/api/student/video-progress', requireLogin, (req, res) => {
+  const userId = req.session.userId;
+  const { lecture_id, watched_seconds } = req.body;
+  if (!lecture_id || watched_seconds === undefined) {
+    return res.status(400).json({ error: 'Missing lecture_id or watched_seconds.' });
+  }
+
+  db.get(`SELECT watched_seconds FROM progress WHERE user_id = ? AND lecture_id = ?`, [userId, lecture_id], (err, row) => {
+    if (err) return res.status(500).json({ error: 'Database error.' });
+    
+    const existingSecs = row ? (row.watched_seconds || 0) : 0;
+    if (watched_seconds <= existingSecs) {
+      return res.json({ success: true, watched_seconds: existingSecs });
+    }
+
+    db.run(`
+      INSERT INTO progress (user_id, lecture_id, watched_seconds) VALUES (?, ?, ?)
+      ON CONFLICT(user_id, lecture_id) DO UPDATE SET watched_seconds = excluded.watched_seconds, updated_at = CURRENT_TIMESTAMP
+    `, [userId, lecture_id, watched_seconds], (err2) => {
+      if (err2) return res.status(500).json({ error: 'Failed to update video progress.' });
+      res.json({ success: true, watched_seconds });
+    });
+  });
 });
 
 // Get student enrolled course IDs
@@ -1095,7 +1125,7 @@ app.get('/api/leaderboard', requireLogin, (req, res) => {
     // 2. Fetch all students statistics
     const queryStats = `
       SELECT u.id, u.name, u.email,
-             (SELECT COUNT(*) FROM progress WHERE user_id = u.id AND completed = 1) as videos_completed,
+             (SELECT SUM(watched_seconds) FROM progress WHERE user_id = u.id) as total_watched_seconds,
              (SELECT COUNT(*) FROM submissions WHERE user_id = u.id AND type = 'mcq' AND is_correct = 1) as mcqs_solved,
              (SELECT COUNT(*) FROM submissions WHERE user_id = u.id AND type = 'assignment' AND is_correct = 1) as assignments_solved
       FROM users u 
@@ -1124,7 +1154,8 @@ app.get('/api/leaderboard', requireLogin, (req, res) => {
 
         // Compute total XP
         students.forEach(s => {
-          s.xp = (s.videos_completed * videoXP) + (s.mcqs_solved * mcqXP) + (s.assignments_solved * assignmentXP);
+          const watchedSecs = s.total_watched_seconds || 0;
+          s.xp = Math.floor(watchedSecs / 30) + (s.mcqs_solved * mcqXP) + (s.assignments_solved * assignmentXP);
           s.courses = userCoursesMap[s.id] || [];
         });
 

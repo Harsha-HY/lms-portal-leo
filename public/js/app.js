@@ -952,6 +952,11 @@ function loadYTVideo(rawYoutubeId, lectureId) {
                   if (remaining <= 30 && !completedLectureIds.includes(lectureId)) {
                     autoCompleteLecture(lectureId);
                   }
+                  
+                  const currentWatchedSecs = Math.floor(currentTime);
+                  if (currentWatchedSecs > 0 && currentWatchedSecs % 5 === 0) {
+                    reportVideoProgress(lectureId, currentWatchedSecs);
+                  }
                 }
               }
             } catch (e) {
@@ -4866,4 +4871,33 @@ window.openExamReview = async function(examId) {
 window.closeExamReview = function() {
   const overlay = document.getElementById('exam-review-overlay');
   if (overlay) overlay.style.display = 'none';
+};
+
+let lastReportedSecsMap = {};
+window.reportVideoProgress = async function(lectureId, watchedSeconds) {
+  const lastReported = lastReportedSecsMap[lectureId] || 0;
+  if (watchedSeconds <= lastReported) return; // only update forward
+  lastReportedSecsMap[lectureId] = watchedSeconds;
+  
+  try {
+    await API.updateVideoProgress(lectureId, watchedSeconds);
+    
+    // Refresh student stats and points header in dashboard dynamically!
+    if (watchedSeconds % 30 === 0) {
+      const lbData = await API.getLeaderboard();
+      const leaderboardCache = lbData.leaderboard || [];
+      const studentEntry = leaderboardCache.find(s => s.id === currentUser.id);
+      if (studentEntry) {
+        const pointsEl = document.getElementById('profile-points-val');
+        if (pointsEl) pointsEl.textContent = studentEntry.xp.toLocaleString();
+        
+        // Also refresh rankings standings dynamically
+        if (window.loadAdminLeaderboard) {
+          loadAdminLeaderboard();
+        }
+      }
+    }
+  } catch (err) {
+    console.error(err);
+  }
 };

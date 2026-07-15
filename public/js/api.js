@@ -121,6 +121,13 @@ const API = {
     });
   },
 
+  updateVideoProgress(lectureId, watchedSeconds) {
+    return this.fetchJSON('/api/student/video-progress', {
+      method: 'POST',
+      body: JSON.stringify({ lecture_id: lectureId, watched_seconds: watchedSeconds })
+    });
+  },
+
   // Student Enrollment Operations
   getEnrollments() {
     return this.fetchJSON('/api/student/enrollments');
