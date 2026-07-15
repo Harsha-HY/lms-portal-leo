@@ -963,7 +963,7 @@ function loadYTVideo(rawYoutubeId, lectureId) {
                 const currentTime = ytPlayer.getCurrentTime();
                 if (duration > 0) {
                   const remaining = duration - currentTime;
-                  if (remaining <= 30 && !completedLectureIds.includes(lectureId)) {
+                  if (remaining <= 15 && !completedLectureIds.includes(lectureId)) {
                     autoCompleteLecture(lectureId);
                   }
                   
@@ -1116,7 +1116,7 @@ window.playLecture = async function(lectureId, title, courseTitle, videoUrl) {
         player.ontimeupdate = () => {
           if (player.duration) {
             const remaining = player.duration - player.currentTime;
-            if (remaining <= 30 && !completedLectureIds.includes(lectureId)) {
+            if (remaining <= 15 && !completedLectureIds.includes(lectureId)) {
               autoCompleteLecture(lectureId);
             }
           }
@@ -1391,6 +1391,9 @@ window.submitQuizSheet = async function() {
     submitBtn.textContent = `Quiz Sheet Submitted: Score ${totalCorrect}/${activeModalMCQs.length}`;
   }
 
+  const pct = Math.round((totalCorrect / activeModalMCQs.length) * 100) || 0;
+  showStudentSuccessModal('Quiz Completed', `You solved ${totalCorrect} of ${activeModalMCQs.length} questions correctly! (${pct}%)`, totalCorrect === activeModalMCQs.length);
+
   await autoCompleteLecture(activeModalLectureId);
 };
 
@@ -1504,9 +1507,10 @@ window.submitModalSolution = async function() {
     });
 
     if (res.error) {
-      alert(res.error);
+      showStudentSuccessModal('Submission Error', res.error, false);
     } else {
-      alert(isCorrect ? '✓ Challenge Submitted and Passed!' : 'Challenge submitted. Correct the failed assertions to complete this milestone.');
+      const msg = isCorrect ? '✓ Challenge Submitted and Passed! Milestone completed successfully.' : 'Challenge attempt saved. Correct the failed assertions to complete this milestone.';
+      showStudentSuccessModal('Solution Saved', msg, isCorrect);
       
       submissionsCache = await API.getSubmissions();
       updateProgressWidgets();
@@ -3163,9 +3167,10 @@ window.submitSolution = async function() {
     });
 
     if (res.error) {
-      alert(res.error);
+      showStudentSuccessModal('Submission Error', res.error, false);
     } else {
-      alert(isCorrect ? '✓ Assignment Submitted & Saved! Progress recorded.' : 'Saved attempt. Fix errors to complete assignment milestone.');
+      const msg = isCorrect ? '✓ Assignment Submitted & Saved! Progress recorded.' : 'Saved attempt. Fix errors to complete assignment milestone.';
+      showStudentSuccessModal('Solution Saved', msg, isCorrect);
       loadStudentAssignments();
       renderHomeScreen();
       renderJourneyScreen();
@@ -4513,10 +4518,10 @@ window.submitExam = async function() {
     document.getElementById('exam-overlay').style.display = 'none';
     
     if (res.status === 'disqualified') {
-      alert(`❌ Exam Terminated: You have been disqualified from this Online Assessment due to excessive tab switching (${examTabSwitches} tab switches logged).`);
+      showStudentSuccessModal('OA Disqualified', `❌ You have been disqualified from this Online Assessment due to excessive tab switching (${examTabSwitches} tab switches logged).`, false);
     } else {
       const pct = Math.round((res.score / res.totalQuestions) * 100);
-      alert(`🎉 Exam Completed Successfully!\n\nScore: ${res.score} / ${res.totalQuestions} correct answers (${pct}%)\nTotal Tab Violations: ${examTabSwitches}`);
+      showStudentSuccessModal('OA Exam Finished', `🎉 Exam Completed Successfully!\n\nScore: ${res.score} / ${res.totalQuestions} correct answers (${pct}%)\nTotal Tab Violations: ${examTabSwitches}`, true);
     }
 
     try {
@@ -5170,4 +5175,31 @@ window.removeWorkspaceDynamicMCQBlock = function(index) {
       if (header) header.textContent = `NEW MCQ QUESTION #${idx + 1}`;
     });
   }
+};
+
+window.showStudentSuccessModal = function(title, message, isSuccess = true) {
+  const existing = document.getElementById('student-toast-modal');
+  if (existing) existing.remove();
+
+  const modal = document.createElement('div');
+  modal.id = 'student-toast-modal';
+  modal.className = 'modal-overlay';
+  modal.style.cssText = 'display: flex; align-items: center; justify-content: center; z-index: 3500; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.75); padding: 1rem;';
+
+  const accentColor = isSuccess ? 'var(--success)' : 'var(--accent)';
+  const icon = isSuccess ? '✓' : '✗';
+
+  modal.innerHTML = `
+    <div class="modal-content" style="max-width: 420px; width: 100%; background: var(--bg-card); border: 2px solid ${accentColor}; border-radius: var(--radius-md); padding: 1.75rem; display: flex; flex-direction: column; align-items: center; gap: 1.25rem; text-align: center; box-shadow: var(--shadow-lg); animation: modalFadeIn 0.3s cubic-bezier(0.16, 1, 0.3, 1);">
+      <div style="width: 55px; height: 55px; border-radius: 50%; background: ${isSuccess ? 'rgba(16,185,129,0.15)' : 'rgba(239,68,68,0.15)'}; display: flex; align-items: center; justify-content: center; font-size: 1.75rem; font-weight: bold; color: ${accentColor};">
+        ${icon}
+      </div>
+      <div>
+        <h4 style="margin: 0 0 0.5rem 0; color: var(--text-main); font-size: 1.25rem; font-weight: 800;">${title}</h4>
+        <p style="margin: 0; color: var(--text-muted); font-size: 0.9rem; line-height: 1.45;">${message}</p>
+      </div>
+      <button class="btn btn-primary" onclick="this.closest('.modal-overlay').remove()" style="width: 100%; padding: 0.65rem; font-weight: 700; border-radius: var(--radius-sm); font-size: 0.9rem;">Continue</button>
+    </div>
+  `;
+  document.body.appendChild(modal);
 };
