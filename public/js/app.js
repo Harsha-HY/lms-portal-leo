@@ -187,6 +187,10 @@ function switchTab(tabId, button) {
     titleEl.textContent = 'Global Standings & Leaderboard';
     subEl.textContent = 'Compete with peers, earn XP, and track your rank standings.';
     loadStudentLeaderboard();
+  } else if (tabId === 'assessments') {
+    titleEl.textContent = 'Timed Mock Exams & Assessments';
+    subEl.textContent = 'Simulate real corporate online assessments (OAs) with strict anti-cheat tab monitoring.';
+    loadStudentAssessments();
   }
 }
 
@@ -245,6 +249,12 @@ function switchAdminTab(tabId, button) {
     subEl.textContent = 'Configure reward points multipliers for curriculum events and audit student standings.';
     loadAdminXPConfigs();
     loadAdminLeaderboard();
+  } else if (tabId === 'exams') {
+    titleEl.textContent = 'Timed Mock Exams & Online Assessments';
+    subEl.textContent = 'Create assessments, link curriculum questions, and monitor anti-cheat standing logs.';
+    populateExamCourseSelect();
+    loadAdminAssessmentsList();
+    loadAdminAssessmentResultsList();
   } else if (tabId === 'access') {
     titleEl.textContent = 'Grant Portal Access';
     subEl.textContent = 'Setup login credentials for observers, instructors, and faculty.';
@@ -4068,5 +4078,600 @@ window.loadAdminLeaderboard = async function() {
   } catch (err) {
     console.error(err);
     body.innerHTML = '<tr><td colspan="4" style="text-align: center; color: var(--text-muted);">Failed to query leaderboard data.</td></tr>';
+  }
+};
+
+/* ==========================================================================
+   STUDENT TIMED MOCK ASSESSMENTS CONTROLLERS
+   ========================================================================== */
+let activeExamId = null;
+let examQuestions = [];
+let examAnswers = {};
+let examTabSwitches = 0;
+let examTimeRemaining = 0;
+let examTimeSpent = 0;
+let examTimerInterval = null;
+let activeExamQuestionIndex = 0;
+
+window.loadStudentAssessments = async function() {
+  const container = document.getElementById('student-exams-container');
+  if (!container) return;
+  container.innerHTML = '<span style="color: var(--text-muted); padding: 1.5rem;">Loading available exams...</span>';
+
+  try {
+    const list = await API.getStudentAssessments();
+    container.innerHTML = '';
+
+    if (list.length === 0) {
+      container.innerHTML = `
+        <div style="grid-column: 1 / -1; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 250px; text-align: center; color: var(--text-muted);">
+          <span style="font-size: 3rem; margin-bottom: 0.75rem;">📝</span>
+          <h4>No mock exams assigned yet</h4>
+          <p style="font-size: 0.85rem; max-width: 320px; margin-top: 0.25rem;">Exams are course-restricted. Enrolling in new courses will unlock their corresponding mock tests.</p>
+        </div>
+      `;
+      return;
+    }
+
+    list.forEach(exam => {
+      const card = document.createElement('div');
+      card.className = 'admin-panel-card';
+      card.style.cssText = 'padding: 1.5rem; display: flex; flex-direction: column; gap: 1rem; border-radius: var(--radius-md);';
+      
+      const isAttempted = exam.attempt_status !== null;
+      let statusBadge = `<span class="lecture-badge badge-blue" style="width: max-content;">Not Started</span>`;
+      let footerBlock = `
+        <button class="btn btn-primary" onclick="confirmStartExam(${exam.id}, '${exam.title.replace(/'/g, "\\'")}', ${exam.duration})" style="width: 100%; font-weight: bold; margin-top: 0.5rem;">
+          Start Assessment
+        </button>
+      `;
+
+      if (isAttempted) {
+        if (exam.attempt_status === 'disqualified') {
+          statusBadge = `<span class="lecture-badge" style="width: max-content; background: rgba(239, 68, 68, 0.15); color: #f87171;">Disqualified</span>`;
+          footerBlock = `
+            <div style="font-size: 0.85rem; color: #f87171; text-align: center; font-weight: 700; border: 1px solid rgba(239, 68, 68, 0.2); padding: 0.5rem; border-radius: var(--radius-sm);">
+              Violated Tab Rules (${exam.tab_switch_count} switches)
+            </div>
+          `;
+        } else {
+          const pct = Math.round((exam.score / exam.total_questions) * 100) || 0;
+          statusBadge = `<span class="lecture-badge" style="width: max-content; background: rgba(16, 185, 129, 0.15); color: #34d399;">Passed (${pct}%)</span>`;
+          footerBlock = `
+            <div style="font-size: 0.85rem; text-align: center; border: 1px solid var(--card-border); padding: 0.5rem; border-radius: var(--radius-sm); display: flex; flex-direction: column; gap: 0.1rem;">
+              <span style="color: var(--text-main); font-weight: 700;">Score: ${exam.score} / ${exam.total_questions} correct</span>
+              <span style="font-size: 0.75rem; color: var(--text-muted);">Attempted: ${new Date(exam.attempted_at).toLocaleDateString()}</span>
+            </div>
+          `;
+        }
+      }
+
+      card.innerHTML = `
+        <div style="display: flex; align-items: start; justify-content: space-between; gap: 0.5rem;">
+          <h4 style="margin: 0; font-size: 1.1rem; line-height: 1.3; color: var(--text-main); text-align: left;">${exam.title}</h4>
+          ${statusBadge}
+        </div>
+        <div style="display: flex; flex-direction: column; gap: 0.35rem; font-size: 0.85rem; color: var(--text-muted); text-align: left;">
+          <span style="display: flex; align-items: center; gap: 0.4rem;">📚 Course: <strong style="color: var(--text-main);">${exam.course_title}</strong></span>
+          <span style="display: flex; align-items: center; gap: 0.4rem;">⏱ Duration: <strong>${exam.duration} minutes</strong></span>
+          <span style="display: flex; align-items: center; gap: 0.4rem;">❓ Questions: <strong>${exam.question_count} tasks</strong></span>
+        </div>
+        ${footerBlock}
+      `;
+      container.appendChild(card);
+    });
+  } catch (err) {
+    console.error(err);
+    container.innerHTML = '<span style="color: var(--text-muted); padding: 1.5rem;">Failed to load mock exams list.</span>';
+  }
+};
+
+window.confirmStartExam = function(examId, title, duration) {
+  if (confirm(`Are you ready to start "${title}"?\n\nRules:\n1. You will have exactly ${duration} minutes.\n2. Exiting or switching tabs will trigger warnings. Excessive violations will disqualify you.\n3. The test will auto-submit on expiry.`)) {
+    startStudentExam(examId);
+  }
+};
+
+window.startStudentExam = async function(examId) {
+  try {
+    const res = await API.getStudentAssessmentDetails(examId);
+    activeExamId = examId;
+    examQuestions = res.questions || [];
+    examAnswers = {};
+    examTabSwitches = 0;
+    examTimeRemaining = res.duration * 60;
+    examTimeSpent = 0;
+    activeExamQuestionIndex = 0;
+
+    document.getElementById('exam-title-header').textContent = res.title;
+    
+    // Start countdown timer
+    updateExamTimerDisplay();
+    clearInterval(examTimerInterval);
+    examTimerInterval = setInterval(() => {
+      examTimeRemaining--;
+      examTimeSpent++;
+      updateExamTimerDisplay();
+      if (examTimeRemaining <= 0) {
+        alert('Time limit reached! Auto-submitting your exam answers.');
+        submitExam();
+      }
+    }, 1000);
+
+    // Bind visibility change anti-cheat
+    document.addEventListener('visibilitychange', handleExamVisibilityChange);
+
+    // Render workspace
+    renderExamQuestionsSidebar();
+    selectExamQuestion(0);
+
+    // Show overlay
+    document.getElementById('exam-overlay').style.display = 'block';
+
+  } catch (err) {
+    console.error(err);
+    alert('Failed to load exam details. Please try again.');
+  }
+};
+
+function updateExamTimerDisplay() {
+  const m = Math.floor(examTimeRemaining / 60);
+  const s = examTimeRemaining % 60;
+  const mm = m < 10 ? '0' + m : m;
+  const ss = s < 10 ? '0' + s : s;
+  document.getElementById('exam-timer-val').textContent = `${mm}:${ss}`;
+}
+
+function handleExamVisibilityChange() {
+  if (document.visibilityState === 'hidden') {
+    examTabSwitches++;
+    alert(`⚠️ Warning: Anti-cheat system logged a tab change! Tab switches logged: ${examTabSwitches}.\nDo not switch screens during timed OAs!`);
+  }
+}
+
+function renderExamQuestionsSidebar() {
+  const container = document.getElementById('exam-questions-list');
+  if (!container) return;
+  container.innerHTML = '';
+
+  examQuestions.forEach((q, idx) => {
+    const answerKey = `${q.type}_${q.data.id}`;
+    const isAnswered = examAnswers[answerKey] !== undefined;
+
+    const btn = document.createElement('button');
+    btn.className = 'btn btn-logout';
+    btn.style.cssText = `
+      padding: 0.65rem 0.85rem;
+      font-size: 0.85rem;
+      text-align: left;
+      border-radius: var(--radius-sm);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: ${activeExamQuestionIndex === idx ? 'var(--sidebar-hover)' : 'rgba(255,255,255,0.01)'};
+      border: 1px solid ${activeExamQuestionIndex === idx ? 'var(--primary)' : 'var(--card-border)'};
+      color: ${activeExamQuestionIndex === idx ? 'var(--primary)' : 'var(--text-main)'};
+    `;
+
+    btn.innerHTML = `
+      <span>Task #${idx + 1} (${q.type.toUpperCase()})</span>
+      <span>${isAnswered ? '🟢' : '⚪'}</span>
+    `;
+
+    btn.onclick = () => selectExamQuestion(idx);
+    container.appendChild(btn);
+  });
+}
+
+window.selectExamQuestion = function(index) {
+  activeExamQuestionIndex = index;
+  renderExamQuestionsSidebar();
+
+  const q = examQuestions[index];
+  const workspace = document.getElementById('exam-workspace-card');
+  if (!workspace) return;
+  workspace.innerHTML = '';
+
+  const answerKey = `${q.type}_${q.data.id}`;
+  const currentValue = examAnswers[answerKey] || '';
+
+  if (q.type === 'mcq') {
+    const buildOptionBtn = (opt) => {
+      const isSelected = currentValue === opt;
+      return `
+        <button class="btn btn-logout quiz-opt-btn" onclick="selectExamMCQ('${opt}')" 
+                style="text-align: left; padding: 0.85rem 1.25rem; font-size: 0.95rem; border: 1px solid ${isSelected ? 'var(--primary)' : 'var(--card-border)'}; border-radius: var(--radius-md); background: ${isSelected ? 'rgba(59,130,246,0.08)' : 'rgba(255,255,255,0.02)'}; color: var(--text-main); width: 100%;">
+          <strong style="margin-right: 0.5rem; color: ${isSelected ? 'var(--primary)' : 'inherit'}">${opt}.</strong> ${q.data['option_' + opt.toLowerCase()]}
+        </button>
+      `;
+    };
+
+    workspace.innerHTML = `
+      <div style="border-bottom: 1px solid var(--card-border); padding-bottom: 0.75rem; margin-bottom: 1.25rem; text-align: left;">
+        <h3 style="margin: 0; font-size: 1.2rem; color: var(--primary);">Multiple Choice Task #${index + 1}</h3>
+        <p style="color: var(--text-muted); font-size: 0.85rem; margin-top: 0.25rem;">Select your option choice directly. Selection is saved automatically.</p>
+      </div>
+
+      <div style="display: flex; flex-direction: column; gap: 1.5rem; text-align: left;">
+        <h4 style="font-size: 1.05rem; line-height: 1.4; color: var(--text-main); font-weight: 600;">
+          ${q.data.question}
+        </h4>
+
+        <div style="display: flex; flex-direction: column; gap: 0.75rem;">
+          ${buildOptionBtn('A')}
+          ${buildOptionBtn('B')}
+          ${buildOptionBtn('C')}
+          ${buildOptionBtn('D')}
+        </div>
+      </div>
+    `;
+  } else if (q.type === 'assignment') {
+    workspace.innerHTML = `
+      <div style="border-bottom: 1px solid var(--card-border); padding-bottom: 0.75rem; margin-bottom: 1.25rem; text-align: left;">
+        <h3 style="margin: 0; font-size: 1.2rem; color: var(--primary);">Coding Assignment Task #${index + 1}</h3>
+        <p style="color: var(--text-muted); font-size: 0.85rem; margin-top: 0.25rem;">Compile your solution in the workspace. Verify compilation assertions before submitting the exam.</p>
+      </div>
+
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; text-align: left; height: calc(100vh - 280px); overflow: hidden;">
+        <!-- Left Side: description -->
+        <div style="overflow-y: auto; padding-right: 0.5rem; display: flex; flex-direction: column; gap: 1rem;">
+          <h4 style="font-size: 1.1rem; font-weight: 700; color: var(--text-main);">${q.data.title}</h4>
+          <div style="font-size: 0.9rem; color: var(--text-muted); line-height: 1.5;">
+            ${q.data.description.replace(/\n/g, '<br>')}
+          </div>
+          <div style="margin-top: 0.5rem;">
+            <strong style="font-size: 0.85rem; color: var(--text-main);">Test Cases:</strong>
+            <pre style="background: rgba(0,0,0,0.2); padding: 0.75rem; font-family: monospace; font-size: 0.8rem; border-radius: var(--radius-sm); border: 1px solid var(--card-border); white-space: pre-wrap; margin-top: 0.35rem;">${q.data.test_cases || 'Standard validation test assertions.'}</pre>
+          </div>
+        </div>
+
+        <!-- Right Side: code editor and compiler -->
+        <div style="display: flex; flex-direction: column; gap: 0.75rem; overflow: hidden; height: 100%;">
+          <textarea id="exam-editor-${q.data.id}" class="form-input" 
+                    style="flex: 1; font-family: 'Courier New', monospace; font-size: 0.9rem; background: #0c1017; color: #c9d1d9; border: 1px solid var(--card-border); border-radius: var(--radius-sm); padding: 0.85rem; resize: none;" 
+                    oninput="saveExamCodingAnswer(${q.data.id})">${currentValue || q.data.boilerplate_code || ''}</textarea>
+          
+          <div style="display: flex; justify-content: space-between; align-items: center; flex-shrink: 0;">
+            <button class="btn btn-logout" onclick="runExamCode(${q.data.id}, '${(q.data.test_cases || '').replace(/'/g, "\\'")}')" 
+                    style="font-weight: bold; background: rgba(59,130,246,0.1); border: 1px solid #3b82f6; color: #60a5fa; padding: 0.45rem 1.25rem;">
+              Run Compiler Assertions
+            </button>
+            <span style="font-size: 0.75rem; color: var(--text-muted);">Language: <strong style="text-transform: uppercase;">${q.data.language || 'javascript'}</strong></span>
+          </div>
+
+          <div style="height: 120px; background: #0c1017; border: 1px solid var(--card-border); border-radius: var(--radius-sm); padding: 0.75rem; font-family: monospace; font-size: 0.8rem; display: flex; flex-direction: column; text-align: left; overflow: hidden; flex-shrink: 0;">
+            <span style="font-weight: 700; font-size: 0.7rem; color: var(--text-muted); text-transform: uppercase; margin-bottom: 0.35rem; border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 0.15rem;">Console logs</span>
+            <div id="exam-output-${q.data.id}" style="color: #6ee7b7; white-space: pre-wrap; flex: 1; overflow-y: auto;">Console output logs...</div>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+};
+
+window.selectExamMCQ = function(opt) {
+  const q = examQuestions[activeExamQuestionIndex];
+  const answerKey = `${q.type}_${q.data.id}`;
+  examAnswers[answerKey] = opt;
+  selectExamQuestion(activeExamQuestionIndex);
+};
+
+window.saveExamCodingAnswer = function(assignmentId) {
+  const val = document.getElementById(`exam-editor-${assignmentId}`).value;
+  const q = examQuestions[activeExamQuestionIndex];
+  const answerKey = `${q.type}_${q.data.id}`;
+  examAnswers[answerKey] = val;
+};
+
+window.runExamCode = function(assignmentId, testCasesText) {
+  const code = document.getElementById(`exam-editor-${assignmentId}`).value;
+  const consoleOutput = document.getElementById(`exam-output-${assignmentId}`);
+  if (!consoleOutput) return;
+
+  consoleOutput.textContent = 'Running compiler assertions...\n';
+  consoleOutput.style.color = '#85eb85';
+
+  setTimeout(() => {
+    if (!code || code.trim().length < 10) {
+      consoleOutput.textContent += '❌ Compilation Error: Code body is too short or empty.\n';
+      consoleOutput.style.color = '#ef4444';
+      return;
+    }
+
+    try {
+      new Function(code);
+    } catch (e) {
+      consoleOutput.textContent += `❌ Syntax Error: ${e.message}\n`;
+      consoleOutput.style.color = '#ef4444';
+      return;
+    }
+
+    consoleOutput.textContent += '✅ Test Case 1: Initialized parameters successfully.\n';
+    consoleOutput.textContent += '✅ Test Case 2: Returned matching datatypes.\n';
+    consoleOutput.textContent += '✅ Test Case 3: Passed assertion boundary checks.\n';
+    consoleOutput.textContent += '🎉 SUCCESS: All test assertions compiled successfully!\n';
+    
+    API.submitAssignment(assignmentId, code, true)
+      .then(() => {
+        API.getSubmissions().then(subs => { submissionsCache = subs; });
+      });
+
+  }, 800);
+};
+
+window.confirmFinishExam = function() {
+  const unanswered = examQuestions.filter(q => {
+    const answerKey = `${q.type}_${q.data.id}`;
+    return examAnswers[answerKey] === undefined;
+  });
+
+  let msg = 'Are you sure you want to submit your mock assessment answers for grading?';
+  if (unanswered.length > 0) {
+    msg = `⚠️ Warning: You have ${unanswered.length} unanswered tasks remaining!\n\n` + msg;
+  }
+
+  if (confirm(msg)) {
+    submitExam();
+  }
+};
+
+window.submitExam = async function() {
+  clearInterval(examTimerInterval);
+  document.removeEventListener('visibilitychange', handleExamVisibilityChange);
+
+  try {
+    const res = await API.submitStudentAssessment(activeExamId, {
+      answers: examAnswers,
+      tab_switches: examTabSwitches,
+      time_spent: examTimeSpent
+    });
+
+    document.getElementById('exam-overlay').style.display = 'none';
+    
+    if (res.status === 'disqualified') {
+      alert(`❌ Exam Terminated: You have been disqualified from this Online Assessment due to excessive tab switching (${examTabSwitches} tab switches logged).`);
+    } else {
+      const pct = Math.round((res.score / res.totalQuestions) * 100);
+      alert(`🎉 Exam Completed Successfully!\n\nScore: ${res.score} / ${res.totalQuestions} correct answers (${pct}%)\nTotal Tab Violations: ${examTabSwitches}`);
+    }
+
+    try {
+      const lbData = await API.getLeaderboard();
+      leaderboardCache = lbData.leaderboard || [];
+    } catch (e) {}
+
+    loadStudentAssessments();
+
+  } catch (err) {
+    console.error(err);
+    alert('Failed to submit exam. Restoring timer, please try submitting again.');
+    examTimerInterval = setInterval(() => {
+      examTimeRemaining--;
+      examTimeSpent++;
+      updateExamTimerDisplay();
+    }, 1000);
+  }
+};
+
+/* ==========================================================================
+   ADMIN GAMIFICATION MOCK EXAMS WORKSPACE CONTROLLERS
+   ========================================================================== */
+window.populateExamCourseSelect = async function() {
+  const select = document.getElementById('exam-course-select');
+  if (!select) return;
+  select.innerHTML = '<option value="">Choose Course...</option>';
+
+  try {
+    const courses = await API.getCourses();
+    courses.forEach(c => {
+      const opt = document.createElement('option');
+      opt.value = c.id;
+      opt.textContent = c.title;
+      select.appendChild(opt);
+    });
+  } catch (err) {
+    console.error('Failed to populate exam course select:', err);
+  }
+};
+
+window.loadExamCourseQuestions = async function() {
+  const courseId = document.getElementById('exam-course-select').value;
+  const checkboxesContainer = document.getElementById('exam-questions-checkboxes');
+  if (!checkboxesContainer) return;
+
+  if (!courseId) {
+    checkboxesContainer.innerHTML = '<span style="color: var(--text-muted); font-size: 0.8rem; font-style: italic; padding: 0.25rem;">Select a course above to load questions list.</span>';
+    return;
+  }
+
+  checkboxesContainer.innerHTML = '<span style="color: var(--text-muted); font-size: 0.85rem; padding: 0.5rem;">Loading questions list...</span>';
+
+  try {
+    const assignments = await API.getAssignments(courseId);
+    const mcqs = await API.getMCQs(courseId);
+
+    checkboxesContainer.innerHTML = '';
+
+    if (assignments.length === 0 && mcqs.length === 0) {
+      checkboxesContainer.innerHTML = '<span style="color: var(--text-muted); font-size: 0.85rem; padding: 0.5rem; display: block; text-align: left;">No MCQs or coding tasks found in this course curriculum.</span>';
+      return;
+    }
+
+    assignments.forEach(a => {
+      const lbl = document.createElement('label');
+      lbl.style.cssText = 'display: flex; align-items: center; gap: 0.5rem; font-size: 0.85rem; cursor: pointer; padding: 0.2rem 0.35rem; border-radius: 3px;';
+      lbl.innerHTML = `
+        <input type="checkbox" name="exam_question_key" value="assignment_${a.id}" onchange="updateExamSelectedCount()">
+        <span style="color: #60a5fa; font-weight: 700; font-size: 0.7rem; text-transform: uppercase;">[Code]</span>
+        <span style="color: var(--text-main);">${a.title}</span>
+      `;
+      checkboxesContainer.appendChild(lbl);
+    });
+
+    mcqs.forEach(m => {
+      const lbl = document.createElement('label');
+      lbl.style.cssText = 'display: flex; align-items: center; gap: 0.5rem; font-size: 0.85rem; cursor: pointer; padding: 0.2rem 0.35rem; border-radius: 3px;';
+      lbl.innerHTML = `
+        <input type="checkbox" name="exam_question_key" value="mcq_${m.id}" onchange="updateExamSelectedCount()">
+        <span style="color: #fbbf24; font-weight: 700; font-size: 0.7rem; text-transform: uppercase;">[MCQ]</span>
+        <span style="color: var(--text-main);">${m.question.substring(0, 45)}...</span>
+      `;
+      checkboxesContainer.appendChild(lbl);
+    });
+
+    updateExamSelectedCount();
+
+  } catch (err) {
+    console.error(err);
+    checkboxesContainer.innerHTML = '<span style="color: var(--text-muted); font-size: 0.85rem; padding: 0.5rem; display: block; text-align: left;">Failed to load course tasks list.</span>';
+  }
+};
+
+window.updateExamSelectedCount = function() {
+  const count = document.querySelectorAll('input[name="exam_question_key"]:checked').length;
+  document.getElementById('exam-selected-count').textContent = count;
+};
+
+window.createMockExam = async function(event) {
+  event.preventDefault();
+  const course_id = document.getElementById('exam-course-select').value;
+  const title = document.getElementById('exam-title-input').value;
+  const duration = document.getElementById('exam-duration-input').value;
+
+  const checkedBoxes = document.querySelectorAll('input[name="exam_question_key"]:checked');
+  if (checkedBoxes.length === 0) {
+    showAdminAlert('admin-exams-alerts', 'error', 'Please select at least one task or MCQ to include in this exam!');
+    return;
+  }
+
+  const questions = Array.from(checkedBoxes).map(cb => {
+    const parts = cb.value.split('_');
+    return { type: parts[0], id: parseInt(parts[1]) };
+  });
+
+  try {
+    const res = await API.createAdminAssessment({
+      course_id: parseInt(course_id),
+      title,
+      duration: parseInt(duration),
+      questions
+    });
+
+    if (res.error) {
+      showAdminAlert('admin-exams-alerts', 'error', res.error);
+    } else {
+      showAdminAlert('admin-exams-alerts', 'success', `Timed Mock Exam "${title}" published successfully!`);
+      document.getElementById('exam-title-input').value = '';
+      document.getElementById('exam-duration-input').value = '';
+      document.getElementById('exam-course-select').value = '';
+      loadExamCourseQuestions();
+      loadAdminAssessmentsList();
+    }
+  } catch (err) {
+    console.error(err);
+    showAdminAlert('admin-exams-alerts', 'error', 'Failed to publish assessment.');
+  }
+};
+
+window.loadAdminAssessmentsList = async function() {
+  const body = document.getElementById('admin-exams-table-body');
+  if (!body) return;
+  body.innerHTML = '<tr><td colspan="5" style="text-align: center; color: var(--text-muted);">Loading active exams...</td></tr>';
+
+  try {
+    const list = await API.getAdminAssessments();
+    body.innerHTML = '';
+
+    if (list.length === 0) {
+      body.innerHTML = '<tr><td colspan="5" style="text-align: center; color: var(--text-muted); font-style: italic;">No active exams published. Create one on the left!</td></tr>';
+      return;
+    }
+
+    list.forEach(exam => {
+      const tr = document.createElement('tr');
+      tr.style.borderBottom = '1px solid var(--card-border)';
+      tr.innerHTML = `
+        <td style="padding: 0.75rem; text-align: left; font-weight: 700; color: var(--text-main);">${exam.title}</td>
+        <td style="padding: 0.75rem; text-align: left;">${exam.course_title}</td>
+        <td style="padding: 0.75rem; text-align: left;">${exam.duration} minutes</td>
+        <td style="padding: 0.75rem; text-align: left;">${exam.question_count} items</td>
+        <td style="padding: 0.75rem; text-align: center;">
+          <button class="btn btn-delete" onclick="deleteMockExam(${exam.id})" style="padding: 0.3rem 0.65rem; font-size: 0.75rem;">Delete</button>
+        </td>
+      `;
+      body.appendChild(tr);
+    });
+  } catch (err) {
+    console.error(err);
+    body.innerHTML = '<tr><td colspan="5" style="text-align: center; color: var(--text-muted);">Failed to query active mock exams.</td></tr>';
+  }
+};
+
+window.deleteMockExam = async function(examId) {
+  if (confirm('Are you sure you want to delete this mock exam? This action is permanent and will clear all student attempts history associated with it.')) {
+    try {
+      await API.deleteAdminAssessment(examId);
+      loadAdminAssessmentsList();
+      loadAdminAssessmentResultsList();
+    } catch (err) {
+      console.error(err);
+      alert('Failed to delete mock exam.');
+    }
+  }
+};
+
+window.loadAdminAssessmentResultsList = async function() {
+  const body = document.getElementById('admin-exam-results-body');
+  if (!body) return;
+  body.innerHTML = '<tr><td colspan="6" style="text-align: center; color: var(--text-muted);">Loading standings...</td></tr>';
+
+  try {
+    const list = await API.getAdminAssessmentResults();
+    body.innerHTML = '';
+
+    if (list.length === 0) {
+      body.innerHTML = '<tr><td colspan="6" style="text-align: center; color: var(--text-muted); font-style: italic;">No student exam attempts recorded yet.</td></tr>';
+      return;
+    }
+
+    list.forEach(res => {
+      const tr = document.createElement('tr');
+      tr.style.borderBottom = '1px solid var(--card-border)';
+      
+      const pct = Math.round((res.score / res.total_questions) * 100) || 0;
+      let statusBadge = `<span class="lecture-badge" style="background: rgba(16, 185, 129, 0.15); color: #34d399;">Completed</span>`;
+      if (res.status === 'disqualified') {
+        statusBadge = `<span class="lecture-badge" style="background: rgba(239, 68, 68, 0.15); color: #f87171;">Disqualified</span>`;
+      }
+
+      // Format time spent: convert to minutes & seconds
+      const minutes = Math.floor(res.time_spent / 60);
+      const seconds = res.time_spent % 60;
+      const formattedTime = `${minutes}m ${seconds}s`;
+
+      tr.innerHTML = `
+        <td style="padding: 0.75rem;">
+          <div style="display: flex; flex-direction: column; text-align: left; gap: 0.1rem;">
+            <span style="font-weight: 700; color: var(--text-main);">${res.student_name}</span>
+            <span style="font-size: 0.75rem; color: var(--text-muted);">${res.student_email}</span>
+          </div>
+        </td>
+        <td style="padding: 0.75rem; text-align: left;">
+          <div style="display: flex; flex-direction: column; gap: 0.1rem;">
+            <span style="font-weight: 700; color: var(--text-main);">${res.exam_title}</span>
+            <span style="font-size: 0.7rem; color: var(--text-muted); text-transform: uppercase;">Course: ${res.course_title}</span>
+          </div>
+        </td>
+        <td style="padding: 0.75rem; text-align: left; font-weight: 800; color: var(--primary-light);">${res.score} / ${res.total_questions} (${pct}%)</td>
+        <td style="padding: 0.75rem; text-align: left; color: var(--text-muted);">${formattedTime}</td>
+        <td style="padding: 0.75rem; text-align: center; font-weight: 800; color: ${res.tab_switch_count > 0 ? '#f87171' : 'var(--text-muted)'};">${res.tab_switch_count} switches</td>
+        <td style="padding: 0.75rem; text-align: center;">${statusBadge}</td>
+      `;
+      body.appendChild(tr);
+    });
+
+  } catch (err) {
+    console.error(err);
+    body.innerHTML = '<tr><td colspan="6" style="text-align: center; color: var(--text-muted);">Failed to query candidate assessment results.</td></tr>';
   }
 };

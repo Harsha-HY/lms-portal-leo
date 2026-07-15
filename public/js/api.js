@@ -95,6 +95,21 @@ const API = {
     return this.fetchJSON('/api/leaderboard');
   },
 
+  getStudentAssessments() {
+    return this.fetchJSON('/api/student/assessments');
+  },
+
+  getStudentAssessmentDetails(id) {
+    return this.fetchJSON(`/api/student/assessments/${id}`);
+  },
+
+  submitStudentAssessment(id, payload) {
+    return this.fetchJSON(`/api/student/assessments/${id}/submit`, {
+      method: 'POST',
+      body: JSON.stringify(payload)
+    });
+  },
+
   updateProgress(lectureId, completed) {
     return this.fetchJSON('/api/student/progress', {
       method: 'POST',
@@ -135,6 +150,27 @@ const API = {
       method: 'POST',
       body: JSON.stringify({ video_xp, mcq_xp, assignment_xp })
     });
+  },
+
+  getAdminAssessments() {
+    return this.fetchJSON('/api/admin/assessments');
+  },
+
+  createAdminAssessment(payload) {
+    return this.fetchJSON('/api/admin/assessments', {
+      method: 'POST',
+      body: JSON.stringify(payload)
+    });
+  },
+
+  deleteAdminAssessment(id) {
+    return this.fetchJSON(`/api/admin/assessments/${id}`, {
+      method: 'DELETE'
+    });
+  },
+
+  getAdminAssessmentResults() {
+    return this.fetchJSON('/api/admin/assessment-results');
   },
 
   getStudentHistory() {

@@ -231,6 +231,39 @@ function initializeDatabase() {
       });
     });
 
+    // 11. Assessments tables
+    db.run(`CREATE TABLE IF NOT EXISTS assessments (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      course_id INTEGER NOT NULL,
+      title TEXT NOT NULL,
+      duration INTEGER NOT NULL, -- in minutes
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (course_id) REFERENCES courses(id) ON DELETE CASCADE
+    )`);
+
+    db.run(`CREATE TABLE IF NOT EXISTS assessment_questions (
+      assessment_id INTEGER NOT NULL,
+      question_type TEXT NOT NULL, -- 'mcq' or 'assignment'
+      question_id INTEGER NOT NULL,
+      order_index INTEGER DEFAULT 0,
+      PRIMARY KEY (assessment_id, question_type, question_id),
+      FOREIGN KEY (assessment_id) REFERENCES assessments(id) ON DELETE CASCADE
+    )`);
+
+    db.run(`CREATE TABLE IF NOT EXISTS assessment_submissions (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id INTEGER NOT NULL,
+      assessment_id INTEGER NOT NULL,
+      score INTEGER DEFAULT 0,
+      total_questions INTEGER DEFAULT 0,
+      tab_switch_count INTEGER DEFAULT 0,
+      time_spent INTEGER DEFAULT 0, -- in seconds
+      status TEXT DEFAULT 'completed', -- 'completed', 'disqualified'
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+      FOREIGN KEY (assessment_id) REFERENCES assessments(id) ON DELETE CASCADE
+    )`);
+
     // Database setup is complete
   });
 }
@@ -1106,6 +1139,222 @@ app.get('/api/leaderboard', requireLogin, (req, res) => {
         res.json({
           multipliers,
           leaderboard: students
+        });
+      });
+    });
+  });
+});
+
+/* ==========================================================================
+   TIMED MOCK ASSESSMENT ENDPOINTS
+   ========================================================================== */
+
+// Admin: Get all assessments with question count
+app.get('/api/admin/assessments', requireLogin, (req, res) => {
+  const query = `
+    SELECT a.*, c.title as course_title,
+           (SELECT COUNT(*) FROM assessment_questions WHERE assessment_id = a.id) as question_count
+    FROM assessments a
+    JOIN courses c ON c.id = a.course_id
+  `;
+  db.all(query, [], (err, rows) => {
+    if (err) return res.status(500).json({ error: 'Failed to fetch assessments.' });
+    res.json(rows);
+  });
+});
+
+// Admin: Create a timed mock assessment
+app.post('/api/admin/assessments', requireAdminOrFaculty, (req, res) => {
+  const { title, course_id, duration, questions } = req.body; // questions: [{type: 'mcq'/'assignment', id: 123}]
+  if (!title || !course_id || !duration || !questions || !Array.isArray(questions)) {
+    return res.status(400).json({ error: 'Missing assessment parameters.' });
+  }
+
+  db.serialize(() => {
+    db.run(`INSERT INTO assessments (course_id, title, duration) VALUES (?, ?, ?)`, [course_id, title, duration], function(err) {
+      if (err) return res.status(500).json({ error: 'Failed to create assessment.' });
+      
+      const assessmentId = this.lastID;
+      const stmt = db.prepare(`INSERT INTO assessment_questions (assessment_id, question_type, question_id, order_index) VALUES (?, ?, ?, ?)`);
+      questions.forEach((q, idx) => {
+        stmt.run(assessmentId, q.type, q.id, idx);
+      });
+      stmt.finalize((err2) => {
+        if (err2) return res.status(500).json({ error: 'Failed to link assessment questions.' });
+        res.json({ success: true, assessmentId });
+      });
+    });
+  });
+});
+
+// Admin: Delete assessment
+app.delete('/api/admin/assessments/:id', requireAdminOrFaculty, (req, res) => {
+  db.run(`DELETE FROM assessments WHERE id = ?`, [req.params.id], (err) => {
+    if (err) return res.status(500).json({ error: 'Failed to delete assessment.' });
+    res.json({ success: true });
+  });
+});
+
+// Admin: Get candidate exam attempts/results
+app.get('/api/admin/assessment-results', requireLogin, (req, res) => {
+  const query = `
+    SELECT sub.*, u.name as student_name, u.email as student_email, a.title as exam_title, c.title as course_title
+    FROM assessment_submissions sub
+    JOIN users u ON u.id = sub.user_id
+    JOIN assessments a ON a.id = sub.assessment_id
+    JOIN courses c ON c.id = a.course_id
+    ORDER BY sub.created_at DESC
+  `;
+  db.all(query, [], (err, rows) => {
+    if (err) return res.status(500).json({ error: 'Failed to fetch candidate assessment results.' });
+    res.json(rows);
+  });
+});
+
+// Student: List assessments available for enrolled courses
+app.get('/api/student/assessments', requireLogin, (req, res) => {
+  const userId = req.session.userId;
+  const query = `
+    SELECT a.id, a.title, a.duration, a.course_id, c.title as course_title,
+           (SELECT COUNT(*) FROM assessment_questions WHERE assessment_id = a.id) as question_count,
+           sub.score, sub.total_questions, sub.status as attempt_status, sub.tab_switch_count, sub.created_at as attempted_at
+    FROM assessments a
+    JOIN courses c ON c.id = a.course_id
+    JOIN enrollments e ON e.course_id = a.course_id AND e.user_id = ?
+    LEFT JOIN assessment_submissions sub ON sub.assessment_id = a.id AND sub.user_id = ?
+    ORDER BY a.created_at DESC
+  `;
+  db.all(query, [userId, userId], (err, rows) => {
+    if (err) return res.status(500).json({ error: 'Failed to load assessments list.' });
+    res.json(rows);
+  });
+});
+
+// Student: Get test structure/questions (excludes correct answers to prevent inspecting)
+app.get('/api/student/assessments/:id', requireLogin, (req, res) => {
+  const assessmentId = req.params.id;
+
+  // Verify student is enrolled in the course associated with this assessment
+  const verifyQuery = `
+    SELECT a.* FROM assessments a
+    JOIN enrollments e ON e.course_id = a.course_id
+    WHERE a.id = ? AND e.user_id = ?
+  `;
+  db.get(verifyQuery, [assessmentId, req.session.userId], (err, assessment) => {
+    if (err || !assessment) {
+      return res.status(403).json({ error: 'Access denied: You are not enrolled in the course for this mock test.' });
+    }
+
+    // Load linked questions
+    db.all(`SELECT question_type, question_id FROM assessment_questions WHERE assessment_id = ? ORDER BY order_index`, [assessmentId], async (err, linkedItems) => {
+      if (err) return res.status(500).json({ error: 'Failed to load test questions structure.' });
+
+      const questions = [];
+      for (const item of linkedItems) {
+        if (item.question_type === 'mcq') {
+          const mcq = await new Promise((resolve) => {
+            db.get(`SELECT id, question, option_a, option_b, option_c, option_d FROM mcqs WHERE id = ?`, [item.question_id], (e, r) => resolve(r));
+          });
+          if (mcq) questions.push({ type: 'mcq', data: mcq });
+        } else if (item.question_type === 'assignment') {
+          const coding = await new Promise((resolve) => {
+            db.get(`SELECT id, title, description, language, boilerplate_code, test_cases, hint FROM assignments WHERE id = ?`, [item.question_id], (e, r) => resolve(r));
+          });
+          if (coding) questions.push({ type: 'assignment', data: coding });
+        }
+      }
+
+      res.json({
+        id: assessment.id,
+        title: assessment.title,
+        duration: assessment.duration,
+        questions
+      });
+    });
+  });
+});
+
+// Student: Submit assessment answers & grade in real-time
+app.post('/api/student/assessments/:id/submit', requireLogin, (req, res) => {
+  const assessmentId = req.params.id;
+  const userId = req.session.userId;
+  const { answers, tab_switches, time_spent } = req.body; // answers: { question_type_id: "A" or submitted_code }
+
+  if (!answers) return res.status(400).json({ error: 'Missing submitted answers.' });
+
+  // Verify enrolled
+  const verifyQuery = `
+    SELECT a.* FROM assessments a
+    JOIN enrollments e ON e.course_id = a.course_id
+    WHERE a.id = ? AND e.user_id = ?
+  `;
+  db.get(verifyQuery, [assessmentId, userId], async (err, assessment) => {
+    if (err || !assessment) {
+      return res.status(403).json({ error: 'Access denied: Enroll in course first.' });
+    }
+
+    // Load questions to compare
+    db.all(`SELECT question_type, question_id FROM assessment_questions WHERE assessment_id = ?`, [assessmentId], async (err, linkedItems) => {
+      if (err) return res.status(500).json({ error: 'Failed to grade assessment.' });
+
+      let score = 0;
+      const totalQuestions = linkedItems.length;
+
+      for (const item of linkedItems) {
+        const answerKey = `${item.question_type}_${item.question_id}`;
+        const submitted = answers[answerKey];
+
+        if (item.question_type === 'mcq') {
+          const dbMCQ = await new Promise((resolve) => {
+            db.get(`SELECT correct_option FROM mcqs WHERE id = ?`, [item.question_id], (e, r) => resolve(r));
+          });
+          
+          const isCorrect = dbMCQ && dbMCQ.correct_option === submitted;
+          if (isCorrect) score++;
+
+          // Also record into standard submissions log so progress counts
+          db.run(`
+            INSERT INTO submissions (user_id, course_id, type, reference_id, submitted_answer, is_correct)
+            VALUES (?, ?, 'mcq', ?, ?, ?)
+          `, [userId, assessment.course_id, item.question_id, submitted, isCorrect ? 1 : 0]);
+
+        } else if (item.question_type === 'assignment') {
+          // Check if solved successfully in submissions
+          const passSubmission = await new Promise((resolve) => {
+            db.get(`
+              SELECT is_correct FROM submissions 
+              WHERE user_id = ? AND type = 'assignment' AND reference_id = ? AND is_correct = 1
+              LIMIT 1
+            `, [userId, item.question_id], (e, r) => resolve(r));
+          });
+
+          if (passSubmission && passSubmission.is_correct === 1) {
+            score++;
+          } else {
+            // Log as incorrect submission if not solved
+            db.run(`
+              INSERT INTO submissions (user_id, course_id, type, reference_id, submitted_answer, is_correct)
+              VALUES (?, ?, 'assignment', ?, ?, 0)
+            `, [userId, assessment.course_id, item.question_id, submitted || '', 0]);
+          }
+        }
+      }
+
+      // Check for disqualification (e.g. excessive tab switching > 15 times)
+      const status = (tab_switches && parseInt(tab_switches) > 15) ? 'disqualified' : 'completed';
+
+      // Insert result
+      db.run(`
+        INSERT INTO assessment_submissions (user_id, assessment_id, score, total_questions, tab_switch_count, time_spent, status)
+        VALUES (?, ?, ?, ?, ?, ?, ?)
+      `, [userId, assessmentId, score, totalQuestions, tab_switches || 0, time_spent || 0, status], function(err) {
+        if (err) return res.status(500).json({ error: 'Failed to save exam results.' });
+        res.json({
+          success: true,
+          score,
+          totalQuestions,
+          status,
+          submissionId: this.lastID
         });
       });
     });
