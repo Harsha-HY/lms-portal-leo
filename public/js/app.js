@@ -23,6 +23,20 @@ let historySubmissions = [];
 let historyLectures = [];
 let selectedStudentId = null;
 
+// Active workspace coding tab monitoring
+let workspaceCodingTabSwitches = 0;
+let activeWorkspaceSubtab = 'video';
+
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'hidden') {
+    const modal = document.getElementById('video-modal');
+    if (modal && modal.style.display === 'block' && activeWorkspaceSubtab === 'coding') {
+      workspaceCodingTabSwitches++;
+      alert(`⚠️ Anti-Cheat Warning: Tab change detected during Coding Challenge!\nYour tab switch logs are being recorded: ${workspaceCodingTabSwitches} switches.`);
+    }
+  }
+});
+
 window.changeTheme = function(themeName) {
   document.body.classList.remove('theme-dark-slate', 'theme-cream-white', 'theme-cyberpunk', 'theme-ocean');
   document.body.classList.add(themeName);
@@ -973,6 +987,7 @@ function loadYTVideo(rawYoutubeId, lectureId) {
 
 // Switch between tabs in Milestone Workspace
 window.switchModalTab = function(tabName) {
+  activeWorkspaceSubtab = tabName;
   const tabs = ['video', 'notes', 'quiz', 'coding'];
   tabs.forEach(t => {
     const btn = document.getElementById(`tab-btn-${t}`);
@@ -1007,6 +1022,8 @@ window.switchModalTab = function(tabName) {
 
 window.playLecture = async function(lectureId, title, courseTitle, videoUrl) {
   activeModalLectureId = lectureId;
+  activeWorkspaceSubtab = 'video';
+  workspaceCodingTabSwitches = 0;
   const modal = document.getElementById('video-modal');
   const iframe = document.getElementById('video-iframe');
   const player = document.getElementById('video-player');
@@ -1164,13 +1181,34 @@ window.playLecture = async function(lectureId, title, courseTitle, videoUrl) {
 
     // Render progressive hints if defined
     const hintsWrapper = document.getElementById('modal-coding-hints-wrapper');
-    const hintText = document.getElementById('modal-coding-hint1-text');
-    const hintDetails = document.getElementById('coding-hint1-details');
+    const hint1Text = document.getElementById('modal-coding-hint1-text');
+    const hint1Details = document.getElementById('coding-hint1-details');
+    const hint2Text = document.getElementById('modal-coding-hint2-text');
+    const hint2Details = document.getElementById('coding-hint2-details');
+
+    let hasHints = false;
+    
     if (task.hint && task.hint.trim() !== '') {
       hintsWrapper.style.display = 'block';
-      hintText.textContent = task.hint;
-      if (hintDetails) hintDetails.open = false; // Reset to collapsed state
+      hint1Details.style.display = 'block';
+      hint1Text.textContent = task.hint;
+      hint1Details.open = false;
+      hasHints = true;
     } else {
+      hint1Details.style.display = 'none';
+    }
+
+    if (task.hint_2 && task.hint_2.trim() !== '') {
+      hintsWrapper.style.display = 'block';
+      hint2Details.style.display = 'block';
+      hint2Text.textContent = task.hint_2;
+      hint2Details.open = false;
+      hasHints = true;
+    } else {
+      hint2Details.style.display = 'none';
+    }
+
+    if (!hasHints) {
       hintsWrapper.style.display = 'none';
     }
 
@@ -1461,7 +1499,8 @@ window.submitModalSolution = async function() {
       reference_id: activeModalAssignment.id,
       submitted_answer: code,
       is_correct: isCorrect ? 1 : 0,
-      ai_feedback: isCorrect ? 'Great implementation! Code matches assertions.' : 'Failed test assertions. Need modifications.'
+      ai_feedback: isCorrect ? 'Great implementation! Code matches assertions.' : 'Failed test assertions. Need modifications.',
+      tab_switches: workspaceCodingTabSwitches
     });
 
     if (res.error) {
@@ -2072,7 +2111,7 @@ function selectAuditStudent(studentId) {
     codingBody.innerHTML = '';
     const studentCoding = studentSubmissions.filter(s => s.type === 'assignment');
     if (studentCoding.length === 0) {
-      codingBody.innerHTML = `<tr><td colspan="4" style="text-align: center; color: var(--text-muted); font-style: italic;">No coding challenge submissions recorded.</td></tr>`;
+      codingBody.innerHTML = `<tr><td colspan="6" style="text-align: center; color: var(--text-muted); font-style: italic;">No coding challenge submissions recorded.</td></tr>`;
     } else {
       studentCoding.forEach(sub => {
         const row = document.createElement('tr');
@@ -2080,11 +2119,18 @@ function selectAuditStudent(studentId) {
           ? `<span style="color: #34d399; font-weight: bold;">✓ Solved & Passed</span>`
           : `<span style="color: #f87171; font-weight: bold;">✗ Incomplete / Failed</span>`;
         
+        const tabSwitches = sub.tab_switches || 0;
+        const encodedCode = encodeURIComponent(sub.submitted_answer || '');
+
         row.innerHTML = `
           <td style="font-size: 0.8rem; color: var(--text-muted); max-width: 140px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${sub.lecture_title || ''}">${sub.lecture_title || 'N/A'}</td>
           <td style="font-weight: 700; color: var(--text-main);">${sub.title}</td>
           <td><span class="lecture-badge badge-blue" style="font-size: 0.65rem; text-transform: uppercase;">${sub.correct_or_lang}</span></td>
+          <td style="font-weight: 700; text-align: center; color: ${tabSwitches > 0 ? '#ef4444' : 'var(--text-muted)'};">${tabSwitches} switches</td>
           <td>${isCorrectText}</td>
+          <td style="text-align: center;">
+            <button class="btn btn-primary" onclick="viewAuditCandidateCode('${encodedCode}', '${sub.title.replace(/'/g, "\\'")}')" style="padding: 0.25rem 0.5rem; font-size: 0.7rem; font-weight: bold;">View Code</button>
+          </td>
         `;
         codingBody.appendChild(row);
       });
@@ -2520,6 +2566,7 @@ async function handleCreateAssignment(e) {
   const title = document.getElementById('assign-title').value;
   const description = document.getElementById('assign-desc').value;
   const hint = document.getElementById('assign-hint').value;
+  const hint_2 = document.getElementById('assign-hint-2').value;
   const language = document.getElementById('assign-lang').value;
   const boilerplate_code = document.getElementById('assign-boilerplate').value;
   const inputVal = document.getElementById('assign-input').value.trim();
@@ -2539,6 +2586,7 @@ async function handleCreateAssignment(e) {
       title,
       description,
       hint,
+      hint_2,
       language,
       boilerplate_code,
       test_cases,
@@ -3093,7 +3141,8 @@ window.submitSolution = async function() {
       reference_id: activeStudentAssignment.id,
       submitted_answer: code,
       is_correct: isCorrect ? 1 : 0,
-      ai_feedback: isCorrect ? 'Excellent job! Code satisfies all automated unit tests.' : 'Some assertions or compile-time checks failed. Review and re-submit.'
+      ai_feedback: isCorrect ? 'Excellent job! Code satisfies all automated unit tests.' : 'Some assertions or compile-time checks failed. Review and re-submit.',
+      tab_switches: workspaceCodingTabSwitches
     });
 
     if (res.error) {
@@ -3521,6 +3570,7 @@ window.hideWorkspaceAddAssignmentForm = function() {
   document.getElementById('w-assign-title').value = '';
   document.getElementById('w-assign-desc').value = '';
   document.getElementById('w-assign-hint').value = '';
+  document.getElementById('w-assign-hint-2').value = '';
   document.getElementById('w-assign-boilerplate').value = '';
   document.getElementById('w-assign-input').value = '';
   document.getElementById('w-assign-output').value = '';
@@ -3533,6 +3583,7 @@ window.saveWorkspaceAssignment = async function() {
   const title = document.getElementById('w-assign-title').value.trim();
   const desc = document.getElementById('w-assign-desc').value.trim();
   const hint = document.getElementById('w-assign-hint').value.trim();
+  const hint_2 = document.getElementById('w-assign-hint-2').value.trim();
   const lang = document.getElementById('w-assign-lang').value;
   const boilerplate = document.getElementById('w-assign-boilerplate').value.trim();
   const inputVal = document.getElementById('w-assign-input').value.trim();
@@ -3554,6 +3605,7 @@ window.saveWorkspaceAssignment = async function() {
       boilerplate_code: boilerplate,
       test_cases: JSON.stringify(testCases),
       hint: hint,
+      hint_2: hint_2,
       order_index: 1
     });
 
@@ -4900,4 +4952,22 @@ window.reportVideoProgress = async function(lectureId, watchedSeconds) {
   } catch (err) {
     console.error(err);
   }
+};
+
+window.viewAuditCandidateCode = function(encodedCode, title) {
+  const code = decodeURIComponent(encodedCode);
+  const modal = document.createElement('div');
+  modal.className = 'modal-overlay';
+  modal.style.cssText = 'display: flex; align-items: center; justify-content: center; z-index: 3000; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.7); padding: 0.5rem;';
+  
+  modal.innerHTML = `
+    <div class="modal-content" style="max-width: 650px; width: 95%; background: var(--bg-card); border: 1px solid var(--card-border); border-radius: var(--radius-md); padding: 1.5rem; display: flex; flex-direction: column; gap: 1rem; text-align: left; box-shadow: 0 10px 25px rgba(0,0,0,0.5);">
+      <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--card-border); padding-bottom: 0.5rem;">
+        <h4 style="margin: 0; color: var(--text-main); font-size: 1.1rem;">Submitted Solution: ${title}</h4>
+        <button class="btn btn-logout" onclick="this.closest('.modal-overlay').remove()" style="padding: 0.2rem 0.6rem; font-size: 0.75rem;">Close</button>
+      </div>
+      <pre style="background: #0c1017; border: 1px solid var(--card-border); padding: 1rem; border-radius: var(--radius-sm); font-family: monospace; font-size: 0.85rem; color: #c9d1d9; white-space: pre-wrap; max-height: 380px; overflow-y: auto; margin: 0;">${code}</pre>
+    </div>
+  `;
+  document.body.appendChild(modal);
 };

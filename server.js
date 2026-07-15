@@ -220,6 +220,14 @@ function initializeDatabase() {
       // Ignored if column already exists
     });
 
+    db.run(`ALTER TABLE assignments ADD COLUMN hint_2 TEXT`, (err) => {
+      // Ignored if column already exists
+    });
+
+    db.run(`ALTER TABLE submissions ADD COLUMN tab_switches INTEGER DEFAULT 0`, (err) => {
+      // Ignored if column already exists
+    });
+
     // 10. XP Settings table
     db.run(`CREATE TABLE IF NOT EXISTS xp_settings (
       key TEXT PRIMARY KEY,
@@ -710,7 +718,7 @@ app.get('/api/admin/student-history', requireAdminOrFaculty, (req, res) => {
     JOIN courses c ON c.id = e.course_id
   `;
   const querySubmissions = `
-    SELECT s.user_id, s.type, s.reference_id, s.submitted_answer, s.is_correct, s.created_at,
+    SELECT s.user_id, s.type, s.reference_id, s.submitted_answer, s.is_correct, s.created_at, s.tab_switches,
            CASE 
              WHEN s.type = 'mcq' THEN m.question 
              ELSE a.title 
@@ -852,13 +860,13 @@ app.get('/api/courses/:courseId/assignments', requireLogin, (req, res) => {
 
 app.post('/api/courses/:courseId/assignments', requireAdminOrFaculty, (req, res) => {
   const courseId = req.params.courseId;
-  const { lecture_id, title, description, language, boilerplate_code, test_cases, hint, order_index } = req.body;
+  const { lecture_id, title, description, language, boilerplate_code, test_cases, hint, hint_2, order_index } = req.body;
   if (!title || !description) {
     return res.status(400).json({ error: 'Title and description are required.' });
   }
   db.run(
-    `INSERT INTO assignments (course_id, lecture_id, title, description, language, boilerplate_code, test_cases, hint, order_index) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-    [courseId, lecture_id || null, title, description, language || 'javascript', boilerplate_code || '', test_cases || '[]', hint || '', order_index || 1],
+    `INSERT INTO assignments (course_id, lecture_id, title, description, language, boilerplate_code, test_cases, hint, hint_2, order_index) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    [courseId, lecture_id || null, title, description, language || 'javascript', boilerplate_code || '', test_cases || '[]', hint || '', hint_2 || '', order_index || 1],
     function (err) {
       if (err) return res.status(500).json({ error: 'Failed to create assignment.' });
       res.status(201).json({ success: true, assignmentId: this.lastID });
@@ -916,7 +924,7 @@ app.get('/api/submissions', requireLogin, (req, res) => {
 
 app.post('/api/submissions', requireLogin, (req, res) => {
   const userId = req.session.userId;
-  const { course_id, type, reference_id, submitted_answer, is_correct, ai_feedback } = req.body;
+  const { course_id, type, reference_id, submitted_answer, is_correct, ai_feedback, tab_switches } = req.body;
   if (!course_id || !type || !reference_id) {
     return res.status(400).json({ error: 'Missing required submission fields.' });
   }
@@ -927,9 +935,9 @@ app.post('/api/submissions', requireLogin, (req, res) => {
       [userId, course_id, type, reference_id],
       () => {
         db.run(
-          `INSERT INTO submissions (user_id, course_id, type, reference_id, submitted_answer, is_correct, ai_feedback) 
-           VALUES (?, ?, ?, ?, ?, ?, ?)`,
-          [userId, course_id, type, reference_id, submitted_answer || '', is_correct ? 1 : 0, ai_feedback || ''],
+          `INSERT INTO submissions (user_id, course_id, type, reference_id, submitted_answer, is_correct, ai_feedback, tab_switches) 
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+          [userId, course_id, type, reference_id, submitted_answer || '', is_correct ? 1 : 0, ai_feedback || '', tab_switches || 0],
           function (err) {
             if (err) return res.status(500).json({ error: 'Failed to save submission.' });
             res.json({ success: true, submissionId: this.lastID });

@@ -386,8 +386,12 @@
                     <textarea class="form-input" id="w-assign-desc" style="height: 80px;" placeholder="Write clear instructions, inputs, expected outputs, and constraints..."></textarea>
                   </div>
                   <div class="form-group" style="margin-bottom: 0.75rem;">
-                    <label class="form-label" style="font-size: 0.75rem;">Hint (Optional)</label>
-                    <textarea class="form-input" id="w-assign-hint" style="height: 50px;" placeholder="Provide a hint for the student..."></textarea>
+                    <label class="form-label" style="font-size: 0.75rem;">Hint 1 (Optional)</label>
+                    <textarea class="form-input" id="w-assign-hint" style="height: 50px;" placeholder="Provide logical hints..."></textarea>
+                  </div>
+                  <div class="form-group" style="margin-bottom: 0.75rem;">
+                    <label class="form-label" style="font-size: 0.75rem;">Hint 2 (Optional)</label>
+                    <textarea class="form-input" id="w-assign-hint-2" style="height: 50px;" placeholder="Provide code setup hints..."></textarea>
                   </div>
                   <div class="form-group" style="margin-bottom: 0.75rem;">
                     <label class="form-label" style="font-size: 0.75rem;">Boilerplate Code</label>
@@ -502,9 +506,13 @@
                    <textarea class="form-input" id="assign-desc" style="height: 100px; resize: none;" required placeholder="Write instructions, expected outputs, and constraints..."></textarea>
                  </div>
                  <div class="form-group">
-                   <label class="form-label" for="assign-hint">Assignment Hint (Optional)</label>
-                   <textarea class="form-input" id="assign-hint" style="height: 60px; resize: none;" placeholder="Provide a hint for the student..."></textarea>
-                 </div>
+                    <label class="form-label" for="assign-hint">Assignment Hint 1 (Optional)</label>
+                    <textarea class="form-input" id="assign-hint" style="height: 60px; resize: none;" placeholder="Provide a general logical hint..."></textarea>
+                  </div>
+                  <div class="form-group">
+                    <label class="form-label" for="assign-hint-2">Assignment Hint 2 (Optional)</label>
+                    <textarea class="form-input" id="assign-hint-2" style="height: 60px; resize: none;" placeholder="Provide a detailed code direction hint..."></textarea>
+                  </div>
                  <div class="form-group">
                    <label class="form-label" for="assign-lang">Programming Language</label>
                    <select class="form-input" id="assign-lang" required>
@@ -874,7 +882,9 @@
                         <th>Lecture</th>
                         <th>Coding Assignment Title</th>
                         <th>Language</th>
+                        <th>Tab Switches</th>
                         <th>Result Status</th>
+                        <th style="width: 100px; text-align: center;">Action</th>
                       </tr>
                     </thead>
                     <tbody id="audit-coding-logs-body">
