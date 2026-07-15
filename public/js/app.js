@@ -2712,13 +2712,6 @@ async function handleCreateMCQ(e) {
 
   const courseId = document.getElementById('mcq-course-select').value;
   const lectureId = document.getElementById('mcq-lecture-select').value;
-  const question = document.getElementById('mcq-question').value;
-  const option_a = document.getElementById('mcq-opt-a').value;
-  const option_b = document.getElementById('mcq-opt-b').value;
-  const option_c = document.getElementById('mcq-opt-c').value;
-  const option_d = document.getElementById('mcq-opt-d').value;
-  const correct_option = document.getElementById('mcq-correct').value;
-  const explanation = document.getElementById('mcq-explanation').value;
   const order_index = document.getElementById('mcq-order').value;
 
   if (!courseId) {
@@ -2726,28 +2719,52 @@ async function handleCreateMCQ(e) {
     return;
   }
 
-  try {
-    const res = await API.createMCQ(courseId, {
-      lecture_id: lectureId || null,
-      question,
-      option_a,
-      option_b,
-      option_c,
-      option_d,
-      correct_option,
-      explanation,
-      order_index
-    });
+  const cards = document.querySelectorAll('.workspace-dynamic-mcq-card');
+  if (cards.length === 0) {
+    if (alerts) alerts.innerHTML = `<div class="alert alert-error">Please add at least one dynamic MCQ block first using the ➕ button!</div>`;
+    return;
+  }
 
-    if (res.error) {
-      if (alerts) alerts.innerHTML = `<div class="alert alert-error">${res.error}</div>`;
-    } else {
-      if (alerts) alerts.innerHTML = `<div class="alert alert-success">✓ MCQ created successfully.</div>`;
-      e.target.reset();
+  if (alerts) alerts.innerHTML = `<div class="alert alert-info">Publishing ${cards.length} questions...</div>`;
+
+  try {
+    let successCount = 0;
+    for (const card of cards) {
+      const question = card.querySelector('.dynamic-mcq-q').value;
+      const option_a = card.querySelector('.dynamic-mcq-a').value;
+      const option_b = card.querySelector('.dynamic-mcq-b').value;
+      const option_c = card.querySelector('.dynamic-mcq-c').value;
+      const option_d = card.querySelector('.dynamic-mcq-d').value;
+      const correct_option = card.querySelector('.dynamic-mcq-correct').value;
+      const explanation = card.querySelector('.dynamic-mcq-explanation').value;
+
+      const res = await API.createMCQ(courseId, {
+        lecture_id: lectureId || null,
+        question,
+        option_a,
+        option_b,
+        option_c,
+        option_d,
+        correct_option,
+        explanation: explanation || 'Milestone MCQ',
+        order_index: parseInt(order_index) || 1
+      });
+
+      if (!res.error) {
+        successCount++;
+      }
+    }
+
+    if (successCount > 0) {
+      if (alerts) alerts.innerHTML = `<div class="alert alert-success">✓ Published ${successCount} MCQ questions successfully!</div>`;
+      document.getElementById('mcqs-dynamic-container').innerHTML = '';
       loadAdminMCQs();
+    } else {
+      if (alerts) alerts.innerHTML = `<div class="alert alert-error">Failed to publish practice quiz questions.</div>`;
     }
   } catch (err) {
     console.error(err);
+    if (alerts) alerts.innerHTML = `<div class="alert alert-error">Failed to publish questions.</div>`;
   }
 }
 
@@ -4970,4 +4987,76 @@ window.viewAuditCandidateCode = function(encodedCode, title) {
     </div>
   `;
   document.body.appendChild(modal);
+};
+
+let workspaceMCQCounter = 0;
+
+window.addWorkspaceDynamicMCQBlock = function() {
+  const container = document.getElementById('mcqs-dynamic-container');
+  if (!container) return;
+
+  const index = workspaceMCQCounter++;
+  const card = document.createElement('div');
+  card.className = 'workspace-dynamic-mcq-card';
+  card.id = `workspace-mcq-block-${index}`;
+  card.style.cssText = 'background: rgba(255,255,255,0.02); border: 1px dashed var(--card-border); border-radius: var(--radius-sm); padding: 1rem; display: flex; flex-direction: column; gap: 0.75rem; position: relative;';
+
+  card.innerHTML = `
+    <button type="button" class="btn btn-delete" onclick="removeWorkspaceDynamicMCQBlock(${index})" 
+            style="position: absolute; top: 0.75rem; right: 0.75rem; padding: 0.2rem 0.5rem; font-size: 0.7rem; font-weight: bold;">Remove</button>
+    <div style="font-weight: 700; font-size: 0.8rem; color: var(--primary); text-align: left;">NEW MCQ QUESTION #${container.children.length + 1}</div>
+    
+    <div class="form-group" style="margin: 0; text-align: left;">
+      <label class="form-label" style="font-size: 0.75rem;">Question Prompt</label>
+      <textarea class="form-input dynamic-mcq-q" style="height: 55px; resize: none; font-size: 0.8rem;" required placeholder="e.g. Which of the following is linear?"></textarea>
+    </div>
+
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem;">
+      <div class="form-group" style="margin: 0; text-align: left;">
+        <label class="form-label" style="font-size: 0.7rem;">Option A</label>
+        <input class="form-input dynamic-mcq-a" type="text" style="padding: 0.35rem 0.5rem; font-size: 0.8rem;" required placeholder="Option A">
+      </div>
+      <div class="form-group" style="margin: 0; text-align: left;">
+        <label class="form-label" style="font-size: 0.7rem;">Option B</label>
+        <input class="form-input dynamic-mcq-b" type="text" style="padding: 0.35rem 0.5rem; font-size: 0.8rem;" required placeholder="Option B">
+      </div>
+      <div class="form-group" style="margin: 0; text-align: left;">
+        <label class="form-label" style="font-size: 0.7rem;">Option C</label>
+        <input class="form-input dynamic-mcq-c" type="text" style="padding: 0.35rem 0.5rem; font-size: 0.8rem;" required placeholder="Option C">
+      </div>
+      <div class="form-group" style="margin: 0; text-align: left;">
+        <label class="form-label" style="font-size: 0.7rem;">Option D</label>
+        <input class="form-input dynamic-mcq-d" type="text" style="padding: 0.35rem 0.5rem; font-size: 0.8rem;" required placeholder="Option D">
+      </div>
+    </div>
+
+    <div class="form-group" style="margin: 0; text-align: left; max-width: 150px;">
+      <label class="form-label" style="font-size: 0.75rem;">Right Option</label>
+      <select class="form-input dynamic-mcq-correct" style="padding: 0.35rem 0.5rem; font-size: 0.8rem;" required>
+        <option value="A">Option A</option>
+        <option value="B">Option B</option>
+        <option value="C">Option C</option>
+        <option value="D">Option D</option>
+      </select>
+    </div>
+
+    <div class="form-group" style="margin: 0; text-align: left;">
+      <label class="form-label" style="font-size: 0.75rem;">Explanation (Optional)</label>
+      <textarea class="form-input dynamic-mcq-explanation" style="height: 45px; resize: none; font-size: 0.8rem;" placeholder="Explain solution details..."></textarea>
+    </div>
+  `;
+  container.appendChild(card);
+};
+
+window.removeWorkspaceDynamicMCQBlock = function(index) {
+  const card = document.getElementById(`workspace-mcq-block-${index}`);
+  if (card) card.remove();
+  
+  const container = document.getElementById('mcqs-dynamic-container');
+  if (container) {
+    Array.from(container.children).forEach((child, idx) => {
+      const header = child.querySelector('div');
+      if (header) header.textContent = `NEW MCQ QUESTION #${idx + 1}`;
+    });
+  }
 };

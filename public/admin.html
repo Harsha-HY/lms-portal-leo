@@ -590,48 +590,23 @@
                </div>
 
                <!-- 1. Manual Form -->
-               <form id="form-mcq-manual" onsubmit="handleCreateMCQ(event)" class="auth-form">
-                 <div class="form-group">
-                   <label class="form-label" for="mcq-question">Question Prompt</label>
-                   <textarea class="form-input" id="mcq-question" style="height: 80px; resize: none;" required placeholder="e.g. Which algorithm does DNS use?"></textarea>
-                 </div>
-                 <div class="form-group" style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem;">
-                   <div>
-                     <label class="form-label" for="mcq-opt-a">Option A</label>
-                     <input class="form-input" type="text" id="mcq-opt-a" required placeholder="Option A">
-                   </div>
-                   <div>
-                     <label class="form-label" for="mcq-opt-b">Option B</label>
-                     <input class="form-input" type="text" id="mcq-opt-b" required placeholder="Option B">
-                   </div>
-                   <div>
-                     <label class="form-label" for="mcq-opt-c">Option C</label>
-                     <input class="form-input" type="text" id="mcq-opt-c" required placeholder="Option C">
-                   </div>
-                   <div>
-                     <label class="form-label" for="mcq-opt-d">Option D</label>
-                     <input class="form-input" type="text" id="mcq-opt-d" required placeholder="Option D">
-                   </div>
-                 </div>
-                 <div class="form-group">
-                   <label class="form-label" for="mcq-correct">Correct Option</label>
-                   <select class="form-input" id="mcq-correct" required>
-                     <option value="A">Option A</option>
-                     <option value="B">Option B</option>
-                     <option value="C">Option C</option>
-                     <option value="D">Option D</option>
-                   </select>
-                 </div>
-                 <div class="form-group">
-                   <label class="form-label" for="mcq-explanation">Explanation / Solution Details</label>
-                   <textarea class="form-input" id="mcq-explanation" style="height: 60px; resize: none;" placeholder="Explain why this choice is correct..."></textarea>
-                 </div>
-                 <div class="form-group">
-                   <label class="form-label" for="mcq-order">Sequence Order Index</label>
-                   <input class="form-input" type="number" id="mcq-order" value="1" min="1">
-                 </div>
-                 <button type="submit" class="btn btn-primary btn-block">Add Quiz Question</button>
-               </form>
+                <form id="form-mcq-manual" onsubmit="handleCreateMCQ(event)" class="auth-form">
+                  <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 1rem; border-bottom: 1px solid var(--card-border); padding-bottom: 0.5rem;">
+                    <strong style="font-size: 0.85rem; color: var(--text-main);">Manual MCQs List</strong>
+                    <button type="button" class="btn btn-primary" onclick="addWorkspaceDynamicMCQBlock()" style="padding: 0.25rem 0.65rem; font-size: 0.75rem; font-weight: bold;">➕ Add MCQ</button>
+                  </div>
+                  
+                  <div id="mcqs-dynamic-container" style="display: flex; flex-direction: column; gap: 1rem; margin-bottom: 1.25rem;">
+                    <!-- Appended dynamic MCQ blocks here -->
+                  </div>
+
+                  <div class="form-group">
+                    <label class="form-label" for="mcq-order">Sequence Order Index</label>
+                    <input class="form-input" type="number" id="mcq-order" value="1" min="1">
+                  </div>
+                  
+                  <button type="submit" class="btn btn-primary btn-block" style="font-weight: bold; padding: 0.6rem;">Publish Practice Quizzes</button>
+                </form>
 
                <!-- 2. AI Generator -->
                <div id="form-mcq-ai" class="auth-form" style="display: none;">
