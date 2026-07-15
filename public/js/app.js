@@ -4517,6 +4517,11 @@ window.submitExam = async function() {
 
     document.getElementById('exam-overlay').style.display = 'none';
     
+    if (res.error) {
+      showStudentSuccessModal('Submission Error', res.error, false);
+      return;
+    }
+    
     if (res.status === 'disqualified') {
       showStudentSuccessModal('OA Disqualified', `❌ You have been disqualified from this Online Assessment due to excessive tab switching (${examTabSwitches} tab switches logged).`, false);
     } else {

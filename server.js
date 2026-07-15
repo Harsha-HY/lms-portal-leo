@@ -1386,32 +1386,37 @@ app.post('/api/student/assessments/:id/submit', requireLogin, (req, res) => {
       return res.status(403).json({ error: 'Access denied: Enroll in course first.' });
     }
 
-    // Load questions to compare
-    db.all(`SELECT question_type, question_id FROM assessment_questions WHERE assessment_id = ?`, [assessmentId], async (err, linkedItems) => {
-      if (err) return res.status(500).json({ error: 'Failed to grade assessment.' });
+    // Check if already submitted
+    db.get(`SELECT id FROM assessment_submissions WHERE user_id = ? AND assessment_id = ?`, [userId, assessmentId], (err, existing) => {
+      if (existing) {
+        return res.status(400).json({ error: 'You have already submitted thisTimed Assessment. It can only be submitted once.' });
+      }
 
-      let score = 0;
-      const totalQuestions = linkedItems.length;
+      // Load questions to compare
+      db.all(`SELECT question_type, question_id FROM assessment_questions WHERE assessment_id = ?`, [assessmentId], async (err, linkedItems) => {
+        if (err) return res.status(500).json({ error: 'Failed to grade assessment.' });
 
-      for (const item of linkedItems) {
-        const answerKey = `${item.question_type}_${item.question_id}`;
-        const submitted = answers[answerKey];
+        let score = 0;
+        const totalQuestions = linkedItems.length;
 
-        if (item.question_type === 'mcq') {
-          const dbMCQ = await new Promise((resolve) => {
-            db.get(`SELECT correct_option FROM mcqs WHERE id = ?`, [item.question_id], (e, r) => resolve(r));
-          });
-          
-          const isCorrect = dbMCQ && dbMCQ.correct_option === submitted;
-          if (isCorrect) score++;
+        for (const item of linkedItems) {
+          const answerKey = `${item.question_type}_${item.question_id}`;
+          const submitted = answers[answerKey];
 
-          // Also record into standard submissions log so progress counts
-          db.run(`
-            INSERT INTO submissions (user_id, course_id, type, reference_id, submitted_answer, is_correct)
-            VALUES (?, ?, 'mcq', ?, ?, ?)
-          `, [userId, assessment.course_id, item.question_id, submitted, isCorrect ? 1 : 0]);
+          if (item.question_type === 'mcq') {
+            const dbMCQ = await new Promise((resolve) => {
+              db.get(`SELECT correct_option FROM mcqs WHERE id = ?`, [item.question_id], (e, r) => resolve(r));
+            });
+            
+            const isCorrect = dbMCQ && dbMCQ.correct_option === submitted;
+            if (isCorrect) score++;
 
-        } else if (item.question_type === 'assignment') {
+            // Also record into standard submissions log so progress counts
+            db.run(`
+              INSERT INTO submissions (user_id, course_id, type, reference_id, submitted_answer, is_correct)
+              VALUES (?, ?, 'mcq', ?, ?, ?)
+            `, [userId, assessment.course_id, item.question_id, submitted || '', isCorrect ? 1 : 0]);
+          } else if (item.question_type === 'assignment') {
           // Check if solved successfully in submissions
           const passSubmission = await new Promise((resolve) => {
             db.get(`
@@ -1452,6 +1457,7 @@ app.post('/api/student/assessments/:id/submit', requireLogin, (req, res) => {
       });
     });
   });
+});
 });
 
 // Student: Review assessment results and answers
