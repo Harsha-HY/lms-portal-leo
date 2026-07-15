@@ -183,6 +183,10 @@ function switchTab(tabId, button) {
     subEl.textContent = 'Test your conceptual knowledge and review detailed AI explanations.';
     populateStudentCourseSelects('student-quiz-course-select');
     loadStudentQuizzes();
+  } else if (tabId === 'leaderboard') {
+    titleEl.textContent = 'Global Standings & Leaderboard';
+    subEl.textContent = 'Compete with peers, earn XP, and track your rank standings.';
+    loadStudentLeaderboard();
   }
 }
 
@@ -236,6 +240,11 @@ function switchAdminTab(tabId, button) {
     titleEl.textContent = 'Student Activity Analytics Hub';
     subEl.textContent = 'Audit student daily login streaks, interactive GitHub-style contribution heatmaps, and course metrics.';
     loadStudentHistoryData();
+  } else if (tabId === 'xp') {
+    titleEl.textContent = 'Gamification XP Settings & Leaderboard';
+    subEl.textContent = 'Configure reward points multipliers for curriculum events and audit student standings.';
+    loadAdminXPConfigs();
+    loadAdminLeaderboard();
   } else if (tabId === 'access') {
     titleEl.textContent = 'Grant Portal Access';
     subEl.textContent = 'Setup login credentials for observers, instructors, and faculty.';
@@ -251,6 +260,9 @@ function switchAdminTab(tabId, button) {
    STUDENT PORTAL LOGIC (dashboard.html)
    ========================================================================== */
 
+let leaderboardCache = [];
+let xpMultipliers = { video_xp: 50, mcq_xp: 20, assignment_xp: 100 };
+
 // Fetch student progress and course lectures mapping
 async function loadDashboardData() {
   try {
@@ -263,6 +275,14 @@ async function loadDashboardData() {
     let loginLogs = [];
     try {
       loginLogs = await API.getLoginLogs();
+    } catch (e) {
+      console.error(e);
+    }
+
+    try {
+      const lbData = await API.getLeaderboard();
+      leaderboardCache = lbData.leaderboard || [];
+      xpMultipliers = lbData.multipliers || xpMultipliers;
     } catch (e) {
       console.error(e);
     }
@@ -597,11 +617,15 @@ function updateProgressWidgets() {
   const avatarWidget = document.getElementById('profile-widget-avatar');
   const dateWidget = document.getElementById('profile-widget-date');
   
-  const calcPoints = totalCompletedCount * 100 + 18023;
-  const calcCoins = totalCompletedCount * 10 + 200;
+  const studentEntry = leaderboardCache.find(s => s.id === currentUser.id);
+  const calcPoints = studentEntry ? studentEntry.xp : 0;
+  const calcCoins = studentEntry ? (studentEntry.mcqs_solved * 10 + studentEntry.assignments_solved * 50) : 0;
+  const studentRank = studentEntry ? `Rank #${studentEntry.rank} Standing` : 'Daily Rank -- >';
 
   if (pointsVal) pointsVal.textContent = calcPoints.toLocaleString();
   if (coinsVal) coinsVal.textContent = calcCoins.toLocaleString();
+  const rankWidget = document.getElementById('profile-widget-rank');
+  if (rankWidget) rankWidget.textContent = studentRank;
   if (nameWidget) nameWidget.textContent = currentUser.name;
   if (avatarWidget) {
     const initials = currentUser.name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
@@ -3908,4 +3932,141 @@ window.selectAnalyticsStudent = function(studentId) {
     'analytics-streak-val',
     'analytics-actions-val'
   );
+};
+
+window.loadStudentLeaderboard = async function() {
+  const body = document.getElementById('student-leaderboard-body');
+  if (!body) return;
+  body.innerHTML = '<tr><td colspan="4" style="text-align: center; color: var(--text-muted);">Loading standings...</td></tr>';
+
+  try {
+    const res = await API.getLeaderboard();
+    const list = res.leaderboard || [];
+    body.innerHTML = '';
+
+    if (list.length === 0) {
+      body.innerHTML = '<tr><td colspan="4" style="text-align: center; color: var(--text-muted); font-style: italic;">No student activity recorded yet.</td></tr>';
+      return;
+    }
+
+    list.forEach(s => {
+      const isMe = s.id === currentUser.id;
+      const tr = document.createElement('tr');
+      tr.style.cssText = isMe 
+        ? 'background: rgba(59, 130, 246, 0.08); border: 1px solid var(--primary); font-weight: 700;'
+        : 'border-bottom: 1px solid var(--card-border);';
+
+      // Medal indicator
+      let rankText = s.rank;
+      if (s.rank === 1) rankText = '🥇 <span style="color:#fbbf24; font-weight:900;">1st</span>';
+      else if (s.rank === 2) rankText = '🥈 <span style="color:#cbd5e1; font-weight:900;">2nd</span>';
+      else if (s.rank === 3) rankText = '🥉 <span style="color:#d97706; font-weight:900;">3rd</span>';
+
+      // Course badges
+      const courseBadges = s.courses.length > 0 
+        ? s.courses.map(c => `<span class="lecture-badge badge-blue" style="font-size: 0.65rem; margin-right: 0.25rem;">${c}</span>`).join('')
+        : '<span style="color: var(--text-muted); font-size: 0.8rem; font-style: italic;">No active enrollments</span>';
+
+      tr.innerHTML = `
+        <td style="padding: 1rem; font-size: 1rem; font-weight: 800;">${rankText}</td>
+        <td style="padding: 1rem;">
+          <div style="display: flex; align-items: center; gap: 0.75rem;">
+            <div class="user-avatar" style="width: 32px; height: 32px; font-size: 0.8rem; background: ${isMe ? 'var(--primary)' : 'rgba(255,255,255,0.05)'};">${s.name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase()}</div>
+            <div style="display: flex; flex-direction: column; text-align: left;">
+              <span style="color: var(--text-main); font-weight: 700;">${s.name} ${isMe ? ' (You)' : ''}</span>
+              <span style="font-size: 0.75rem; color: var(--text-muted);">${s.email}</span>
+            </div>
+          </div>
+        </td>
+        <td style="padding: 1rem; text-align: left;">${courseBadges}</td>
+        <td style="padding: 1rem; text-align: right; font-weight: 900; color: var(--primary-light); font-size: 1.05rem;">${s.xp.toLocaleString()} XP</td>
+      `;
+      body.appendChild(tr);
+    });
+  } catch (err) {
+    console.error(err);
+    body.innerHTML = '<tr><td colspan="4" style="text-align: center; color: var(--text-muted);">Failed to load standings.</td></tr>';
+  }
+};
+
+/* ==========================================================================
+   ADMIN GAMIFICATION XP & LEADERBOARD WORKSPACE CONTROLLERS
+   ========================================================================== */
+window.loadAdminXPConfigs = async function() {
+  try {
+    const config = await API.getXPSettings();
+    document.getElementById('xp-video-input').value = config.video_xp || 50;
+    document.getElementById('xp-mcq-input').value = config.mcq_xp || 20;
+    document.getElementById('xp-assignment-input').value = config.assignment_xp || 100;
+  } catch (err) {
+    console.error('Failed to load admin XP config:', err);
+  }
+};
+
+window.saveXPMultipliers = async function(event) {
+  event.preventDefault();
+  const video_xp = document.getElementById('xp-video-input').value;
+  const mcq_xp = document.getElementById('xp-mcq-input').value;
+  const assignment_xp = document.getElementById('xp-assignment-input').value;
+
+  try {
+    const res = await API.saveXPSettings(video_xp, mcq_xp, assignment_xp);
+    if (res.error) {
+      showAdminAlert('admin-xp-alerts', 'error', res.error);
+    } else {
+      showAdminAlert('admin-xp-alerts', 'success', 'XP configuration multipliers updated successfully!');
+      await loadAdminLeaderboard();
+    }
+  } catch (err) {
+    console.error(err);
+    showAdminAlert('admin-xp-alerts', 'error', 'Failed to update XP multipliers.');
+  }
+};
+
+window.loadAdminLeaderboard = async function() {
+  const body = document.getElementById('admin-xp-leaderboard-body');
+  if (!body) return;
+  body.innerHTML = '<tr><td colspan="4" style="text-align: center; color: var(--text-muted);">Loading standings...</td></tr>';
+
+  try {
+    const res = await API.getLeaderboard();
+    const list = res.leaderboard || [];
+    body.innerHTML = '';
+
+    if (list.length === 0) {
+      body.innerHTML = '<tr><td colspan="4" style="text-align: center; color: var(--text-muted); font-style: italic;">No student activity logs recorded yet.</td></tr>';
+      return;
+    }
+
+    list.forEach(s => {
+      const tr = document.createElement('tr');
+      tr.style.borderBottom = '1px solid var(--card-border)';
+      
+      // Medal rank highlight
+      let rankBadge = s.rank;
+      if (s.rank === 1) rankBadge = '🥇';
+      else if (s.rank === 2) rankBadge = '🥈';
+      else if (s.rank === 3) rankBadge = '🥉';
+
+      const courseBadges = s.courses.length > 0 
+        ? s.courses.map(c => `<span class="lecture-badge badge-blue" style="font-size: 0.65rem; margin-right: 0.25rem;">${c}</span>`).join('')
+        : '<span style="color: var(--text-muted); font-size: 0.75rem; font-style: italic;">No courses taken</span>';
+
+      tr.innerHTML = `
+        <td style="padding: 0.75rem; font-weight: 800; font-size: 1rem; text-align: center;">${rankBadge}</td>
+        <td style="padding: 0.75rem;">
+          <div style="display: flex; flex-direction: column; gap: 0.1rem; text-align: left;">
+            <span style="font-weight: 700; color: var(--text-main);">${s.name}</span>
+            <span style="font-size: 0.75rem; color: var(--text-muted);">${s.email}</span>
+          </div>
+        </td>
+        <td style="padding: 0.75rem; text-align: left;">${courseBadges}</td>
+        <td style="padding: 0.75rem; text-align: right; font-weight: 900; color: var(--primary-light);">${s.xp.toLocaleString()} XP</td>
+      `;
+      body.appendChild(tr);
+    });
+  } catch (err) {
+    console.error(err);
+    body.innerHTML = '<tr><td colspan="4" style="text-align: center; color: var(--text-muted);">Failed to query leaderboard data.</td></tr>';
+  }
 };

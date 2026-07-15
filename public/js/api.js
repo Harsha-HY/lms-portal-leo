@@ -91,6 +91,10 @@ const API = {
     return this.fetchJSON('/api/student/logs');
   },
 
+  getLeaderboard() {
+    return this.fetchJSON('/api/leaderboard');
+  },
+
   updateProgress(lectureId, completed) {
     return this.fetchJSON('/api/student/progress', {
       method: 'POST',
@@ -120,6 +124,17 @@ const API = {
 
   getTrackingData() {
     return this.fetchJSON('/api/admin/tracking');
+  },
+
+  getXPSettings() {
+    return this.fetchJSON('/api/admin/xp-settings');
+  },
+
+  saveXPSettings(video_xp, mcq_xp, assignment_xp) {
+    return this.fetchJSON('/api/admin/xp-settings', {
+      method: 'POST',
+      body: JSON.stringify({ video_xp, mcq_xp, assignment_xp })
+    });
   },
 
   getStudentHistory() {

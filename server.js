@@ -216,6 +216,21 @@ function initializeDatabase() {
       // Ignored if column already exists
     });
 
+    // 10. XP Settings table
+    db.run(`CREATE TABLE IF NOT EXISTS xp_settings (
+      key TEXT PRIMARY KEY,
+      value INTEGER
+    )`, () => {
+      // Seed default multipliers if empty
+      db.get(`SELECT COUNT(*) as count FROM xp_settings`, [], (err, row) => {
+        if (!err && row && row.count === 0) {
+          db.run(`INSERT INTO xp_settings (key, value) VALUES ('video_xp', 50)`);
+          db.run(`INSERT INTO xp_settings (key, value) VALUES ('mcq_xp', 20)`);
+          db.run(`INSERT INTO xp_settings (key, value) VALUES ('assignment_xp', 100)`);
+        }
+      });
+    });
+
     // Database setup is complete
   });
 }
@@ -999,6 +1014,102 @@ app.post('/api/admin/generate-ai-mcq', requireAdminOrFaculty, (req, res) => {
   ];
 
   res.json({ success: true, mcqs });
+});
+
+/* ==========================================================================
+   GAMIFICATION XP & LEADERBOARD ENDPOINTS
+   ========================================================================== */
+
+// Get current XP settings
+app.get('/api/admin/xp-settings', requireLogin, (req, res) => {
+  db.all(`SELECT key, value FROM xp_settings`, [], (err, rows) => {
+    if (err) return res.status(500).json({ error: 'Failed to fetch XP settings.' });
+    const settings = {};
+    rows.forEach(r => { settings[r.key] = r.value; });
+    res.json(settings);
+  });
+});
+
+// Update XP settings (Admin only)
+app.post('/api/admin/xp-settings', requireAdmin, (req, res) => {
+  const { video_xp, mcq_xp, assignment_xp } = req.body;
+  if (video_xp === undefined || mcq_xp === undefined || assignment_xp === undefined) {
+    return res.status(400).json({ error: 'Missing XP setting multipliers.' });
+  }
+
+  db.serialize(() => {
+    db.run(`INSERT OR REPLACE INTO xp_settings (key, value) VALUES ('video_xp', ?)`, [parseInt(video_xp)]);
+    db.run(`INSERT OR REPLACE INTO xp_settings (key, value) VALUES ('mcq_xp', ?)`, [parseInt(mcq_xp)]);
+    db.run(`INSERT OR REPLACE INTO xp_settings (key, value) VALUES ('assignment_xp', ?)`, [parseInt(assignment_xp)], (err) => {
+      if (err) return res.status(500).json({ error: 'Failed to save XP settings.' });
+      res.json({ success: true });
+    });
+  });
+});
+
+// Get global leaderboard (computes XP on the fly for all students)
+app.get('/api/leaderboard', requireLogin, (req, res) => {
+  // 1. Fetch XP multipliers
+  db.all(`SELECT key, value FROM xp_settings`, [], (err, settingsRows) => {
+    if (err) return res.status(500).json({ error: 'Failed to fetch XP settings.' });
+    const multipliers = {};
+    settingsRows.forEach(r => { multipliers[r.key] = r.value; });
+
+    const videoXP = multipliers.video_xp || 50;
+    const mcqXP = multipliers.mcq_xp || 20;
+    const assignmentXP = multipliers.assignment_xp || 100;
+
+    // 2. Fetch all students statistics
+    const queryStats = `
+      SELECT u.id, u.name, u.email,
+             (SELECT COUNT(*) FROM progress WHERE user_id = u.id AND completed = 1) as videos_completed,
+             (SELECT COUNT(*) FROM submissions WHERE user_id = u.id AND type = 'mcq' AND is_correct = 1) as mcqs_solved,
+             (SELECT COUNT(*) FROM submissions WHERE user_id = u.id AND type = 'assignment' AND is_correct = 1) as assignments_solved
+      FROM users u 
+      WHERE u.role = 'student'
+    `;
+
+    db.all(queryStats, [], (err, students) => {
+      if (err) return res.status(500).json({ error: 'Failed to query student statistics.' });
+
+      // 3. Fetch enrollments
+      const queryEnrollments = `
+        SELECT e.user_id, c.title as course_title 
+        FROM enrollments e 
+        JOIN courses c ON c.id = e.course_id
+      `;
+
+      db.all(queryEnrollments, [], (err, enrollments) => {
+        if (err) return res.status(500).json({ error: 'Failed to query student enrollments.' });
+
+        // Map course names to students
+        const userCoursesMap = {};
+        enrollments.forEach(e => {
+          if (!userCoursesMap[e.user_id]) userCoursesMap[e.user_id] = [];
+          userCoursesMap[e.user_id].push(e.course_title);
+        });
+
+        // Compute total XP
+        students.forEach(s => {
+          s.xp = (s.videos_completed * videoXP) + (s.mcqs_solved * mcqXP) + (s.assignments_solved * assignmentXP);
+          s.courses = userCoursesMap[s.id] || [];
+        });
+
+        // Sort descending by XP
+        students.sort((a, b) => b.xp - a.xp);
+
+        // Assign Rank
+        students.forEach((s, index) => {
+          s.rank = index + 1;
+        });
+
+        res.json({
+          multipliers,
+          leaderboard: students
+        });
+      });
+    });
+  });
 });
 
 // Start Server

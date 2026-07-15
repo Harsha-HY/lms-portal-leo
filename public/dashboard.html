@@ -261,6 +261,13 @@
           Practice MCQs
         </button>
 
+        <button class="sidebar-link" onclick="switchTab('leaderboard', this)">
+          <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+          </svg>
+          Leaderboard
+        </button>
+
         <!-- Apps Section Header -->
         <span style="font-size: 0.7rem; font-weight: 700; color: var(--text-muted); letter-spacing: 0.08em; padding: 1.5rem 1.25rem 0.25rem 1.25rem; text-transform: uppercase;">
           Apps
@@ -669,6 +676,32 @@
           <!-- Empty state quizzes -->
           <div id="quiz-empty-state" class="admin-panel-card" style="margin-top: 0; display: flex; align-items: center; justify-content: center; height: 100%; color: var(--text-muted); font-style: italic; font-size: 0.95rem;">
             Select a quiz question from the sidebar list to begin your practice challenge.
+          </div>
+        </div>
+      </section>
+
+      <!-- 6. LEADERBOARD TAB VIEW -->
+      <section id="tab-leaderboard" class="tab-view" style="display: none;">
+        <div class="card-section" style="max-width: 900px; margin: 0 auto;">
+          <div class="section-heading" style="margin-bottom: 1.5rem;">
+            <h2>Global Standings & Leaderboard</h2>
+            <p style="color: var(--text-muted); font-size: 0.9rem; margin-top: 0.25rem;">Compete with peers, solve coding milestones, and reach the top of the curriculum ranks!</p>
+          </div>
+
+          <div class="admin-panel-card" style="padding: 1.5rem; overflow-x: auto; width: 100%; border-radius: var(--radius-md);">
+            <table class="data-table" style="width: 100%; font-size: 0.95rem; border-collapse: collapse;">
+              <thead>
+                <tr style="border-bottom: 2px solid var(--card-border); text-align: left;">
+                  <th style="padding: 0.85rem 1rem; width: 80px;">Rank</th>
+                  <th style="padding: 0.85rem 1rem;">Candidate Name</th>
+                  <th style="padding: 0.85rem 1rem;">Enrolled Learning Cycles</th>
+                  <th style="padding: 0.85rem 1rem; text-align: right; width: 120px;">Total XP</th>
+                </tr>
+              </thead>
+              <tbody id="student-leaderboard-body">
+                <!-- Populated dynamically via JS -->
+              </tbody>
+            </table>
           </div>
         </div>
       </section>
