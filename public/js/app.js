@@ -4623,10 +4623,11 @@ window.createMockExam = async function(event) {
   const duration = document.getElementById('exam-duration-input').value;
 
   const checkedBoxes = document.querySelectorAll('input[name="exam_question_key"]:checked');
-  const dynamicCards = document.querySelectorAll('.exam-dynamic-mcq-card');
+  const dynamicMCQCards = document.querySelectorAll('.exam-dynamic-mcq-card');
+  const dynamicCodingCards = document.querySelectorAll('.exam-dynamic-coding-card');
 
-  if (checkedBoxes.length === 0 && dynamicCards.length === 0) {
-    showAdminAlert('admin-exams-alerts', 'error', 'Please select at least one task or construct a dynamic MCQ question!');
+  if (checkedBoxes.length === 0 && dynamicMCQCards.length === 0 && dynamicCodingCards.length === 0) {
+    showAdminAlert('admin-exams-alerts', 'error', 'Please select at least one task or construct a dynamic MCQ or coding question!');
     return;
   }
 
@@ -4636,7 +4637,7 @@ window.createMockExam = async function(event) {
   });
 
   const dynamic_mcqs = [];
-  dynamicCards.forEach(card => {
+  dynamicMCQCards.forEach(card => {
     const question = card.querySelector('.dynamic-mcq-q').value;
     const option_a = card.querySelector('.dynamic-mcq-a').value;
     const option_b = card.querySelector('.dynamic-mcq-b').value;
@@ -4646,13 +4647,37 @@ window.createMockExam = async function(event) {
     dynamic_mcqs.push({ question, option_a, option_b, option_c, option_d, correct_option });
   });
 
+  const dynamic_assignments = [];
+  dynamicCodingCards.forEach(card => {
+    const cTitle = card.querySelector('.dynamic-code-title').value;
+    const cDesc = card.querySelector('.dynamic-code-desc').value;
+    const cLang = card.querySelector('.dynamic-code-lang').value;
+    const cBoiler = card.querySelector('.dynamic-code-boilerplate').value;
+    const cHint = card.querySelector('.dynamic-code-hint').value;
+    const cHint2 = card.querySelector('.dynamic-code-hint-2').value;
+    const cInput = card.querySelector('.dynamic-code-input').value;
+    const cOutput = card.querySelector('.dynamic-code-output').value;
+    
+    dynamic_assignments.push({
+      title: cTitle,
+      description: cDesc,
+      language: cLang,
+      boilerplate_code: cBoiler,
+      hint: cHint,
+      hint_2: cHint2,
+      test_case_input: cInput,
+      expected_output: cOutput
+    });
+  });
+
   try {
     const res = await API.createAdminAssessment({
       course_id: parseInt(course_id),
       title,
       duration: parseInt(duration),
       questions,
-      dynamic_mcqs
+      dynamic_mcqs,
+      dynamic_assignments
     });
 
     if (res.error) {
@@ -4841,6 +4866,92 @@ window.removeExamDynamicMCQBlock = function(index) {
     Array.from(container.children).forEach((child, idx) => {
       const header = child.querySelector('div');
       if (header) header.textContent = `NEW MCQ QUESTION #${idx + 1}`;
+    });
+  }
+};
+
+let dynamicCodingCounter = 0;
+
+window.addExamDynamicCodingBlock = function() {
+  const container = document.getElementById('exam-dynamic-questions-container');
+  if (!container) return;
+
+  const index = dynamicCodingCounter++;
+  const card = document.createElement('div');
+  card.className = 'exam-dynamic-coding-card';
+  card.id = `dynamic-coding-block-${index}`;
+  card.style.cssText = 'background: rgba(255,255,255,0.02); border: 1px dashed #10b981; border-radius: var(--radius-sm); padding: 1rem; display: flex; flex-direction: column; gap: 0.75rem; position: relative;';
+
+  card.innerHTML = `
+    <button type="button" class="btn btn-delete" onclick="removeExamDynamicCodingBlock(${index})" 
+            style="position: absolute; top: 0.75rem; right: 0.75rem; padding: 0.2rem 0.5rem; font-size: 0.7rem; font-weight: bold;">Remove</button>
+    <div style="font-weight: 700; font-size: 0.8rem; color: #34d399; text-align: left;">NEW CODING TASK #${container.children.length + 1}</div>
+    
+    <div class="form-group" style="margin: 0; text-align: left;">
+      <label class="form-label" style="font-size: 0.75rem;">Coding Challenge Title</label>
+      <input class="form-input dynamic-code-title" type="text" style="padding: 0.35rem 0.5rem; font-size: 0.8rem;" required placeholder="e.g. Reverse a String">
+    </div>
+
+    <div class="form-group" style="margin: 0; text-align: left;">
+      <label class="form-label" style="font-size: 0.75rem;">Instructions / Description</label>
+      <textarea class="form-input dynamic-code-desc" style="height: 50px; resize: none; font-size: 0.8rem;" required placeholder="Write instructions for the candidate..."></textarea>
+    </div>
+
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem;">
+      <div class="form-group" style="margin: 0; text-align: left;">
+        <label class="form-label" style="font-size: 0.7rem;">Target Language</label>
+        <select class="form-input dynamic-code-lang" style="padding: 0.35rem 0.5rem; font-size: 0.8rem;" required>
+          <option value="javascript">JavaScript</option>
+          <option value="python">Python 3</option>
+          <option value="sql">SQLite SQL</option>
+          <option value="html">HTML Render</option>
+        </select>
+      </div>
+      <div class="form-group" style="margin: 0; text-align: left;">
+        <label class="form-label" style="font-size: 0.7rem;">Test Case Input</label>
+        <input class="form-input dynamic-code-input" type="text" style="padding: 0.35rem 0.5rem; font-size: 0.8rem;" required placeholder="e.g. 'hello'">
+      </div>
+    </div>
+
+    <div class="form-group" style="margin: 0; text-align: left;">
+      <label class="form-label" style="font-size: 0.75rem;">Expected Output (Assertion value matching)</label>
+      <input class="form-input dynamic-code-output" type="text" style="padding: 0.35rem 0.5rem; font-size: 0.8rem;" required placeholder="e.g. 'olleh'">
+    </div>
+
+    <div class="form-group" style="margin: 0; text-align: left;">
+      <label class="form-label" style="font-size: 0.75rem;">Boilerplate Starter Code</label>
+      <textarea class="form-input dynamic-code-boilerplate" style="height: 55px; resize: none; font-family: monospace; font-size: 0.8rem;" required placeholder="function solve(str) {\n  return '';\n}"></textarea>
+    </div>
+
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem;">
+      <div class="form-group" style="margin: 0; text-align: left;">
+        <label class="form-label" style="font-size: 0.7rem;">Hint 1 (Logical Intuition)</label>
+        <input class="form-input dynamic-code-hint" type="text" style="padding: 0.35rem 0.5rem; font-size: 0.8rem;" placeholder="e.g. Split, reverse, then join.">
+      </div>
+      <div class="form-group" style="margin: 0; text-align: left;">
+        <label class="form-label" style="font-size: 0.7rem;">Hint 2 (Implementation details)</label>
+        <input class="form-input dynamic-code-hint-2" type="text" style="padding: 0.35rem 0.5rem; font-size: 0.8rem;" placeholder="e.g. Return str.split('').reverse().join('')">
+      </div>
+    </div>
+  `;
+  container.appendChild(card);
+};
+
+window.removeExamDynamicCodingBlock = function(index) {
+  const card = document.getElementById(`dynamic-coding-block-${index}`);
+  if (card) card.remove();
+  
+  const container = document.getElementById('exam-dynamic-questions-container');
+  if (container) {
+    Array.from(container.children).forEach((child, idx) => {
+      const header = child.querySelector('div');
+      if (header) {
+        if (child.classList.contains('exam-dynamic-coding-card')) {
+          header.textContent = `NEW CODING TASK #${idx + 1}`;
+        } else {
+          header.textContent = `NEW MCQ QUESTION #${idx + 1}`;
+        }
+      }
     });
   }
 };

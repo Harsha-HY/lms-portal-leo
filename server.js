@@ -1204,13 +1204,14 @@ app.get('/api/admin/assessments', requireLogin, (req, res) => {
 
 // Admin: Create a timed mock assessment
 app.post('/api/admin/assessments', requireAdminOrFaculty, (req, res) => {
-  const { title, course_id, duration, questions, dynamic_mcqs } = req.body;
+  const { title, course_id, duration, questions, dynamic_mcqs, dynamic_assignments } = req.body;
   if (!title || !course_id || !duration) {
     return res.status(400).json({ error: 'Missing assessment parameters.' });
   }
 
   const finalQuestions = Array.isArray(questions) ? [...questions] : [];
   const mcqsToCreate = Array.isArray(dynamic_mcqs) ? dynamic_mcqs : [];
+  const assignmentsToCreate = Array.isArray(dynamic_assignments) ? dynamic_assignments : [];
 
   db.serialize(async () => {
     try {
@@ -1230,6 +1231,26 @@ app.post('/api/admin/assessments', requireAdminOrFaculty, (req, res) => {
           });
         });
         finalQuestions.push({ type: 'mcq', id: newMcqId });
+      }
+
+      // 2. Create dynamic Coding Tasks
+      for (const a of assignmentsToCreate) {
+        if (!a.title || !a.description || !a.expected_output) {
+          continue; // skip incomplete fields
+        }
+
+        const testCasesJson = JSON.stringify([{ input: a.test_case_input || '', output: a.expected_output }]);
+
+        const newAssignId = await new Promise((resolve, reject) => {
+          db.run(`
+            INSERT INTO assignments (course_id, title, description, language, boilerplate_code, test_cases, hint, hint_2, order_index)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1)
+          `, [course_id, a.title, a.description, a.language || 'javascript', a.boilerplate_code || '', testCasesJson, a.hint || '', a.hint_2 || ''], function(err) {
+            if (err) reject(err);
+            else resolve(this.lastID);
+          });
+        });
+        finalQuestions.push({ type: 'assignment', id: newAssignId });
       }
 
       if (finalQuestions.length === 0) {

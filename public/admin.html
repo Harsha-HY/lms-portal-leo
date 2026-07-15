@@ -1030,11 +1030,14 @@
                 </div>
               </div>
 
-              <!-- Dynamic MCQ builder section -->
+              <!-- Dynamic MCQ & Coding Challenge builder section -->
               <div style="border-top: 1px solid var(--card-border); padding-top: 1rem; margin-top: 0.5rem; display: flex; flex-direction: column; gap: 0.75rem;">
                 <div style="display: flex; align-items: center; justify-content: space-between;">
-                  <strong style="font-size: 0.85rem; color: var(--text-main);">Create Dynamic MCQs</strong>
-                  <button type="button" class="btn btn-primary" onclick="addExamDynamicMCQBlock()" style="padding: 0.25rem 0.65rem; font-size: 0.75rem; font-weight: bold;">➕ Add MCQ</button>
+                  <strong style="font-size: 0.85rem; color: var(--text-main);">Create Dynamic Tasks</strong>
+                  <div style="display: flex; gap: 0.35rem;">
+                    <button type="button" class="btn btn-primary" onclick="addExamDynamicMCQBlock()" style="padding: 0.25rem 0.5rem; font-size: 0.7rem; font-weight: bold; background: rgba(59,130,246,0.15); border: 1px solid #3b82f6; color: #60a5fa;">➕ Add MCQ</button>
+                    <button type="button" class="btn btn-primary" onclick="addExamDynamicCodingBlock()" style="padding: 0.25rem 0.5rem; font-size: 0.7rem; font-weight: bold; background: rgba(16,185,129,0.15); border: 1px solid #10b981; color: #34d399;">➕ Add Coding</button>
+                  </div>
                 </div>
                 <div id="exam-dynamic-questions-container" style="display: flex; flex-direction: column; gap: 0.75rem;">
                   <!-- Dynamic questions cards appended here -->
