@@ -5671,17 +5671,18 @@ window.loadStudentCallbackPanel = async function() {
       document.getElementById('callback-bio').value = bioText;
     }
 
-    // 2. Populate Course drop-down with enrolled courses
+    // 2. Populate Course drop-down with all courses offered
     const courseSelect = document.getElementById('callback-course');
     if (courseSelect) {
       courseSelect.innerHTML = '';
       
-      // Get currently enrolled courses
-      const enrolledCourses = allCourses.filter(c => enrolledCourseIds.includes(c.id));
-      if (enrolledCourses.length === 0) {
-        courseSelect.innerHTML = `<option value="" disabled selected>No enrolled courses yet</option>`;
-      } else {
-        enrolledCourses.forEach(course => {
+      const generalOpt = document.createElement('option');
+      generalOpt.value = "General Inquiry / Other";
+      generalOpt.textContent = "General Inquiry / Other";
+      courseSelect.appendChild(generalOpt);
+
+      if (allCourses && allCourses.length > 0) {
+        allCourses.forEach(course => {
           const opt = document.createElement('option');
           opt.value = course.title;
           opt.textContent = course.title;
