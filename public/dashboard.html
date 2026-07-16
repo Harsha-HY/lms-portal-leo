@@ -1339,6 +1339,33 @@
     </div>
   </div>
 
+  <!-- Courses Spotlight Pop-up Modal (After Onboarding Completion) -->
+  <div class="modal-overlay" id="onboarding-courses-popup-modal" style="display: none; align-items: center; justify-content: center; z-index: 3000; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.85); padding: 1.5rem; text-align: left; overflow-y: auto;">
+    <div class="modal-content" style="max-width: 820px; width: 100%; background: var(--bg-card); border: 2px solid var(--primary); border-radius: var(--radius-md); padding: 2rem; display: flex; flex-direction: column; gap: 1.5rem; box-shadow: var(--shadow-lg); position: relative; animation: modalFadeIn 0.35s cubic-bezier(0.25, 0.8, 0.25, 1);">
+      
+      <!-- Close button (x mark) -->
+      <button onclick="closeOnboardingCoursesModal()" style="position: absolute; top: 1.25rem; right: 1.25rem; background: transparent; border: none; font-size: 1.5rem; color: var(--text-muted); cursor: pointer; transition: color 0.2s; font-weight: bold;" onmouseover="this.style.color='var(--accent)'" onmouseout="this.style.color='var(--text-muted)'">&times;</button>
+      
+      <!-- Modal Header -->
+      <div style="border-bottom: 1px solid var(--card-border); padding-bottom: 0.75rem; text-align: left;">
+        <span style="font-size: 0.7rem; font-weight: 800; text-transform: uppercase; color: var(--primary); letter-spacing: 0.05em; display: block;">Leo Access Curriculum Spotlight</span>
+        <h3 style="margin: 0; font-size: 1.45rem; color: var(--text-main); font-weight: 800;">Available Learning Specializations</h3>
+        <p style="color: var(--text-muted); font-size: 0.85rem; margin-top: 0.25rem;">Explore courses we provide! Click on "Syllabus Details" to explore the roadmap or "Enroll" to begin learning.</p>
+      </div>
+
+      <!-- Courses Grid list -->
+      <div id="onboarding-courses-list-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 1.25rem; max-height: 420px; overflow-y: auto; padding-right: 0.25rem; width: 100%;">
+        <!-- Populated dynamically via JS -->
+      </div>
+      
+      <!-- Modal Footer -->
+      <div style="border-top: 1px solid var(--card-border); padding-top: 1rem; display: flex; justify-content: flex-end;">
+        <button class="btn btn-primary" onclick="closeOnboardingCoursesModal()" style="padding: 0.5rem 1.5rem; font-weight: bold; border-radius: var(--radius-sm);">Go to Dashboard</button>
+      </div>
+
+    </div>
+  </div>
+
   <script src="https://www.youtube.com/iframe_api"></script>
   <script src="js/api.js"></script>
   <script src="js/app.js"></script>

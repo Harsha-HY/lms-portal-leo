@@ -5480,7 +5480,7 @@ window.handleOnboardingSubmit = async function(e) {
   try {
     await API.updateStudentProfile(payload);
     document.getElementById('onboarding-wizard-modal').style.display = 'none';
-    showStudentSuccessModal('Profile Initialized', '🎉 Onboarding complete! Welcome to your personalized dashboard.', true);
+    triggerOnboardingCoursesSpotlight();
   } catch (err) {
     alerts.innerHTML = `<div class="alert alert-error">${err.message || 'Failed to save profile.'}</div>`;
   }
@@ -5744,4 +5744,84 @@ window.selectDetailsStudent = async function(studentId) {
     console.error('Failed to query candidate detail profile card:', err);
     levelBadge.innerText = 'Error';
   }
+};
+
+/* ==========================================================================
+   ONBOARDING COURSES SPOTLIGHT POPUP MODAL CONTROLLERS
+   ========================================================================== */
+window.triggerOnboardingCoursesSpotlight = function() {
+  const container = document.getElementById('onboarding-courses-list-grid');
+  if (!container) return;
+  container.innerHTML = '';
+
+  allCourses.forEach(course => {
+    const isEnrolled = enrolledCourseIds.includes(course.id);
+
+    const card = document.createElement('div');
+    card.className = 'course-card';
+    card.style.cssText = 'background: var(--bg-card); border: 1px solid var(--card-border); border-radius: var(--radius-sm); overflow: hidden; display: flex; flex-direction: column; width: 100%;';
+    card.innerHTML = `
+      <div class="course-thumbnail" style="background-image: url('${course.thumbnail_url}'); height: 120px; background-size: cover; background-position: center; position: relative; width: 100%;">
+        <span class="course-category-tag" style="position: absolute; top: 0.5rem; left: 0.5rem; background: var(--primary); color: white; font-size: 0.7rem; font-weight: bold; padding: 0.15rem 0.4rem; border-radius: 4px;">${course.category}</span>
+      </div>
+      <div style="padding: 1rem; display: flex; flex-direction: column; gap: 0.5rem; flex: 1; text-align: left;">
+        <h4 style="margin: 0; font-size: 1rem; color: var(--text-main); font-weight: 800;">${course.title}</h4>
+        <p style="margin: 0; font-size: 0.8rem; color: var(--text-muted); line-height: 1.4; flex: 1;">${course.description || 'Access lectures and track progress.'}</p>
+        <div style="margin-top: 0.75rem; display: flex; gap: 0.5rem; justify-content: space-between; align-items: center; width: 100%;">
+          <button class="btn" style="padding: 0.4rem 0.75rem; font-size: 0.8rem; background: rgba(255,255,255,0.05); border: 1px solid var(--card-border); color: var(--text-main); font-weight: 700;" onclick="openCourseRoadmapModal(${course.id})">
+            Syllabus Details
+          </button>
+          
+          <div id="onb-enroll-container-${course.id}" style="display: flex; flex: 1; justify-content: flex-end;">
+            ${isEnrolled ? `
+              <button class="btn btn-success" style="padding: 0.4rem 0.75rem; font-size: 0.8rem; background: rgba(16, 185, 129, 0.15); border: 1px solid rgba(16, 185, 129, 0.3); color: var(--success); width: 100%; cursor: default; font-weight: 700;" disabled>
+                Enrolled
+              </button>
+            ` : `
+              <button class="btn btn-primary" style="padding: 0.4rem 0.75rem; font-size: 0.8rem; background: var(--sidebar-active); width: 100%;" onclick="enrollCourseFromOnboarding(${course.id})">
+                Enroll
+              </button>
+            `}
+          </div>
+        </div>
+      </div>
+    `;
+    container.appendChild(card);
+  });
+
+  document.getElementById('onboarding-courses-popup-modal').style.display = 'flex';
+};
+
+window.enrollCourseFromOnboarding = async function(courseId) {
+  try {
+    const res = await API.enrollInCourse(courseId);
+    if (res.error) {
+      alert('Enrollment failed: ' + res.error);
+      return;
+    }
+    
+    // Add to cache
+    if (!enrolledCourseIds.includes(courseId)) {
+      enrolledCourseIds.push(courseId);
+    }
+    
+    // Update button in popup dynamically
+    const container = document.getElementById(`onb-enroll-container-${courseId}`);
+    if (container) {
+      container.innerHTML = `
+        <button class="btn btn-success" style="padding: 0.4rem 0.75rem; font-size: 0.8rem; background: rgba(16, 185, 129, 0.15); border: 1px solid rgba(16, 185, 129, 0.3); color: var(--success); width: 100%; cursor: default; font-weight: 700;" disabled>
+          Enrolled
+        </button>
+      `;
+    }
+    
+    // Load dashboard data in background
+    loadDashboardData();
+  } catch (err) {
+    console.error('Error enrolling from onboarding popup:', err);
+  }
+};
+
+window.closeOnboardingCoursesModal = function() {
+  document.getElementById('onboarding-courses-popup-modal').style.display = 'none';
 };
