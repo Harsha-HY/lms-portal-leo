@@ -275,6 +275,13 @@
           Mock Exams
         </button>
 
+        <button class="sidebar-link" onclick="switchTab('profile', this)">
+          <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
+          </svg>
+          My Profile
+        </button>
+
         <!-- Apps Section Header -->
         <span style="font-size: 0.7rem; font-weight: 700; color: var(--text-muted); letter-spacing: 0.08em; padding: 1.5rem 1.25rem 0.25rem 1.25rem; text-transform: uppercase;">
           Apps
@@ -725,7 +732,160 @@
             <!-- Populated dynamically via JS -->
           </div>
         </div>
-      </section>
+  </section>
+
+  <!-- 8. MY PROFILE TAB VIEW -->
+  <section id="tab-profile" class="tab-view" style="display: none;">
+    <div class="card-section" style="max-width: 720px; margin: 0 auto; text-align: left;">
+      <div class="section-heading" style="margin-bottom: 1.5rem; border-bottom: 1px solid var(--card-border); padding-bottom: 0.75rem;">
+        <h2>My Profile & Credentials</h2>
+        <p style="color: var(--text-muted); font-size: 0.9rem; margin-top: 0.25rem;">Keep your educational credentials and professional portfolio profiles updated for placements.</p>
+      </div>
+
+      <div class="widget-card" style="padding: 2rem; display: flex; flex-direction: column; gap: 1.5rem; border-radius: var(--radius-md); align-items: stretch;">
+        <!-- Profile Avatar Header -->
+        <div style="display: flex; align-items: center; gap: 1.25rem; border-bottom: 1px solid var(--card-border); padding-bottom: 1.25rem;">
+          <div class="user-avatar" id="profile-panel-avatar" style="width: 55px; height: 55px; font-size: 1.5rem; background: var(--primary); color: white; display: flex; align-items: center; justify-content: center; border-radius: 50%; font-weight: bold;">U</div>
+          <div>
+            <h3 id="profile-panel-name" style="margin: 0; font-size: 1.25rem; color: var(--text-main); font-weight: 800;">Student Name</h3>
+            <span id="profile-panel-email" style="font-size: 0.85rem; color: var(--text-muted);">student@email.com</span>
+          </div>
+        </div>
+
+        <!-- Profile form -->
+        <form id="profile-update-form" onsubmit="handleSaveProfile(event)" style="display: flex; flex-direction: column; gap: 1.25rem;">
+          <!-- Onboarding Level Selection -->
+          <div class="form-group">
+            <label class="form-label" style="font-weight: 700;">Education Level</label>
+            <div style="display: flex; gap: 1rem; margin-top: 0.35rem;">
+              <label style="display: flex; align-items: center; gap: 0.5rem; color: var(--text-main); cursor: pointer; font-size: 0.9rem;">
+                <input type="radio" name="profile-edu-level" value="school" onclick="toggleProfileFormFields('school')" required> School (11th/12th)
+              </label>
+              <label style="display: flex; align-items: center; gap: 0.5rem; color: var(--text-main); cursor: pointer; font-size: 0.9rem;">
+                <input type="radio" name="profile-edu-level" value="college" onclick="toggleProfileFormFields('college')" required> College / University
+              </label>
+            </div>
+          </div>
+
+          <!-- Shared: Phone -->
+          <div class="form-group">
+            <label class="form-label" for="profile-phone">Mobile Phone Number</label>
+            <input class="form-input" type="text" id="profile-phone" placeholder="e.g. +91 9876543210" required>
+          </div>
+
+          <!-- SCHOOL SPECIFIC FIELDS -->
+          <div id="profile-school-group" style="display: none; flex-direction: column; gap: 1.25rem;">
+            <div class="form-group">
+              <label class="form-label" for="profile-school-name">School Name</label>
+              <input class="form-input" type="text" id="profile-school-name" placeholder="e.g. Kendriya Vidyalaya">
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="profile-school-grade">Current Grade / Class</label>
+              <select class="form-input" id="profile-school-grade">
+                <option value="11th Grade">11th Grade</option>
+                <option value="12th Grade">12th Grade</option>
+                <option value="Completed 12th">Completed 12th</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="profile-school-stream">Subject Stream</label>
+              <select class="form-input" id="profile-school-stream">
+                <option value="Science / MPC">Science / MPC (Math, Physics, Chemistry)</option>
+                <option value="Commerce">Commerce</option>
+                <option value="Arts / Humanities">Arts / Humanities</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- COLLEGE SPECIFIC FIELDS -->
+          <div id="profile-college-group" style="display: none; flex-direction: column; gap: 1.25rem;">
+            <div class="form-group">
+              <label class="form-label" for="profile-college-name">College / University Name</label>
+              <input class="form-input" type="text" id="profile-college-name" placeholder="e.g. IIT Madras">
+            </div>
+            <div class="grid-2" style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+              <div class="form-group">
+                <label class="form-label" for="profile-college-degree">Degree Program</label>
+                <select class="form-input" id="profile-college-degree">
+                  <option value="B.Tech">B.Tech / B.E.</option>
+                  <option value="BCA">BCA (Bachelor of Comp Applications)</option>
+                  <option value="MCA">MCA (Master of Comp Applications)</option>
+                  <option value="B.Sc">B.Sc / M.Sc</option>
+                  <option value="M.Tech">M.Tech / M.E.</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label class="form-label" for="profile-college-year">Current Year / Status</label>
+                <select class="form-input" id="profile-college-year">
+                  <option value="1st Year">1st Year</option>
+                  <option value="2nd Year">2nd Year</option>
+                  <option value="3rd Year">3rd Year</option>
+                  <option value="4th Year">4th Year</option>
+                  <option value="Graduated">Graduated</option>
+                </select>
+              </div>
+            </div>
+            <div class="grid-2" style="display: grid; grid-template-columns: 1.2fr 0.8fr; gap: 1rem;">
+              <div class="form-group">
+                <label class="form-label" for="profile-college-major">Major / Branch of Study</label>
+                <input class="form-input" type="text" id="profile-college-major" placeholder="e.g. Computer Science">
+              </div>
+              <div class="form-group">
+                <label class="form-label" for="profile-college-gpa">Current CGPA / %</label>
+                <input class="form-input" type="text" id="profile-college-gpa" placeholder="e.g. 9.1 CGPA">
+              </div>
+            </div>
+          </div>
+
+          <!-- Shared: Graduation Year -->
+          <div class="form-group">
+            <label class="form-label" for="profile-grad-year">Passing / Graduation Year</label>
+            <select class="form-input" id="profile-grad-year">
+              <option value="2024">2024</option>
+              <option value="2025">2025</option>
+              <option value="2026">2026</option>
+              <option value="2027">2027</option>
+              <option value="2028">2028</option>
+              <option value="2029">2029</option>
+              <option value="2030">2030</option>
+            </select>
+          </div>
+
+          <!-- Links & Portfolio Links -->
+          <div style="border-top: 1px solid var(--card-border); padding-top: 1rem; display: flex; flex-direction: column; gap: 1rem;">
+            <h4 style="font-size: 0.85rem; text-transform: uppercase; color: var(--primary); font-weight: 700; margin: 0;">Portfolio Links (Optional)</h4>
+            <div class="grid-2" style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+              <div class="form-group">
+                <label class="form-label" for="profile-github">GitHub Profile Link</label>
+                <input class="form-input" type="url" id="profile-github" placeholder="https://github.com/username">
+              </div>
+              <div class="form-group">
+                <label class="form-label" for="profile-linkedin">LinkedIn Profile Link</label>
+                <input class="form-input" type="url" id="profile-linkedin" placeholder="https://linkedin.com/in/username">
+              </div>
+            </div>
+          </div>
+
+          <!-- Resume Upload Panel -->
+          <div style="border-top: 1px solid var(--card-border); padding-top: 1rem;">
+            <h4 style="font-size: 0.85rem; text-transform: uppercase; color: var(--success); font-weight: 700; margin: 0 0 0.5rem 0;">Resume Upload (PDF)</h4>
+            <div style="display: flex; align-items: center; gap: 1rem;">
+              <input class="form-input" type="file" id="profile-resume-file" accept=".pdf" style="padding: 0.45rem;">
+              <button type="button" class="btn" style="padding: 0.6rem 1rem; background: rgba(255,255,255,0.05); border: 1px solid var(--card-border);" onclick="uploadProfileResumeFile()">Upload</button>
+            </div>
+            <div id="profile-resume-status" style="font-size: 0.8rem; color: var(--text-muted); margin-top: 0.35rem; font-style: italic;">
+              No resume attached yet.
+            </div>
+          </div>
+
+          <div id="profile-alerts" style="margin-top: 0.5rem;"></div>
+
+          <button type="submit" class="btn btn-primary" style="padding: 0.75rem; font-weight: bold; width: 100%; border-radius: var(--radius-sm); font-size: 0.95rem;">Save Profile</button>
+        </form>
+      </div>
+    </div>
+  </section>
+</section>
 
     </main>
   </div>
@@ -1009,6 +1169,171 @@
       <!-- Action Footer -->
       <div style="border-top: 1px solid var(--card-border); padding-top: 1rem; display: flex; justify-content: flex-end;">
         <button class="btn btn-primary" onclick="closeRoadmapModal()" style="padding: 0.5rem 1.5rem; font-weight: bold; border-radius: var(--radius-sm);">Get Started</button>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Student Onboarding Wizard Modal Overlay -->
+  <div class="modal-overlay" id="onboarding-wizard-modal" style="display: none; align-items: center; justify-content: center; z-index: 3000; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.85); padding: 1.5rem; text-align: left; overflow-y: auto;">
+    <div class="modal-content" style="max-width: 520px; width: 100%; background: var(--bg-card); border: 2px solid var(--primary); border-radius: var(--radius-md); padding: 2rem; display: flex; flex-direction: column; gap: 1.5rem; box-shadow: var(--shadow-lg); animation: modalFadeIn 0.35s cubic-bezier(0.25, 0.8, 0.25, 1);">
+      
+      <!-- Modal Header -->
+      <div style="border-bottom: 1px solid var(--card-border); padding-bottom: 0.75rem;">
+        <span style="font-size: 0.7rem; font-weight: 800; text-transform: uppercase; color: var(--primary); letter-spacing: 0.05em; display: block;">Setup Profile</span>
+        <h3 style="margin: 0; font-size: 1.25rem; color: var(--text-main); font-weight: 800;" id="onboarding-modal-title">Welcome to Leo Access!</h3>
+      </div>
+
+      <!-- STEP 1: GATEWAY EDUCATIONAL LEVEL SELECTION -->
+      <div id="onboarding-step-1" style="display: flex; flex-direction: column; gap: 1.25rem;">
+        <p style="margin: 0; color: var(--text-muted); font-size: 0.9rem; line-height: 1.45;">To customize your career roadmaps and referral tracks, please choose your current education level:</p>
+        
+        <div style="display: flex; flex-direction: column; gap: 0.75rem;">
+          <!-- School Option Button -->
+          <button type="button" class="btn" onclick="selectOnboardingLevel('school')" style="display: flex; align-items: center; justify-content: space-between; padding: 1rem 1.25rem; background: rgba(255,255,255,0.01); border: 1.5px solid var(--card-border); border-radius: var(--radius-sm); width: 100%; transition: all 0.2s;" onmouseover="this.style.borderColor='var(--primary)'" onmouseout="this.style.borderColor='var(--card-border)'">
+            <div style="display: flex; align-items: center; gap: 0.75rem; text-align: left;">
+              <span style="font-size: 1.75rem;">🏫</span>
+              <div>
+                <strong style="display: block; font-size: 0.95rem; color: var(--text-main);">School Student</strong>
+                <span style="font-size: 0.75rem; color: var(--text-muted);">11th Grade, 12th Grade or recently completed 12th</span>
+              </div>
+            </div>
+            <span style="font-size: 1.15rem; color: var(--primary); font-weight: 900;">&rarr;</span>
+          </button>
+
+          <!-- College Option Button -->
+          <button type="button" class="btn" onclick="selectOnboardingLevel('college')" style="display: flex; align-items: center; justify-content: space-between; padding: 1rem 1.25rem; background: rgba(255,255,255,0.01); border: 1.5px solid var(--card-border); border-radius: var(--radius-sm); width: 100%; transition: all 0.2s;" onmouseover="this.style.borderColor='var(--success)'" onmouseout="this.style.borderColor='var(--card-border)'">
+            <div style="display: flex; align-items: center; gap: 0.75rem; text-align: left;">
+              <span style="font-size: 1.75rem;">🎓</span>
+              <div>
+                <strong style="display: block; font-size: 0.95rem; color: var(--text-main);">College Student</strong>
+                <span style="font-size: 0.75rem; color: var(--text-muted);">Pursuing Degree (B.Tech, BCA, MCA, B.Sc) or Graduated</span>
+              </div>
+            </div>
+            <span style="font-size: 1.15rem; color: var(--success); font-weight: 900;">&rarr;</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- STEP 2: DYNAMIC DETAILS FORM -->
+      <div id="onboarding-step-2" style="display: none;">
+        <form id="onboarding-details-form" onsubmit="handleOnboardingSubmit(event)" style="display: flex; flex-direction: column; gap: 1.15rem;">
+          
+          <!-- Shared phone number -->
+          <div class="form-group">
+            <label class="form-label" for="onboarding-phone">Mobile Phone Number</label>
+            <input class="form-input" type="text" id="onboarding-phone" placeholder="e.g. +91 9876543210" required>
+          </div>
+
+          <!-- SCHOOL SPECIFIC FORM FIELDS -->
+          <div id="onboarding-school-fields" style="display: none; flex-direction: column; gap: 1.15rem;">
+            <div class="form-group">
+              <label class="form-label" for="onboarding-school-name">School / High School Name</label>
+              <input class="form-input" type="text" id="onboarding-school-name" placeholder="e.g. Kendriya Vidyalaya">
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="onboarding-school-grade">Current Grade / Status</label>
+              <select class="form-input" id="onboarding-school-grade">
+                <option value="11th Grade">11th Grade</option>
+                <option value="12th Grade">12th Grade</option>
+                <option value="Completed 12th">Completed 12th</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="onboarding-school-stream">Subject Stream</label>
+              <select class="form-input" id="onboarding-school-stream">
+                <option value="Science / MPC">Science / MPC (Math, Physics, Chemistry)</option>
+                <option value="Commerce">Commerce</option>
+                <option value="Arts / Humanities">Arts / Humanities</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- COLLEGE SPECIFIC FORM FIELDS -->
+          <div id="onboarding-college-fields" style="display: none; flex-direction: column; gap: 1.15rem;">
+            <div class="form-group">
+              <label class="form-label" for="onboarding-college-name">College / University Name</label>
+              <input class="form-input" type="text" id="onboarding-college-name" placeholder="e.g. IIT Madras">
+            </div>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem;">
+              <div class="form-group">
+                <label class="form-label" for="onboarding-college-degree">Degree Program</label>
+                <select class="form-input" id="onboarding-college-degree">
+                  <option value="B.Tech">B.Tech / B.E.</option>
+                  <option value="BCA">BCA (Bachelor of Comp Applications)</option>
+                  <option value="MCA">MCA (Master of Comp Applications)</option>
+                  <option value="B.Sc">B.Sc / M.Sc</option>
+                  <option value="M.Tech">M.Tech / M.E.</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label class="form-label" for="onboarding-college-year">Current Year</label>
+                <select class="form-input" id="onboarding-college-year">
+                  <option value="1st Year">1st Year</option>
+                  <option value="2nd Year">2nd Year</option>
+                  <option value="3rd Year">3rd Year</option>
+                  <option value="4th Year">4th Year</option>
+                  <option value="Graduated">Graduated</option>
+                </select>
+              </div>
+            </div>
+            <div style="display: grid; grid-template-columns: 1.2fr 0.8fr; gap: 0.75rem;">
+              <div class="form-group">
+                <label class="form-label" for="onboarding-college-major">Branch / Major of Study</label>
+                <input class="form-input" type="text" id="onboarding-college-major" placeholder="e.g. Computer Science">
+              </div>
+              <div class="form-group">
+                <label class="form-label" for="onboarding-college-gpa">Current CGPA / %</label>
+                <input class="form-input" type="text" id="onboarding-college-gpa" placeholder="e.g. 9.1 CGPA">
+              </div>
+            </div>
+            
+            <!-- Portfolio links for college -->
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem;">
+              <div class="form-group">
+                <label class="form-label" for="onboarding-github">GitHub Profile Link</label>
+                <input class="form-input" type="url" id="onboarding-github" placeholder="https://github.com/username">
+              </div>
+              <div class="form-group">
+                <label class="form-label" for="onboarding-linkedin">LinkedIn Profile Link</label>
+                <input class="form-input" type="url" id="onboarding-linkedin" placeholder="https://linkedin.com/in/username">
+              </div>
+            </div>
+
+            <!-- Resume upload for college -->
+            <div class="form-group" style="background: rgba(255,255,255,0.01); border: 1px dashed var(--card-border); padding: 0.75rem; border-radius: var(--radius-sm);">
+              <label class="form-label" for="onboarding-resume-file" style="font-size: 0.75rem; color: var(--success); display: block; margin-bottom: 0.25rem;">Upload Resume PDF (Optional)</label>
+              <div style="display: flex; gap: 0.5rem; align-items: center;">
+                <input type="file" id="onboarding-resume-file" accept=".pdf" style="font-size: 0.75rem; padding: 0.25rem; flex: 1;">
+                <button type="button" class="btn" style="padding: 0.4rem 0.75rem; font-size: 0.75rem; background: rgba(255,255,255,0.05); border: 1px solid var(--card-border);" onclick="uploadOnboardingResumeFile()">Upload</button>
+              </div>
+              <div id="onboarding-resume-status" style="font-size: 0.7rem; color: var(--text-muted); margin-top: 0.25rem; font-style: italic;">No file attached.</div>
+            </div>
+          </div>
+
+          <!-- Shared graduation/completion year -->
+          <div class="form-group">
+            <label class="form-label" for="onboarding-grad-year">Passing / Graduation Year</label>
+            <select class="form-input" id="onboarding-grad-year">
+              <option value="2024">2024</option>
+              <option value="2025">2025</option>
+              <option value="2026">2026</option>
+              <option value="2027">2027</option>
+              <option value="2028">2028</option>
+              <option value="2029">2029</option>
+              <option value="2030">2030</option>
+            </select>
+          </div>
+
+          <div id="onboarding-alerts"></div>
+
+          <!-- Form Buttons -->
+          <div style="display: flex; gap: 0.75rem; margin-top: 0.5rem;">
+            <button type="button" class="btn" style="flex: 0.4; padding: 0.65rem; background: rgba(255,255,255,0.05); border: 1px solid var(--card-border);" onclick="backToOnboardingStep1()">&larr; Back</button>
+            <button type="submit" class="btn btn-primary" style="flex: 0.6; padding: 0.65rem; font-weight: bold; border-radius: var(--radius-sm);">Submit & Start</button>
+          </div>
+
+        </form>
       </div>
 
     </div>

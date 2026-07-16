@@ -205,6 +205,10 @@ function switchTab(tabId, button) {
     titleEl.textContent = 'Timed Mock Exams & Assessments';
     subEl.textContent = 'Simulate real corporate online assessments (OAs) with strict anti-cheat tab monitoring.';
     loadStudentAssessments();
+  } else if (tabId === 'profile') {
+    titleEl.textContent = 'My Student Profile';
+    subEl.textContent = 'Manage your academic details, resumes, and portfolio links.';
+    loadStudentProfilePanel();
   }
 }
 
@@ -323,6 +327,16 @@ async function loadDashboardData() {
       courseMCQsMap[course.id] = mcqs;
     }
     
+    // Check onboarding status
+    try {
+      const profile = await API.getStudentProfile();
+      if (!profile || profile.onboarding_completed !== 1) {
+        document.getElementById('onboarding-wizard-modal').style.display = 'flex';
+      }
+    } catch (e) {
+      console.error('Onboarding check failed:', e);
+    }
+
     renderHomeScreen();
     renderHomeDates(); // Refresh calendar dates matching dynamic completions
     renderStudentActivityWidgets(loginLogs, rawProgress, submissionsCache, enrolledCourseIds);
@@ -3781,15 +3795,17 @@ window.drawActivityHeatmapAndRings = function(logs, progress, submissions, enrol
 
   // Add Logins
   logs.forEach(log => {
-    const dateStr = formatDateStr(new Date(log.login_time));
-    activityMap[dateStr] = (activityMap[dateStr] || 0) + 1;
-    totalActions++;
+    if (log.login_time) {
+      const dateStr = log.login_time.substring(0, 10);
+      activityMap[dateStr] = (activityMap[dateStr] || 0) + 1;
+      totalActions++;
+    }
   });
 
   // Add video completions
   progress.forEach(prog => {
-    if (prog.completed || prog.completed === 1) {
-      const dateStr = formatDateStr(new Date(prog.updated_at));
+    if ((prog.completed || prog.completed === 1) && prog.updated_at) {
+      const dateStr = prog.updated_at.substring(0, 10);
       activityMap[dateStr] = (activityMap[dateStr] || 0) + 1;
       totalActions++;
     }
@@ -3797,9 +3813,12 @@ window.drawActivityHeatmapAndRings = function(logs, progress, submissions, enrol
 
   // Add MCQ & Coding submissions
   submissions.forEach(sub => {
-    const dateStr = formatDateStr(new Date(sub.created_at || sub.updated_at));
-    activityMap[dateStr] = (activityMap[dateStr] || 0) + 1;
-    totalActions++;
+    const rawDate = sub.created_at || sub.updated_at;
+    if (rawDate) {
+      const dateStr = rawDate.substring(0, 10);
+      activityMap[dateStr] = (activityMap[dateStr] || 0) + 1;
+      totalActions++;
+    }
   });
 
   if (summaryText) {
@@ -3884,7 +3903,7 @@ window.drawActivityHeatmapAndRings = function(logs, progress, submissions, enrol
         cell.style.backgroundColor = 'var(--primary)'; // High visibility blue/purple
       }
       
-      const formattedDateLabel = cellDate.toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' });
+      const formattedDateLabel = cellDate.toLocaleDateString('en-US', { weekday: 'long', day: 'numeric', month: 'short', year: 'numeric' });
       cell.title = `${count} activity actions on ${formattedDateLabel}`;
     }
     
@@ -4017,6 +4036,11 @@ window.selectAnalyticsStudent = function(studentId) {
   document.getElementById('analytics-student-avatar').textContent = initials;
   document.getElementById('analytics-student-name').textContent = student.name;
   document.getElementById('analytics-student-email').textContent = student.email;
+  
+  const studentEntry = leaderboardCache.find(s => s.id === studentId);
+  const rankText = studentEntry ? `Leaderboard Rank #${studentEntry.rank}` : 'Unranked / No Activity';
+  const rankEl = document.getElementById('analytics-student-rank');
+  if (rankEl) rankEl.textContent = rankText;
 
   // Filter logs for this student
   const studentLogs = historyLogs.filter(l => l.user_id === studentId);
@@ -4035,6 +4059,69 @@ window.selectAnalyticsStudent = function(studentId) {
     'analytics-streak-val',
     'analytics-actions-val'
   );
+
+  // Fetch and display educational placement profile details
+  const profileCard = document.getElementById('analytics-profile-card');
+  if (profileCard) {
+    profileCard.style.display = 'none'; // hide initially
+    API.getAdminStudentProfile(studentId).then(profile => {
+      if (profile) {
+        profileCard.style.display = 'flex';
+        
+        document.getElementById('analytics-profile-level').innerText = profile.education_level === 'school' ? '🏫 School Student' : '🎓 College Student';
+        document.getElementById('analytics-profile-phone').innerText = profile.phone_number || '-';
+        document.getElementById('analytics-profile-institution').innerText = profile.institution_name || '-';
+        document.getElementById('analytics-profile-grade').innerText = profile.status_grade || '-';
+        document.getElementById('analytics-profile-stream').innerText = profile.stream_degree || '-';
+        document.getElementById('analytics-profile-year').innerText = profile.completion_year || '-';
+
+        // Adjust labels based on level
+        document.getElementById('analytics-profile-inst-label').innerText = profile.education_level === 'school' ? 'School Name' : 'College / University Name';
+        document.getElementById('analytics-profile-grade-label').innerText = profile.education_level === 'school' ? 'Current Grade' : 'Current Year';
+        document.getElementById('analytics-profile-stream-label').innerText = profile.education_level === 'school' ? 'Subject Stream' : 'Major / Branch';
+
+        const gpaContainer = document.getElementById('analytics-profile-gpa-container');
+        if (profile.education_level === 'school') {
+          gpaContainer.style.display = 'none';
+        } else {
+          gpaContainer.style.display = 'block';
+          document.getElementById('analytics-profile-gpa').innerText = profile.gpa_score || '-';
+        }
+
+        // Links & resume
+        const github = document.getElementById('analytics-profile-github');
+        const linkedin = document.getElementById('analytics-profile-linkedin');
+        const resume = document.getElementById('analytics-profile-resume');
+
+        if (profile.education_level === 'college') {
+          if (profile.github_link) {
+            github.style.display = 'inline-block';
+            github.href = profile.github_link;
+          } else {
+            github.style.display = 'none';
+          }
+          if (profile.linkedin_link) {
+            linkedin.style.display = 'inline-block';
+            linkedin.href = profile.linkedin_link;
+          } else {
+            linkedin.style.display = 'none';
+          }
+        } else {
+          github.style.display = 'none';
+          linkedin.style.display = 'none';
+        }
+
+        if (profile.resume_url) {
+          resume.style.display = 'inline-block';
+          resume.href = '/' + profile.resume_url;
+        } else {
+          resume.style.display = 'none';
+        }
+      }
+    }).catch(err => {
+      console.error('Failed to load admin student profile:', err);
+    });
+  }
 };
 
 window.loadStudentLeaderboard = async function() {
@@ -5284,4 +5371,205 @@ window.openCourseRoadmapModal = function(courseId) {
 
 window.closeRoadmapModal = function() {
   document.getElementById('roadmap-preview-modal').style.display = 'none';
+};
+
+/* ==========================================================================
+   STUDENT ONBOARDING WIZARD & PROFILE CONTROLLERS
+   ========================================================================== */
+let onboardingLevel = '';
+let onboardingResumeUrl = '';
+let profileResumeUrl = '';
+
+window.selectOnboardingLevel = function(level) {
+  onboardingLevel = level;
+  document.getElementById('onboarding-step-1').style.display = 'none';
+  document.getElementById('onboarding-step-2').style.display = 'block';
+  document.getElementById('onboarding-modal-title').innerText = level === 'school' ? '🏫 School Student Details' : '🎓 College Student Details';
+
+  // Toggle dynamic fields
+  document.getElementById('onboarding-school-fields').style.display = level === 'school' ? 'flex' : 'none';
+  document.getElementById('onboarding-college-fields').style.display = level === 'college' ? 'flex' : 'none';
+  
+  // Make fields required dynamically
+  document.getElementById('onboarding-school-name').required = level === 'school';
+  document.getElementById('onboarding-college-name').required = level === 'college';
+};
+
+window.backToOnboardingStep1 = function() {
+  document.getElementById('onboarding-step-2').style.display = 'none';
+  document.getElementById('onboarding-step-1').style.display = 'flex';
+  document.getElementById('onboarding-modal-title').innerText = 'Welcome to Leo Access!';
+};
+
+window.uploadOnboardingResumeFile = async function() {
+  const fileInput = document.getElementById('onboarding-resume-file');
+  const status = document.getElementById('onboarding-resume-status');
+  if (!fileInput || !fileInput.files[0]) {
+    alert('Please select a PDF resume file first.');
+    return;
+  }
+  
+  status.textContent = 'Uploading...';
+  const formData = new FormData();
+  formData.append('resume_file', fileInput.files[0]);
+
+  try {
+    const res = await API.uploadStudentResume(formData);
+    onboardingResumeUrl = res.resume_url;
+    status.textContent = '✅ Resume uploaded successfully!';
+    status.style.color = 'var(--success)';
+  } catch (err) {
+    status.textContent = '❌ Upload failed: ' + err.message;
+    status.style.color = 'var(--accent)';
+  }
+};
+
+window.uploadProfileResumeFile = async function() {
+  const fileInput = document.getElementById('profile-resume-file');
+  const status = document.getElementById('profile-resume-status');
+  if (!fileInput || !fileInput.files[0]) {
+    alert('Please select a PDF resume file first.');
+    return;
+  }
+  
+  status.textContent = 'Uploading...';
+  const formData = new FormData();
+  formData.append('resume_file', fileInput.files[0]);
+
+  try {
+    const res = await API.uploadStudentResume(formData);
+    profileResumeUrl = res.resume_url;
+    status.textContent = '✅ Resume uploaded successfully!';
+    status.style.color = 'var(--success)';
+  } catch (err) {
+    status.textContent = '❌ Upload failed: ' + err.message;
+    status.style.color = 'var(--accent)';
+  }
+};
+
+window.handleOnboardingSubmit = async function(e) {
+  e.preventDefault();
+  const alerts = document.getElementById('onboarding-alerts');
+  alerts.innerHTML = '';
+
+  const payload = {
+    education_level: onboardingLevel,
+    phone_number: document.getElementById('onboarding-phone').value,
+    completion_year: document.getElementById('onboarding-grad-year').value,
+    resume_url: onboardingResumeUrl
+  };
+
+  if (onboardingLevel === 'school') {
+    payload.institution_name = document.getElementById('onboarding-school-name').value;
+    payload.status_grade = document.getElementById('onboarding-school-grade').value;
+    payload.stream_degree = document.getElementById('onboarding-school-stream').value;
+  } else {
+    payload.institution_name = document.getElementById('onboarding-college-name').value;
+    payload.status_grade = document.getElementById('onboarding-college-year').value;
+    payload.stream_degree = document.getElementById('onboarding-college-degree').value;
+    payload.major_branch = document.getElementById('onboarding-college-major').value;
+    payload.gpa_score = document.getElementById('onboarding-college-gpa').value;
+    payload.github_link = document.getElementById('onboarding-github').value;
+    payload.linkedin_link = document.getElementById('onboarding-linkedin').value;
+  }
+
+  try {
+    await API.updateStudentProfile(payload);
+    document.getElementById('onboarding-wizard-modal').style.display = 'none';
+    showStudentSuccessModal('Profile Initialized', '🎉 Onboarding complete! Welcome to your personalized dashboard.', true);
+  } catch (err) {
+    alerts.innerHTML = `<div class="alert alert-error">${err.message || 'Failed to save profile.'}</div>`;
+  }
+};
+
+window.toggleProfileFormFields = function(level) {
+  document.getElementById('profile-school-group').style.display = level === 'school' ? 'flex' : 'none';
+  document.getElementById('profile-college-group').style.display = level === 'college' ? 'flex' : 'none';
+  
+  document.getElementById('profile-school-name').required = level === 'school';
+  document.getElementById('profile-college-name').required = level === 'college';
+};
+
+window.handleSaveProfile = async function(e) {
+  e.preventDefault();
+  const alerts = document.getElementById('profile-alerts');
+  alerts.innerHTML = '';
+
+  const eduLevel = document.querySelector('input[name="profile-edu-level"]:checked').value;
+
+  const payload = {
+    education_level: eduLevel,
+    phone_number: document.getElementById('profile-phone').value,
+    completion_year: document.getElementById('profile-grad-year').value,
+    resume_url: profileResumeUrl
+  };
+
+  if (eduLevel === 'school') {
+    payload.institution_name = document.getElementById('profile-school-name').value;
+    payload.status_grade = document.getElementById('profile-school-grade').value;
+    payload.stream_degree = document.getElementById('profile-school-stream').value;
+  } else {
+    payload.institution_name = document.getElementById('profile-college-name').value;
+    payload.status_grade = document.getElementById('profile-college-year').value;
+    payload.stream_degree = document.getElementById('profile-college-degree').value;
+    payload.major_branch = document.getElementById('profile-college-major').value;
+    payload.gpa_score = document.getElementById('profile-college-gpa').value;
+    payload.github_link = document.getElementById('profile-github').value;
+    payload.linkedin_link = document.getElementById('profile-linkedin').value;
+  }
+
+  try {
+    await API.updateStudentProfile(payload);
+    alerts.innerHTML = `<div style="color: var(--success); font-weight: bold; font-size: 0.85rem; margin-top: 0.25rem;">✅ Profile details saved successfully!</div>`;
+    setTimeout(() => { alerts.innerHTML = ''; }, 3000);
+  } catch (err) {
+    alerts.innerHTML = `<div style="color: var(--accent); font-weight: bold; font-size: 0.85rem; margin-top: 0.25rem;">❌ Failed to save profile: ${err.message}</div>`;
+  }
+};
+
+window.loadStudentProfilePanel = async function() {
+  document.getElementById('profile-panel-name').innerText = currentUser.name;
+  document.getElementById('profile-panel-email').innerText = currentUser.email;
+
+  const initials = currentUser.name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
+  document.getElementById('profile-panel-avatar').innerText = initials;
+
+  try {
+    const profile = await API.getStudentProfile();
+    if (profile) {
+      // Set edu level radio button
+      const radio = document.querySelector(`input[name="profile-edu-level"][value="${profile.education_level}"]`);
+      if (radio) {
+        radio.checked = true;
+        toggleProfileFormFields(profile.education_level);
+      }
+
+      document.getElementById('profile-phone').value = profile.phone_number || '';
+      document.getElementById('profile-grad-year').value = profile.completion_year || '2026';
+
+      if (profile.education_level === 'school') {
+        document.getElementById('profile-school-name').value = profile.institution_name || '';
+        document.getElementById('profile-school-grade').value = profile.status_grade || '12th Grade';
+        document.getElementById('profile-school-stream').value = profile.stream_degree || 'Science / MPC';
+      } else {
+        document.getElementById('profile-college-name').value = profile.institution_name || '';
+        document.getElementById('profile-college-year').value = profile.status_grade || '3rd Year';
+        document.getElementById('profile-college-degree').value = profile.stream_degree || 'B.Tech';
+        document.getElementById('profile-college-major').value = profile.major_branch || '';
+        document.getElementById('profile-college-gpa').value = profile.gpa_score || '';
+        document.getElementById('profile-github').value = profile.github_link || '';
+        document.getElementById('profile-linkedin').value = profile.linkedin_link || '';
+      }
+
+      profileResumeUrl = profile.resume_url || '';
+      const resumeStatus = document.getElementById('profile-resume-status');
+      if (profileResumeUrl) {
+        resumeStatus.innerHTML = `✅ Attached Resume: <a href="/${profileResumeUrl}" target="_blank" style="color: var(--success); font-weight: 700; text-decoration: underline;">View PDF</a>`;
+      } else {
+        resumeStatus.innerText = 'No resume attached yet.';
+      }
+    }
+  } catch (err) {
+    console.error('Failed to load profile details:', err);
+  }
 };

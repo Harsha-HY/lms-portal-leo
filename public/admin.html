@@ -935,7 +935,48 @@
                 <div class="user-avatar" id="analytics-student-avatar" style="width: 50px; height: 50px; font-size: 1.5rem; background: var(--sidebar-active); display: flex; align-items: center; justify-content: center; border-radius: 50%; color: white;">U</div>
                 <div style="display: flex; flex-direction: column; gap: 0.2rem; text-align: left;">
                   <h3 id="analytics-student-name" style="margin: 0; font-size: 1.35rem; color: var(--text-main);">Name</h3>
-                  <span id="analytics-student-email" style="font-size: 0.85rem; color: var(--text-muted);">Email</span>
+                  <span id="analytics-student-email" style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 0.25rem;">Email</span>
+                  <span id="analytics-student-rank" class="badge-purple" style="font-size: 0.75rem; font-weight: 700; width: fit-content; text-align: center; display: inline-block;">Rank --</span>
+                </div>
+              </div>
+
+              <!-- Student Onboarding Profile Details -->
+              <div id="analytics-profile-card" style="border: 1px solid var(--card-border); padding: 1.25rem; border-radius: var(--radius-sm); text-align: left; display: none; flex-direction: column; gap: 0.75rem; background: rgba(255,255,255,0.01);">
+                <strong style="font-size: 0.85rem; color: var(--primary); text-transform: uppercase;">👤 Educational & Placement Profile</strong>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; font-size: 0.85rem;">
+                  <div>
+                    <span style="color: var(--text-muted); display: block; font-size: 0.75rem;">Education Level</span>
+                    <strong id="analytics-profile-level" style="color: var(--text-main); text-transform: capitalize;">-</strong>
+                  </div>
+                  <div>
+                    <span style="color: var(--text-muted); display: block; font-size: 0.75rem;">Phone Number</span>
+                    <strong id="analytics-profile-phone" style="color: var(--text-main);">-</strong>
+                  </div>
+                  <div style="grid-column: span 2;">
+                    <span id="analytics-profile-inst-label" style="color: var(--text-muted); display: block; font-size: 0.75rem;">Institution Name</span>
+                    <strong id="analytics-profile-institution" style="color: var(--text-main);">-</strong>
+                  </div>
+                  <div>
+                    <span id="analytics-profile-grade-label" style="color: var(--text-muted); display: block; font-size: 0.75rem;">Year / Grade</span>
+                    <strong id="analytics-profile-grade" style="color: var(--text-main);">-</strong>
+                  </div>
+                  <div>
+                    <span id="analytics-profile-stream-label" style="color: var(--text-muted); display: block; font-size: 0.75rem;">Stream / Major</span>
+                    <strong id="analytics-profile-stream" style="color: var(--text-main);">-</strong>
+                  </div>
+                  <div id="analytics-profile-gpa-container">
+                    <span style="color: var(--text-muted); display: block; font-size: 0.75rem;">CGPA / Percentage</span>
+                    <strong id="analytics-profile-gpa" style="color: var(--text-main);">-</strong>
+                  </div>
+                  <div>
+                    <span style="color: var(--text-muted); display: block; font-size: 0.75rem;">Graduation Year</span>
+                    <strong id="analytics-profile-year" style="color: var(--text-main);">-</strong>
+                  </div>
+                  <div style="grid-column: span 2; display: flex; gap: 0.75rem; border-top: 1px solid var(--card-border); padding-top: 0.5rem; margin-top: 0.25rem;" id="analytics-profile-links-container">
+                    <a id="analytics-profile-github" href="#" target="_blank" class="badge-purple" style="font-size: 0.75rem; text-decoration: underline; display: none;">GitHub</a>
+                    <a id="analytics-profile-linkedin" href="#" target="_blank" class="badge-purple" style="font-size: 0.75rem; text-decoration: underline; display: none;">LinkedIn</a>
+                    <a id="analytics-profile-resume" href="#" target="_blank" class="badge-purple" style="font-size: 0.75rem; text-decoration: underline; display: none; background: rgba(16, 185, 129, 0.15); border-color: rgba(16,185,129,0.3); color: var(--success);">View Resume (PDF)</a>
+                  </div>
                 </div>
               </div>
 

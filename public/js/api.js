@@ -110,6 +110,36 @@ const API = {
     });
   },
 
+  getStudentProfile() {
+    return this.fetchJSON('/api/student/profile');
+  },
+
+  updateStudentProfile(payload) {
+    return this.fetchJSON('/api/student/profile', {
+      method: 'POST',
+      body: JSON.stringify(payload)
+    });
+  },
+
+  uploadStudentResume(formData) {
+    return fetch('/api/student/profile/resume', {
+      method: 'POST',
+      body: formData
+    }).then(async (res) => {
+      if (res.status === 401) {
+        window.location.href = '/login.html';
+        throw new Error('Unauthorized');
+      }
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed to upload');
+      return data;
+    });
+  },
+
+  getAdminStudentProfile(id) {
+    return this.fetchJSON(`/api/admin/students/${id}/profile`);
+  },
+
   getStudentAssessmentReview(id) {
     return this.fetchJSON(`/api/student/assessments/${id}/review`);
   },

@@ -282,6 +282,23 @@ function initializeDatabase() {
       FOREIGN KEY (assessment_id) REFERENCES assessments(id) ON DELETE CASCADE
     )`);
 
+    db.run(`CREATE TABLE IF NOT EXISTS student_profiles (
+      user_id INTEGER PRIMARY KEY,
+      education_level TEXT NOT NULL,
+      institution_name TEXT,
+      status_grade TEXT,
+      stream_degree TEXT,
+      major_branch TEXT,
+      completion_year INTEGER,
+      gpa_score TEXT,
+      phone_number TEXT,
+      github_link TEXT,
+      linkedin_link TEXT,
+      resume_url TEXT,
+      onboarding_completed INTEGER DEFAULT 1,
+      FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+    )`);
+
     // Database setup is complete
   });
 }
@@ -592,6 +609,85 @@ app.post('/api/student/video-progress', requireLogin, (req, res) => {
       if (err2) return res.status(500).json({ error: 'Failed to update video progress.' });
       res.json({ success: true, watched_seconds });
     });
+  });
+});
+
+// Student: Get profile
+app.get('/api/student/profile', requireLogin, (req, res) => {
+  const userId = req.session.userId;
+  db.get(`SELECT * FROM student_profiles WHERE user_id = ?`, [userId], (err, row) => {
+    if (err) return res.status(500).json({ error: 'Failed to fetch student profile.' });
+    res.json(row || null);
+  });
+});
+
+// Student: Update/create profile
+app.post('/api/student/profile', requireLogin, (req, res) => {
+  const userId = req.session.userId;
+  const {
+    education_level,
+    institution_name,
+    status_grade,
+    stream_degree,
+    major_branch,
+    completion_year,
+    gpa_score,
+    phone_number,
+    github_link,
+    linkedin_link,
+    resume_url
+  } = req.body;
+
+  if (!education_level) {
+    return res.status(400).json({ error: 'education_level is required.' });
+  }
+
+  db.run(`
+    INSERT INTO student_profiles (
+      user_id, education_level, institution_name, status_grade, stream_degree, 
+      major_branch, completion_year, gpa_score, phone_number, github_link, linkedin_link, resume_url, onboarding_completed
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1)
+    ON CONFLICT(user_id) DO UPDATE SET
+      education_level = excluded.education_level,
+      institution_name = excluded.institution_name,
+      status_grade = excluded.status_grade,
+      stream_degree = excluded.stream_degree,
+      major_branch = excluded.major_branch,
+      completion_year = excluded.completion_year,
+      gpa_score = excluded.gpa_score,
+      phone_number = excluded.phone_number,
+      github_link = excluded.github_link,
+      linkedin_link = excluded.linkedin_link,
+      resume_url = excluded.resume_url,
+      onboarding_completed = 1
+  `, [
+    userId, education_level, institution_name || '', status_grade || '', stream_degree || '',
+    major_branch || '', completion_year ? parseInt(completion_year) : null, gpa_score || '',
+    phone_number || '', github_link || '', linkedin_link || '', resume_url || ''
+  ], (err) => {
+    if (err) {
+      console.error(err);
+      return res.status(500).json({ error: 'Failed to save profile details.' });
+    }
+    res.json({ success: true });
+  });
+});
+
+// Student: Upload Resume PDF
+app.post('/api/student/profile/resume', requireLogin, upload.single('resume_file'), (req, res) => {
+  if (!req.file) {
+    return res.status(400).json({ error: 'No resume file uploaded.' });
+  }
+  const resumeUrl = `uploads/${req.file.filename}`;
+  res.json({ success: true, resume_url: resumeUrl });
+});
+
+// Admin: Query a student's profile details
+app.get('/api/admin/students/:id/profile', requireAdminOrFaculty, (req, res) => {
+  const studentId = req.params.id;
+  db.get(`SELECT * FROM student_profiles WHERE user_id = ?`, [studentId], (err, row) => {
+    if (err) return res.status(500).json({ error: 'Failed to fetch student profile.' });
+    res.json(row || null);
   });
 });
 
