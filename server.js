@@ -299,6 +299,20 @@ function initializeDatabase() {
       FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
     )`);
 
+    db.run(`CREATE TABLE IF NOT EXISTS callback_requests (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id INTEGER NOT NULL,
+      name TEXT NOT NULL,
+      email TEXT NOT NULL,
+      course_title TEXT NOT NULL,
+      phone_number TEXT NOT NULL,
+      bio TEXT NOT NULL,
+      doubt TEXT NOT NULL,
+      status TEXT DEFAULT 'pending',
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+    )`);
+
     // Database setup is complete
   });
 }
@@ -688,6 +702,52 @@ app.get('/api/admin/students/:id/profile', requireAdminOrFaculty, (req, res) => 
   db.get(`SELECT * FROM student_profiles WHERE user_id = ?`, [studentId], (err, row) => {
     if (err) return res.status(500).json({ error: 'Failed to fetch student profile.' });
     res.json(row || null);
+  });
+});
+
+// Student: Submit a Callback Request
+app.post('/api/student/callback-request', requireLogin, (req, res) => {
+  const userId = req.session.userId;
+  const { name, email, course_title, phone_number, bio, doubt } = req.body;
+  if (!name || !email || !course_title || !phone_number || !doubt) {
+    return res.status(400).json({ error: 'Missing required callback request fields.' });
+  }
+
+  db.run(`
+    INSERT INTO callback_requests (user_id, name, email, course_title, phone_number, bio, doubt)
+    VALUES (?, ?, ?, ?, ?, ?, ?)
+  `, [userId, name, email, course_title, phone_number, bio || '', doubt], (err) => {
+    if (err) {
+      console.error(err);
+      return res.status(500).json({ error: 'Failed to submit callback request.' });
+    }
+    res.json({ success: true });
+  });
+});
+
+// Student: Get my Callback Requests history
+app.get('/api/student/callback-requests', requireLogin, (req, res) => {
+  const userId = req.session.userId;
+  db.all(`SELECT * FROM callback_requests WHERE user_id = ? ORDER BY created_at DESC`, [userId], (err, rows) => {
+    if (err) return res.status(500).json({ error: 'Failed to fetch callback requests.' });
+    res.json(rows);
+  });
+});
+
+// Admin: Get all Callback Requests
+app.get('/api/admin/callback-requests', requireAdminOrFaculty, (req, res) => {
+  db.all(`SELECT * FROM callback_requests ORDER BY created_at DESC`, [], (err, rows) => {
+    if (err) return res.status(500).json({ error: 'Failed to fetch callback requests.' });
+    res.json(rows);
+  });
+});
+
+// Admin: Mark callback request as completed (Finish)
+app.post('/api/admin/callback-requests/:id/finish', requireAdminOrFaculty, (req, res) => {
+  const requestId = req.params.id;
+  db.run(`UPDATE callback_requests SET status = 'completed' WHERE id = ?`, [requestId], (err) => {
+    if (err) return res.status(500).json({ error: 'Failed to complete callback request.' });
+    res.json({ success: true });
   });
 });
 

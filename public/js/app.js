@@ -209,6 +209,10 @@ function switchTab(tabId, button) {
     titleEl.textContent = 'My Student Profile';
     subEl.textContent = 'Manage your academic details, resumes, and portfolio links.';
     loadStudentProfilePanel();
+  } else if (tabId === 'callback') {
+    titleEl.textContent = 'Request a Callback';
+    subEl.textContent = 'Submit your doubts and request a mentor phone call back.';
+    loadStudentCallbackPanel();
   }
 }
 
@@ -281,6 +285,10 @@ function switchAdminTab(tabId, button) {
     titleEl.textContent = 'Candidate Audit Logs';
     subEl.textContent = 'Track and review student session logs, course enrollments, and video lecture progress history.';
     loadStudentHistoryData();
+  } else if (tabId === 'requests') {
+    titleEl.textContent = 'Callback Queries & Mentorship Requests';
+    subEl.textContent = 'Manage active doubts, callback request details, phone number lookups, and mark queries resolved.';
+    loadAdminRequestsPanel();
   }
 }
 
@@ -5634,4 +5642,262 @@ window.enrollCourseFromOnboarding = async function(courseId) {
 
 window.closeOnboardingCoursesModal = function() {
   document.getElementById('onboarding-courses-popup-modal').style.display = 'none';
+};
+
+/* ==========================================================================
+   REQUEST CALLBACK CONTROLLERS
+   ========================================================================== */
+window.loadStudentCallbackPanel = async function() {
+  try {
+    // 1. Prefill form fields from user session and profile details
+    if (currentUser) {
+      document.getElementById('callback-name').value = currentUser.name || '';
+      document.getElementById('callback-email').value = currentUser.email || '';
+    }
+
+    // Attempt to load profile to get phone and bio info
+    const profile = await API.getStudentProfile();
+    if (profile) {
+      if (profile.phone_number) {
+        document.getElementById('callback-phone').value = profile.phone_number;
+      }
+      
+      let bioText = '';
+      if (profile.education_level === 'school') {
+        bioText = `Class ${profile.status_grade || ''} Student at ${profile.institution_name || ''}`;
+      } else {
+        bioText = `${profile.status_grade || ''} Year ${profile.stream_degree || ''} (${profile.major_branch || ''}) Student at ${profile.institution_name || ''}`;
+      }
+      document.getElementById('callback-bio').value = bioText;
+    }
+
+    // 2. Populate Course drop-down with enrolled courses
+    const courseSelect = document.getElementById('callback-course');
+    if (courseSelect) {
+      courseSelect.innerHTML = '';
+      
+      // Get currently enrolled courses
+      const enrolledCourses = allCourses.filter(c => enrolledCourseIds.includes(c.id));
+      if (enrolledCourses.length === 0) {
+        courseSelect.innerHTML = `<option value="" disabled selected>No enrolled courses yet</option>`;
+      } else {
+        enrolledCourses.forEach(course => {
+          const opt = document.createElement('option');
+          opt.value = course.title;
+          opt.textContent = course.title;
+          courseSelect.appendChild(opt);
+        });
+      }
+    }
+
+    // 3. Load past callback requests history list
+    const historyList = document.getElementById('callback-history-list');
+    if (historyList) {
+      historyList.innerHTML = `<span style="font-size: 0.85rem; color: var(--text-muted); font-style: italic;">Loading request history...</span>`;
+      
+      const requests = await API.getStudentCallbackRequests();
+      historyList.innerHTML = '';
+      
+      if (!requests || requests.length === 0) {
+        historyList.innerHTML = `<span style="font-size: 0.85rem; color: var(--text-muted); font-style: italic;">No requests submitted yet.</span>`;
+        return;
+      }
+
+      requests.forEach(req => {
+        const item = document.createElement('div');
+        item.style.cssText = `
+          background: rgba(255,255,255,0.02);
+          border: 1px solid var(--card-border);
+          border-radius: var(--radius-sm);
+          padding: 1rem;
+          display: flex;
+          flex-direction: column;
+          gap: 0.5rem;
+          text-align: left;
+        `;
+        
+        const isPending = req.status === 'pending';
+        const badgeColor = isPending ? 'badge-purple' : 'badge-success';
+        const badgeBg = isPending ? 'var(--primary)' : 'rgba(16,185,129,0.15)';
+        const badgeBorder = isPending ? 'none' : '1px solid rgba(16,185,129,0.3)';
+        const badgeColorHex = isPending ? '#fff' : 'var(--success)';
+
+        item.innerHTML = `
+          <div style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
+            <span style="font-size: 0.8rem; color: var(--text-muted); font-weight: 700;">${new Date(req.created_at).toLocaleDateString()}</span>
+            <span class="${badgeColor}" style="font-size: 0.7rem; font-weight: 800; background: ${badgeBg}; border: ${badgeBorder}; color: ${badgeColorHex}; padding: 0.15rem 0.4rem; border-radius: 4px; text-transform: uppercase;">${req.status}</span>
+          </div>
+          <div>
+            <strong style="font-size: 0.9rem; color: var(--text-main); display: block;">${req.course_title}</strong>
+            <p style="margin: 0.35rem 0 0 0; font-size: 0.825rem; color: var(--text-muted); line-height: 1.4;">${req.doubt}</p>
+          </div>
+        `;
+        historyList.appendChild(item);
+      });
+    }
+  } catch (err) {
+    console.error('Failed to load callback panel details:', err);
+  }
+};
+
+window.handleCallbackSubmit = async function(event) {
+  event.preventDefault();
+  const alerts = document.getElementById('callback-alerts');
+  if (alerts) alerts.innerHTML = '';
+
+  const payload = {
+    name: document.getElementById('callback-name').value,
+    email: document.getElementById('callback-email').value,
+    course_title: document.getElementById('callback-course').value,
+    phone_number: document.getElementById('callback-phone').value,
+    bio: document.getElementById('callback-bio').value,
+    doubt: document.getElementById('callback-doubt').value
+  };
+
+  try {
+    const res = await API.submitCallbackRequest(payload);
+    if (res.success) {
+      if (alerts) {
+        alerts.innerHTML = `
+          <div style="background: rgba(16,185,129,0.15); border: 1px solid rgba(16,185,129,0.3); color: var(--success); padding: 0.75rem 1rem; border-radius: var(--radius-sm); font-size: 0.85rem; font-weight: 700;">
+            ✓ Callback Request submitted successfully! A coach will call you shortly.
+          </div>
+        `;
+      }
+      document.getElementById('callback-doubt').value = '';
+      setTimeout(() => {
+        if (alerts) alerts.innerHTML = '';
+      }, 5000);
+      
+      // Reload history list
+      loadStudentCallbackPanel();
+    } else {
+      if (alerts) {
+        alerts.innerHTML = `
+          <div style="background: rgba(239,68,68,0.15); border: 1px solid rgba(239,68,68,0.3); color: var(--accent); padding: 0.75rem 1rem; border-radius: var(--radius-sm); font-size: 0.85rem; font-weight: 700;">
+            ✗ Error: ${res.error || 'Failed to submit callback request.'}
+          </div>
+        `;
+      }
+    }
+  } catch (err) {
+    if (alerts) {
+      alerts.innerHTML = `
+        <div style="background: rgba(239,68,68,0.15); border: 1px solid rgba(239,68,68,0.3); color: var(--accent); padding: 0.75rem 1rem; border-radius: var(--radius-sm); font-size: 0.85rem; font-weight: 700;">
+          ✗ Submission Error: ${err.message}
+        </div>
+      `;
+    }
+  }
+};
+
+window.loadAdminRequestsPanel = async function() {
+  try {
+    const requests = await API.getAdminCallbackRequests();
+    
+    const pendingList = document.getElementById('requests-pending-list');
+    const completedList = document.getElementById('requests-completed-list');
+    
+    if (!pendingList || !completedList) return;
+    
+    pendingList.innerHTML = '';
+    completedList.innerHTML = '';
+
+    const pendingRequests = requests.filter(r => r.status === 'pending');
+    const completedRequests = requests.filter(r => r.status === 'completed');
+
+    // Update counts
+    document.getElementById('requests-pending-count').textContent = `${pendingRequests.length} Pending`;
+    document.getElementById('requests-completed-count').textContent = `${completedRequests.length} Completed`;
+
+    if (pendingRequests.length === 0) {
+      pendingList.innerHTML = `<span style="font-size: 0.85rem; color: var(--text-muted); font-style: italic;">No pending callback requests.</span>`;
+    } else {
+      pendingRequests.forEach(req => {
+        const card = createAdminRequestCard(req, true);
+        pendingList.appendChild(card);
+      });
+    }
+
+    if (completedRequests.length === 0) {
+      completedList.innerHTML = `<span style="font-size: 0.85rem; color: var(--text-muted); font-style: italic;">No finished callback requests yet.</span>`;
+    } else {
+      completedRequests.forEach(req => {
+        const card = createAdminRequestCard(req, false);
+        completedList.appendChild(card);
+      });
+    }
+  } catch (err) {
+    console.error('Failed to load admin callback requests panel:', err);
+  }
+};
+
+function createAdminRequestCard(req, isPending) {
+  const card = document.createElement('div');
+  card.className = 'admin-panel-card';
+  card.style.cssText = `
+    padding: 1.25rem;
+    background: rgba(255,255,255,0.02);
+    border: 1px solid var(--card-border);
+    border-radius: var(--radius-sm);
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    text-align: left;
+    margin-bottom: 0.75rem;
+  `;
+
+  card.innerHTML = `
+    <!-- Header -->
+    <div style="display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 1px solid var(--card-border); padding-bottom: 0.5rem; width: 100%;">
+      <div>
+        <h4 style="margin: 0; font-size: 1.1rem; color: var(--text-main); font-weight: 800;">${req.name}</h4>
+        <span style="font-size: 0.75rem; color: var(--text-muted);">${req.email} | Phone: <strong style="color: var(--primary-light);">${req.phone_number}</strong></span>
+      </div>
+      <span style="font-size: 0.7rem; color: var(--text-muted);">${new Date(req.created_at).toLocaleDateString()}</span>
+    </div>
+
+    <!-- Student Bio -->
+    <div>
+      <span style="font-size: 0.7rem; text-transform: uppercase; color: var(--primary-light); font-weight: 800; display: block; margin-bottom: 0.15rem;">Student Education / Biography</span>
+      <p style="margin: 0; font-size: 0.8rem; color: var(--text-main); font-style: italic;">"${req.bio || 'Not provided'}"</p>
+    </div>
+
+    <!-- Course Info -->
+    <div>
+      <span style="font-size: 0.7rem; text-transform: uppercase; color: var(--success); font-weight: 800; display: block; margin-bottom: 0.15rem;">Selected Course Block</span>
+      <span style="font-size: 0.85rem; font-weight: bold; color: var(--text-main);">${req.course_title}</span>
+    </div>
+
+    <!-- Doubt Description -->
+    <div style="background: rgba(0,0,0,0.15); padding: 0.75rem; border-radius: var(--radius-sm); border: 1px solid rgba(255,255,255,0.01);">
+      <span style="font-size: 0.7rem; text-transform: uppercase; color: var(--text-muted); font-weight: 800; display: block; margin-bottom: 0.25rem;">❓ What is your doubt?</span>
+      <p style="margin: 0; font-size: 0.85rem; color: var(--text-main); line-height: 1.45; white-space: pre-line;">${req.doubt}</p>
+    </div>
+
+    <!-- Action Box -->
+    ${isPending ? `
+      <div style="display: flex; justify-content: flex-end; margin-top: 0.25rem;">
+        <button class="btn btn-primary" onclick="finishCallbackQuery(${req.id})" style="padding: 0.45rem 1rem; font-size: 0.8rem; font-weight: 700; background: var(--success); border: none;">✓ Finish Query</button>
+      </div>
+    ` : `
+      <div style="display: flex; justify-content: flex-end; margin-top: 0.25rem; font-size: 0.8rem; font-weight: 700; color: var(--success); align-items: center; gap: 0.25rem;">
+        <span>✓ Resolved & Completed</span>
+      </div>
+    `}
+  `;
+  return card;
+}
+
+window.finishCallbackQuery = async function(requestId) {
+  try {
+    const res = await API.finishCallbackRequest(requestId);
+    if (res.success) {
+      loadAdminRequestsPanel();
+    } else {
+      alert('Failed to complete query: ' + (res.error || 'Server error'));
+    }
+  } catch (err) {
+    console.error('Failed to resolve callback query:', err);
+  }
 };

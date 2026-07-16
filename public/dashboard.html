@@ -269,6 +269,13 @@
           My Profile
         </button>
 
+        <button class="sidebar-link" onclick="switchTab('callback', this)">
+          <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.94.725l.548 2.2a1 1 0 01-.321.988l-1.305.98a10.582 10.582 0 004.872 4.872l.98-1.305a1 1 0 01.988-.321l2.2.548a1 1 0 01.725.94V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"></path>
+          </svg>
+          Request Callback
+        </button>
+
         <!-- Apps Section Header -->
         <span style="font-size: 0.7rem; font-weight: 700; color: var(--text-muted); letter-spacing: 0.08em; padding: 1.5rem 1.25rem 0.25rem 1.25rem; text-transform: uppercase;">
           Apps
@@ -869,6 +876,71 @@
 
           <button type="submit" class="btn btn-primary" style="padding: 0.75rem; font-weight: bold; width: 100%; border-radius: var(--radius-sm); font-size: 0.95rem;">Save Profile</button>
         </form>
+      </div>
+    </div>
+  </section>
+
+  <!-- 9. REQUEST CALLBACK TAB VIEW -->
+  <section id="tab-callback" class="tab-view" style="display: none;">
+    <div class="card-section" style="max-width: 950px; margin: 0 auto; text-align: left;">
+      <div class="section-heading" style="margin-bottom: 1.5rem; border-bottom: 1px solid var(--card-border); padding-bottom: 0.75rem;">
+        <h2>Request a Call Back</h2>
+        <p style="color: var(--text-muted); font-size: 0.9rem; margin-top: 0.25rem;">Stuck on a milestone or have doubt regarding placement? Submit a callback query and our coaches will call you.</p>
+      </div>
+
+      <div style="display: grid; grid-template-columns: 1.2fr 0.8fr; gap: 2rem;">
+        <!-- Left: Form -->
+        <div class="widget-card" style="padding: 2rem; border-radius: var(--radius-md); display: flex; flex-direction: column; gap: 1.5rem;">
+          <form id="callback-request-form" onsubmit="handleCallbackSubmit(event)" style="display: flex; flex-direction: column; gap: 1.25rem;">
+            
+            <div class="grid-2" style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+              <div class="form-group">
+                <label class="form-label" for="callback-name">Your Name</label>
+                <input class="form-input" type="text" id="callback-name" required>
+              </div>
+              <div class="form-group">
+                <label class="form-label" for="callback-email">Email Address</label>
+                <input class="form-input" type="email" id="callback-email" required>
+              </div>
+            </div>
+
+            <div class="grid-2" style="display: grid; grid-template-columns: 1.2fr 0.8fr; gap: 1rem;">
+              <div class="form-group">
+                <label class="form-label" for="callback-course">Select Course</label>
+                <select class="form-input" id="callback-course" required>
+                  <!-- Populated dynamically -->
+                </select>
+              </div>
+              <div class="form-group">
+                <label class="form-label" for="callback-phone">Contact Phone Number</label>
+                <input class="form-input" type="text" id="callback-phone" placeholder="e.g. +91 98765 43210" required>
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label" for="callback-bio">Education / Bio Highlights</label>
+              <input class="form-input" type="text" id="callback-bio" placeholder="e.g. 3rd Year B.Tech CSE Student at IIT Madras">
+            </div>
+
+            <div class="form-group">
+              <label class="form-label" for="callback-doubt">What is your doubt?</label>
+              <textarea class="form-input" id="callback-doubt" rows="4" placeholder="Explain your query, issue, or concept block in detail so our mentor can prepare before calling." style="resize: vertical; font-family: inherit; line-height: 1.5;" required></textarea>
+            </div>
+
+            <div id="callback-alerts"></div>
+
+            <button type="submit" class="btn btn-primary" style="padding: 0.75rem; font-weight: bold; border-radius: var(--radius-sm); font-size: 0.95rem;">Submit Callback Request</button>
+          </form>
+        </div>
+
+        <!-- Right: History List -->
+        <div style="display: flex; flex-direction: column; gap: 1rem;">
+          <h3 style="font-size: 1.05rem; color: var(--text-main); font-weight: 800; margin: 0;">Request History</h3>
+          <div id="callback-history-list" style="display: flex; flex-direction: column; gap: 0.75rem; overflow-y: auto; max-height: 400px; padding-right: 0.25rem;">
+            <!-- Populated dynamically -->
+            <span style="font-size: 0.85rem; color: var(--text-muted); font-style: italic;">No requests submitted yet.</span>
+          </div>
+        </div>
       </div>
     </div>
   </section>

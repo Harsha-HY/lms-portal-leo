@@ -140,6 +140,27 @@ const API = {
     return this.fetchJSON(`/api/admin/students/${id}/profile`);
   },
 
+  submitCallbackRequest(payload) {
+    return this.fetchJSON('/api/student/callback-request', {
+      method: 'POST',
+      body: JSON.stringify(payload)
+    });
+  },
+
+  getStudentCallbackRequests() {
+    return this.fetchJSON('/api/student/callback-requests');
+  },
+
+  getAdminCallbackRequests() {
+    return this.fetchJSON('/api/admin/callback-requests');
+  },
+
+  finishCallbackRequest(id) {
+    return this.fetchJSON(`/api/admin/callback-requests/${id}/finish`, {
+      method: 'POST'
+    });
+  },
+
   getStudentAssessmentReview(id) {
     return this.fetchJSON(`/api/student/assessments/${id}/review`);
   },
