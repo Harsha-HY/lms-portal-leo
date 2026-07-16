@@ -70,12 +70,6 @@
           Candidate History
         </button>
 
-        <button class="sidebar-link" id="student-details-nav-btn" onclick="switchAdminTab('student-details', this)">
-          <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
-          </svg>
-          Student Details
-        </button>
 
         <button class="sidebar-link" id="analytics-nav-btn" onclick="switchAdminTab('analytics', this)">
           <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
@@ -904,110 +898,7 @@
         </div>
       </section>
 
-      <!-- STUDENT DETAILS WORKSPACE -->
-      <section id="tab-admin-student-details" class="admin-tab-view" style="display: none;">
-        <div class="admin-grid" style="grid-template-columns: 1fr 2fr; gap: 1.5rem; align-items: stretch; min-height: 500px;">
-          <!-- Left Column: Student Selection List -->
-          <div class="admin-panel-card" style="padding: 1.5rem; display: flex; flex-direction: column; gap: 1rem;">
-            <h3>Registered Students</h3>
-            <p style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 0.5rem; text-align: left;">Click a student to view their educational credentials and resume portfolios.</p>
-            <div id="details-student-list" style="display: flex; flex-direction: column; gap: 0.5rem; overflow-y: auto; max-height: 480px; padding-right: 0.25rem;">
-              <!-- Populated dynamically via JS -->
-            </div>
-          </div>
 
-          <!-- Right Column: Student Detailed Profile Card -->
-          <div class="admin-panel-card" style="padding: 2rem; display: flex; flex-direction: column; gap: 1.5rem; min-height: 500px; justify-content: flex-start; text-align: left;">
-            <!-- Empty State -->
-            <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; min-height: 350px; text-align: center; color: var(--text-muted);" id="details-empty-state">
-              <span style="font-size: 3.5rem; margin-bottom: 1rem;">👤</span>
-              <h4>No Student Selected</h4>
-              <p style="font-size: 0.9rem; max-width: 320px; margin-top: 0.35rem;">Select a student from the directory on the left to display their full profile data, phone numbers, and resumes.</p>
-            </div>
-
-            <!-- Profile Details Content -->
-            <div id="details-info-content" style="display: none; flex-direction: column; gap: 1.75rem;">
-              
-              <!-- Header Section -->
-              <div style="display: flex; align-items: center; gap: 1.25rem; border-bottom: 1px solid var(--card-border); padding-bottom: 1.25rem; width: 100%;">
-                <div class="user-avatar" id="details-student-avatar" style="width: 60px; height: 60px; font-size: 1.75rem; background: var(--primary); display: flex; align-items: center; justify-content: center; border-radius: 50%; color: white; font-weight: bold;">U</div>
-                <div style="display: flex; flex-direction: column; gap: 0.25rem;">
-                  <h3 id="details-student-name" style="margin: 0; font-size: 1.45rem; color: var(--text-main); font-weight: 800;">Name</h3>
-                  <div style="display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap;">
-                    <span id="details-student-email" style="font-size: 0.85rem; color: var(--text-muted);">Email</span>
-                    <span style="color: var(--card-border); font-size: 0.75rem;">|</span>
-                    <span id="details-student-phone-top" style="font-size: 0.85rem; color: var(--primary-light); font-weight: 700;">Phone</span>
-                  </div>
-                  <div style="margin-top: 0.35rem; display: flex; gap: 0.5rem; align-items: center;">
-                    <span id="details-student-rank" class="badge-purple" style="font-size: 0.75rem; font-weight: 700;">Rank --</span>
-                    <span id="details-student-level-badge" class="badge-success" style="font-size: 0.75rem; font-weight: 700; background: rgba(16, 185, 129, 0.15); border: 1px solid rgba(16, 185, 129, 0.3); color: var(--success);">College</span>
-                  </div>
-                </div>
-              </div>
-
-              <!-- Academic Profile Info Panel -->
-              <div style="border: 1px solid var(--card-border); padding: 1.5rem; border-radius: var(--radius-sm); background: rgba(255,255,255,0.01); display: flex; flex-direction: column; gap: 1rem;">
-                <h4 style="font-size: 0.9rem; color: var(--primary); text-transform: uppercase; margin: 0; font-weight: 800; letter-spacing: 0.05em;">📚 Academic Profile</h4>
-                
-                <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 1rem 1.5rem; font-size: 0.875rem;">
-                  <div style="grid-column: span 2;">
-                    <span id="details-inst-lbl" style="color: var(--text-muted); display: block; font-size: 0.75rem; margin-bottom: 0.15rem;">Institution Name</span>
-                    <strong id="details-student-institution" style="color: var(--text-main); font-size: 0.95rem;">-</strong>
-                  </div>
-                  
-                  <div>
-                    <span id="details-grade-lbl" style="color: var(--text-muted); display: block; font-size: 0.75rem; margin-bottom: 0.15rem;">Year / Grade</span>
-                    <strong id="details-student-grade" style="color: var(--text-main);">-</strong>
-                  </div>
-                  
-                  <div>
-                    <span id="details-stream-lbl" style="color: var(--text-muted); display: block; font-size: 0.75rem; margin-bottom: 0.15rem;">Stream / Major</span>
-                    <strong id="details-student-stream" style="color: var(--text-main);">-</strong>
-                  </div>
-                  
-                  <div id="details-gpa-container">
-                    <span style="color: var(--text-muted); display: block; font-size: 0.75rem; margin-bottom: 0.15rem;">CGPA / Percentage</span>
-                    <strong id="details-student-gpa" style="color: var(--text-main);">-</strong>
-                  </div>
-                  
-                  <div>
-                    <span style="color: var(--text-muted); display: block; font-size: 0.75rem; margin-bottom: 0.15rem;">Completion Year</span>
-                    <strong id="details-student-year" style="color: var(--text-main);">-</strong>
-                  </div>
-                  
-                  <div style="grid-column: span 2;">
-                    <span style="color: var(--text-muted); display: block; font-size: 0.75rem; margin-bottom: 0.15rem;">Registered Contact Phone</span>
-                    <strong id="details-student-phone-full" style="color: var(--text-main); font-size: 0.95rem;">-</strong>
-                  </div>
-                </div>
-              </div>
-
-              <!-- Portfolio & Placement Credentials Panel -->
-              <div style="border: 1px solid var(--card-border); padding: 1.5rem; border-radius: var(--radius-sm); background: rgba(255,255,255,0.01); display: flex; flex-direction: column; gap: 1rem;">
-                <h4 style="font-size: 0.9rem; color: var(--success); text-transform: uppercase; margin: 0; font-weight: 800; letter-spacing: 0.05em;">💼 Portfolio & Placements</h4>
-                
-                <div style="display: flex; flex-direction: column; gap: 1rem;">
-                  <!-- External Links -->
-                  <div style="display: flex; gap: 1rem; align-items: center; flex-wrap: wrap;" id="details-portfolio-links">
-                    <a id="details-github-btn" href="#" target="_blank" class="btn" style="padding: 0.5rem 1rem; font-size: 0.8rem; background: rgba(255,255,255,0.05); border: 1px solid var(--card-border); display: none;">🌐 GitHub Portfolio</a>
-                    <a id="details-linkedin-btn" href="#" target="_blank" class="btn" style="padding: 0.5rem 1rem; font-size: 0.8rem; background: rgba(255,255,255,0.05); border: 1px solid var(--card-border); display: none;">👔 LinkedIn Connect</a>
-                  </div>
-
-                  <!-- Resume Attachment -->
-                  <div style="background: rgba(255,255,255,0.01); border: 1px dashed var(--card-border); padding: 1rem; border-radius: var(--radius-sm);" id="details-resume-container">
-                    <strong style="font-size: 0.8rem; color: var(--text-main); display: block; margin-bottom: 0.35rem;">Attached PDF Resume File:</strong>
-                    <div style="display: flex; align-items: center; justify-content: space-between; gap: 1rem;">
-                      <span id="details-resume-lbl" style="font-size: 0.75rem; color: var(--text-muted); font-style: italic;">No resume attached by candidate.</span>
-                      <a id="details-resume-btn" href="#" target="_blank" class="btn btn-primary" style="padding: 0.45rem 1rem; font-size: 0.8rem; display: none;">View Resume PDF</a>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-            </div>
-          </div>
-        </div>
-      </section>
 
       <!-- 5. STUDENT ANALYTICS WORKSPACE -->
       <section id="tab-admin-analytics" class="admin-tab-view" style="display: none;">
