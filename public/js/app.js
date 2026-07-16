@@ -415,27 +415,9 @@ function renderHomeDates() {
   }
 }
 
-// Helper to check if a lecture milestone is fully completed (video, quiz, and coding solved)
+// Helper to check if a lecture milestone is fully completed (video watch completed)
 function isLectureCompleted(lecId, courseId) {
-  if (!completedLectureIds.includes(lecId)) return false;
-
-  const linkedMCQs = (courseMCQsMap[courseId] || []).filter(q => q.lecture_id === lecId);
-  if (linkedMCQs.length > 0) {
-    const allMCQsSolved = linkedMCQs.every(q => 
-      submissionsCache.some(s => s.type === 'mcq' && s.reference_id === q.id && s.is_correct === 1)
-    );
-    if (!allMCQsSolved) return false;
-  }
-
-  const linkedAssignments = (courseAssignmentsMap[courseId] || []).filter(a => a.lecture_id === lecId);
-  if (linkedAssignments.length > 0) {
-    const allAssignmentsSolved = linkedAssignments.every(a => 
-      submissionsCache.some(s => s.type === 'assignment' && s.reference_id === a.id && s.is_correct === 1)
-    );
-    if (!allAssignmentsSolved) return false;
-  }
-
-  return true;
+  return completedLectureIds.includes(lecId);
 }
 
 // Render widgets and ongoing cycle listing on Home tab
