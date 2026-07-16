@@ -281,6 +281,10 @@ function switchAdminTab(tabId, button) {
     titleEl.textContent = 'Candidate Audit Logs';
     subEl.textContent = 'Track and review student session logs, course enrollments, and video lecture progress history.';
     loadStudentHistoryData();
+  } else if (tabId === 'student-details') {
+    titleEl.textContent = 'Placement Profiles & Resume Directory';
+    subEl.textContent = 'Query detailed student contact details, phone numbers, portfolio links, and attached resumes.';
+    loadAdminStudentDetailsPanel();
   }
 }
 
@@ -5571,5 +5575,173 @@ window.loadStudentProfilePanel = async function() {
     }
   } catch (err) {
     console.error('Failed to load profile details:', err);
+  }
+};
+
+/* ==========================================================================
+   ADMIN STUDENT DETAILS TAB CONTROLLERS
+   ========================================================================== */
+let selectedDetailsStudentId = null;
+
+window.loadAdminStudentDetailsPanel = async function() {
+  try {
+    // If cache is empty, fetch it
+    if (historyStudents.length === 0) {
+      const data = await API.getStudentHistory();
+      historyStudents = data.students || [];
+      historyLogs = data.logs || [];
+      historyProgress = data.progress || [];
+      historyEnrollments = data.enrollments || [];
+      historySubmissions = data.submissions || [];
+      historyLectures = data.lectures || [];
+    }
+
+    // Load leaderboard too for ranks
+    if (leaderboardCache.length === 0) {
+      const lbData = await API.getLeaderboard();
+      leaderboardCache = lbData.leaderboard || [];
+    }
+
+    renderDetailsStudentList();
+  } catch (err) {
+    console.error('Failed to load admin student details tab:', err);
+  }
+};
+
+window.renderDetailsStudentList = function() {
+  const container = document.getElementById('details-student-list');
+  if (!container) return;
+  container.innerHTML = '';
+
+  if (historyStudents.length === 0) {
+    container.innerHTML = `<span style="color: var(--text-muted); font-size: 0.85rem; padding: 1rem;">No students registered yet.</span>`;
+    return;
+  }
+
+  historyStudents.forEach(student => {
+    const isSelected = selectedDetailsStudentId === student.id;
+    const row = document.createElement('div');
+    row.className = 'lecture-row';
+    row.style.cssText = `
+      padding: 0.85rem 1rem; 
+      border-radius: var(--radius-sm); 
+      margin-bottom: 0.35rem; 
+      cursor: pointer;
+      display: flex;
+      flex-direction: column;
+      gap: 0.25rem;
+      border: 1px solid ${isSelected ? 'var(--primary)' : 'transparent'};
+      background-color: ${isSelected ? 'var(--sidebar-hover)' : 'rgba(255, 255, 255, 0.01)'};
+    `;
+    
+    row.innerHTML = `
+      <span style="font-weight: 700; color: ${isSelected ? 'var(--primary)' : 'var(--text-main)'}; font-size: 0.95rem; text-align: left;">${student.name}</span>
+      <span style="font-size: 0.75rem; color: var(--text-muted); text-align: left;">${student.email}</span>
+    `;
+    
+    row.onclick = () => {
+      selectedDetailsStudentId = student.id;
+      renderDetailsStudentList();
+      selectDetailsStudent(student.id);
+    };
+    
+    container.appendChild(row);
+  });
+};
+
+window.selectDetailsStudent = async function(studentId) {
+  const student = historyStudents.find(s => s.id === studentId);
+  if (!student) return;
+
+  const emptyState = document.getElementById('details-empty-state');
+  const detailsContent = document.getElementById('details-info-content');
+
+  if (emptyState) emptyState.style.display = 'none';
+  if (detailsContent) detailsContent.style.display = 'flex';
+
+  // Set top-level identifiers
+  const initials = student.name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
+  document.getElementById('details-student-avatar').textContent = initials;
+  document.getElementById('details-student-name').textContent = student.name;
+  document.getElementById('details-student-email').textContent = student.email;
+
+  // Ranks standing
+  const studentEntry = leaderboardCache.find(s => s.id === studentId);
+  const rankText = studentEntry ? `Leaderboard Rank #${studentEntry.rank}` : 'Unranked / No Activity';
+  document.getElementById('details-student-rank').textContent = rankText;
+
+  // Clear fields while loading
+  document.getElementById('details-student-phone-top').innerText = 'Loading phone...';
+  document.getElementById('details-student-phone-full').innerText = '-';
+  document.getElementById('details-student-institution').innerText = 'Loading...';
+  document.getElementById('details-student-grade').innerText = '-';
+  document.getElementById('details-student-stream').innerText = '-';
+  document.getElementById('details-student-year').innerText = '-';
+  document.getElementById('details-student-gpa').innerText = '-';
+
+  const levelBadge = document.getElementById('details-student-level-badge');
+  levelBadge.innerText = 'Unresolved';
+
+  const githubBtn = document.getElementById('details-github-btn');
+  const linkedinBtn = document.getElementById('details-linkedin-btn');
+  const resumeBtn = document.getElementById('details-resume-btn');
+  const resumeLbl = document.getElementById('details-resume-lbl');
+
+  githubBtn.style.display = 'none';
+  linkedinBtn.style.display = 'none';
+  resumeBtn.style.display = 'none';
+  resumeLbl.innerText = 'No resume attached yet.';
+
+  try {
+    const profile = await API.getAdminStudentProfile(studentId);
+    if (profile) {
+      levelBadge.innerText = profile.education_level === 'school' ? '🏫 School Grade' : '🎓 College Program';
+      
+      const phoneText = profile.phone_number || 'No Phone';
+      document.getElementById('details-student-phone-top').innerText = phoneText;
+      document.getElementById('details-student-phone-full').innerText = phoneText;
+      
+      document.getElementById('details-student-institution').innerText = profile.institution_name || '-';
+      document.getElementById('details-student-grade').innerText = profile.status_grade || '-';
+      document.getElementById('details-student-stream').innerText = profile.stream_degree || '-';
+      document.getElementById('details-student-year').innerText = profile.completion_year || '-';
+
+      // Set label translations
+      document.getElementById('details-inst-lbl').innerText = profile.education_level === 'school' ? 'School Name' : 'College / University Name';
+      document.getElementById('details-grade-lbl').innerText = profile.education_level === 'school' ? 'Current Class' : 'Current Year';
+      document.getElementById('details-stream-lbl').innerText = profile.education_level === 'school' ? 'Subject Stream' : 'Degree Major / Branch';
+
+      const gpaContainer = document.getElementById('details-gpa-container');
+      if (profile.education_level === 'school') {
+        gpaContainer.style.display = 'none';
+      } else {
+        gpaContainer.style.display = 'block';
+        document.getElementById('details-student-gpa').innerText = profile.gpa_score || '-';
+      }
+
+      if (profile.education_level === 'college') {
+        if (profile.github_link) {
+          githubBtn.style.display = 'inline-block';
+          githubBtn.href = profile.github_link;
+        }
+        if (profile.linkedin_link) {
+          linkedinBtn.style.display = 'inline-block';
+          linkedinBtn.href = profile.linkedin_link;
+        }
+      }
+
+      if (profile.resume_url) {
+        resumeLbl.innerText = 'Resume PDF is attached.';
+        resumeBtn.style.display = 'inline-block';
+        resumeBtn.href = '/' + profile.resume_url;
+      }
+    } else {
+      levelBadge.innerText = 'Not Onboarded';
+      document.getElementById('details-student-phone-top').innerText = 'No Phone';
+      document.getElementById('details-student-institution').innerText = 'Pending onboarding details';
+    }
+  } catch (err) {
+    console.error('Failed to query candidate detail profile card:', err);
+    levelBadge.innerText = 'Error';
   }
 };
