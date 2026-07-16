@@ -228,6 +228,12 @@ function initializeDatabase() {
       // Ignored if column already exists
     });
 
+    db.run(`ALTER TABLE courses ADD COLUMN instructor_name TEXT DEFAULT 'Faculty Lead'`, (err) => {});
+    db.run(`ALTER TABLE courses ADD COLUMN instructor_title TEXT DEFAULT 'LMS Instructor'`, (err) => {});
+    db.run(`ALTER TABLE courses ADD COLUMN instructor_bio TEXT DEFAULT 'Professional industry practitioner.'`, (err) => {});
+    db.run(`ALTER TABLE courses ADD COLUMN instructor_avatar TEXT DEFAULT 'avatar-1'`, (err) => {});
+    db.run(`ALTER TABLE courses ADD COLUMN syllabus_roadmap TEXT DEFAULT 'Syllabus Roadmap Outline Details'`, (err) => {});
+
     // 10. XP Settings table
     db.run(`CREATE TABLE IF NOT EXISTS xp_settings (
       key TEXT PRIMARY KEY,
@@ -426,7 +432,7 @@ app.get('/api/courses', requireLogin, (req, res) => {
 
 // Create course (Admin / Faculty)
 app.post('/api/courses', requireAdminOrFaculty, upload.single('thumbnail_file'), (req, res) => {
-  const { title, description, category, thumbnail_url } = req.body;
+  const { title, description, category, thumbnail_url, instructor_name, instructor_title, instructor_bio, instructor_avatar, syllabus_roadmap } = req.body;
   if (!title || !category) {
     return res.status(400).json({ error: 'Title and Category are required.' });
   }
@@ -439,8 +445,19 @@ app.post('/api/courses', requireAdminOrFaculty, upload.single('thumbnail_file'),
   }
 
   db.run(
-    `INSERT INTO courses (title, description, category, thumbnail_url) VALUES (?, ?, ?, ?)`,
-    [title, description, category, thumb],
+    `INSERT INTO courses (title, description, category, thumbnail_url, instructor_name, instructor_title, instructor_bio, instructor_avatar, syllabus_roadmap) 
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    [
+      title,
+      description,
+      category,
+      thumb,
+      instructor_name || 'Faculty Lead',
+      instructor_title || 'LMS Instructor',
+      instructor_bio || 'Professional industry practitioner.',
+      instructor_avatar || 'avatar-1',
+      syllabus_roadmap || 'Syllabus Roadmap Details'
+    ],
     function (err) {
       if (err) return res.status(500).json({ error: 'Failed to create course.' });
       res.status(201).json({ success: true, courseId: this.lastID });

@@ -223,6 +223,42 @@
                 <label class="form-label" for="course-thumb-file">Upload Course Thumbnail Image</label>
                 <input class="form-input" type="file" id="course-thumb-file" accept="image/*" required>
               </div>
+
+              <!-- Instructor Profile Card Configuration -->
+              <div style="border: 1px solid var(--card-border); padding: 1rem; border-radius: var(--radius-sm); margin-bottom: 1rem; background: rgba(255,255,255,0.01);">
+                <strong style="font-size: 0.85rem; color: var(--primary); display: block; margin-bottom: 0.75rem;">👨‍🏫 Instructor Profile Settings</strong>
+                <div class="form-group" style="margin-bottom: 0.75rem;">
+                  <label class="form-label" style="font-size: 0.75rem;" for="course-instructor-name">Instructor Name</label>
+                  <input class="form-input" type="text" id="course-instructor-name" required placeholder="e.g. Striver" style="padding: 0.4rem 0.65rem; font-size: 0.8rem;">
+                </div>
+                <div class="form-group" style="margin-bottom: 0.75rem;">
+                  <label class="form-label" style="font-size: 0.75rem;" for="course-instructor-title">Credentials / Title Tagline</label>
+                  <input class="form-input" type="text" id="course-instructor-title" required placeholder="e.g. Ex-Google SWE, Founder of takeUforward" style="padding: 0.4rem 0.65rem; font-size: 0.8rem;">
+                </div>
+                <div class="form-group" style="margin-bottom: 0.75rem;">
+                  <label class="form-label" style="font-size: 0.75rem;" for="course-instructor-bio">Biography / Expertise Description</label>
+                  <textarea class="form-input" id="course-instructor-bio" style="height: 60px; resize: none; padding: 0.4rem 0.65rem; font-size: 0.8rem;" placeholder="Brief details about teaching history..."></textarea>
+                </div>
+                <div class="form-group" style="margin-bottom: 0;">
+                  <label class="form-label" style="font-size: 0.75rem;" for="course-instructor-avatar">Select Instructor Photo Avatar</label>
+                  <select class="form-input" id="course-instructor-avatar" style="padding: 0.4rem 0.65rem; font-size: 0.8rem;">
+                    <option value="avatar-1">👨‍💻 Technical Coach (Avatar 1)</option>
+                    <option value="avatar-2">👩‍💻 AI & ML Researcher (Avatar 2)</option>
+                    <option value="avatar-3">🧑‍🏫 Senior Professor (Avatar 3)</option>
+                    <option value="avatar-4">👩‍🏫 Design Architect (Avatar 4)</option>
+                  </select>
+                </div>
+              </div>
+
+              <!-- Learning Path & Roadmap Configuration -->
+              <div style="border: 1px solid var(--card-border); padding: 1rem; border-radius: var(--radius-sm); margin-bottom: 1.25rem; background: rgba(255,255,255,0.01);">
+                <strong style="font-size: 0.85rem; color: var(--success); display: block; margin-bottom: 0.75rem;">🗺️ Syllabus Roadmap Outline</strong>
+                <div class="form-group" style="margin-bottom: 0;">
+                  <label class="form-label" style="font-size: 0.75rem;" for="course-syllabus-roadmap">Weekly Topics / Learning Roadmap</label>
+                  <textarea class="form-input" id="course-syllabus-roadmap" style="height: 90px; resize: none; font-size: 0.8rem; padding: 0.4rem 0.65rem;" placeholder="Use vertical pipes to separate steps, e.g.&#10;Phase 1: Basic Syntaxes | Phase 2: Array Functions | Phase 3: Dynamic Programming" required></textarea>
+                </div>
+              </div>
+
               <button type="submit" class="btn btn-primary btn-block">Add Course</button>
             </form>
           </div>

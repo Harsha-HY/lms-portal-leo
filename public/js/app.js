@@ -826,17 +826,20 @@ function renderCoursesGrid() {
       <div class="course-card-content">
         <h4 class="course-card-title">${course.title}</h4>
         <p class="course-card-desc">${course.description || 'Access lectures and tracks progress.'}</p>
-        <div class="course-card-footer" style="margin-top: 1rem; display: flex; justify-content: space-between; align-items: center; width: 100%;">
+        <div class="course-card-footer" style="margin-top: 1rem; display: flex; gap: 0.5rem; justify-content: space-between; align-items: center; width: 100%;">
+          <button class="btn" style="padding: 0.5rem 0.85rem; font-size: 0.85rem; background: rgba(255,255,255,0.05); border: 1px solid var(--card-border); color: var(--text-main); font-weight: 700;" onclick="openCourseRoadmapModal(${course.id})">
+            Syllabus
+          </button>
           ${isEnrolled ? `
-            <div style="flex: 1; display: flex; justify-content: flex-end; width: 100%;">
-              <button class="btn btn-success" style="padding: 0.5rem 1.25rem; font-size: 0.85rem; background: rgba(16, 185, 129, 0.15); border: 1px solid rgba(16, 185, 129, 0.3); color: var(--success); width: 100%; cursor: default; font-weight: 700;" disabled>
+            <div style="flex: 1; display: flex; justify-content: flex-end;">
+              <button class="btn btn-success" style="padding: 0.5rem 0.85rem; font-size: 0.85rem; background: rgba(16, 185, 129, 0.15); border: 1px solid rgba(16, 185, 129, 0.3); color: var(--success); width: 100%; cursor: default; font-weight: 700;" disabled>
                 ✓ Enrolled
               </button>
             </div>
           ` : `
-            <div style="flex: 1; display: flex; justify-content: flex-end; width: 100%;">
-              <button class="btn btn-primary" style="padding: 0.5rem 1.25rem; font-size: 0.85rem; background: var(--sidebar-active); width: 100%;" onclick="enrollCourse(${course.id})">
-                Enroll Course
+            <div style="flex: 1; display: flex; justify-content: flex-end;">
+              <button class="btn btn-primary" style="padding: 0.5rem 0.85rem; font-size: 0.85rem; background: var(--sidebar-active); width: 100%;" onclick="enrollCourse(${course.id})">
+                Enroll
               </button>
             </div>
           `}
@@ -1737,6 +1740,12 @@ async function handleCreateCourse(e) {
   const fileInput = document.getElementById('course-thumb-file');
   const file = fileInput ? fileInput.files[0] : null;
 
+  const insName = document.getElementById('course-instructor-name').value;
+  const insTitle = document.getElementById('course-instructor-title').value;
+  const insBio = document.getElementById('course-instructor-bio').value;
+  const insAvatar = document.getElementById('course-instructor-avatar').value;
+  const syllabus = document.getElementById('course-syllabus-roadmap').value;
+
   if (!file) {
     showAdminAlert(alertContainer, 'error', 'Please choose a course thumbnail image file.');
     return;
@@ -1747,6 +1756,11 @@ async function handleCreateCourse(e) {
   formData.append('category', category);
   formData.append('description', description);
   formData.append('thumbnail_file', file);
+  formData.append('instructor_name', insName);
+  formData.append('instructor_title', insTitle);
+  formData.append('instructor_bio', insBio);
+  formData.append('instructor_avatar', insAvatar);
+  formData.append('syllabus_roadmap', syllabus);
 
   try {
     const res = await API.createCourse(formData);
@@ -5207,4 +5221,67 @@ window.showStudentSuccessModal = function(title, message, isSuccess = true) {
     </div>
   `;
   document.body.appendChild(modal);
+};
+
+window.openCourseRoadmapModal = function(courseId) {
+  const course = allCourses.find(c => c.id === courseId);
+  if (!course) return;
+
+  document.getElementById('roadmap-course-title').innerText = course.title;
+  
+  // Set instructor details
+  document.getElementById('roadmap-instructor-name').innerText = course.instructor_name || 'Faculty Lead';
+  document.getElementById('roadmap-instructor-title').innerText = course.instructor_title || 'LMS Instructor';
+  document.getElementById('roadmap-instructor-bio').innerText = course.instructor_bio || 'Professional industry practitioner.';
+
+  // Map avatar ID to suitable emoji icons
+  const avatarMap = {
+    'avatar-1': '👨‍💻',
+    'avatar-2': '👩‍💻',
+    'avatar-3': '🧑‍🏫',
+    'avatar-4': '👩‍🏫'
+  };
+  const avatarEmoji = avatarMap[course.instructor_avatar] || '👨‍💻';
+  document.getElementById('roadmap-instructor-avatar-container').innerText = avatarEmoji;
+
+  // Render vertical timeline steps
+  const stepsContainer = document.getElementById('roadmap-timeline-steps');
+  stepsContainer.innerHTML = '';
+
+  const roadmapRaw = course.syllabus_roadmap || 'Syllabus roadmap not specified.';
+  const phases = roadmapRaw.split('|').map(s => s.trim()).filter(s => s.length > 0);
+
+  phases.forEach((phase, idx) => {
+    // Determine status style: Phase 1 gets active primary theme style, others get sub-styles
+    const circleBg = idx === 0 ? 'var(--primary)' : 'rgba(255,255,255,0.05)';
+    const circleBorder = idx === 0 ? 'none' : '1px solid var(--card-border)';
+    const circleColor = idx === 0 ? '#fff' : 'var(--text-muted)';
+    
+    // Add visual line connector unless it's the last step
+    const connectorLine = idx < phases.length - 1 
+      ? `<div style="position: absolute; left: 16px; top: 32px; width: 2px; height: calc(100% - 10px); background: var(--card-border); z-index: 1;"></div>` 
+      : '';
+
+    const item = document.createElement('div');
+    item.style.cssText = 'display: flex; gap: 1rem; position: relative; padding-bottom: 0.5rem;';
+    item.innerHTML = `
+      <div style="position: relative; display: flex; flex-direction: column; align-items: center; width: 34px;">
+        <div style="width: 32px; height: 32px; border-radius: 50%; background: ${circleBg}; border: ${circleBorder}; display: flex; align-items: center; justify-content: center; font-size: 0.85rem; font-weight: 800; color: ${circleColor}; z-index: 2;">
+          ${idx + 1}
+        </div>
+        ${connectorLine}
+      </div>
+      <div style="flex: 1; padding-top: 0.25rem;">
+        <strong style="font-size: 0.85rem; color: var(--text-main); display: block; letter-spacing: -0.01em;">Phase ${idx + 1}</strong>
+        <p style="margin: 0.15rem 0 0 0; font-size: 0.8rem; line-height: 1.4; color: var(--text-muted);">${phase}</p>
+      </div>
+    `;
+    stepsContainer.appendChild(item);
+  });
+
+  document.getElementById('roadmap-preview-modal').style.display = 'flex';
+};
+
+window.closeRoadmapModal = function() {
+  document.getElementById('roadmap-preview-modal').style.display = 'none';
 };
