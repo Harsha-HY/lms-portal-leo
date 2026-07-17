@@ -9,7 +9,7 @@ const multer = require('multer');
 const pdfParse = require('pdf-parse');
 
 // Configure upload directory
-const UPLOADS_DIR = path.join(__dirname, 'public', 'uploads');
+const UPLOADS_DIR = path.join(__dirname, 'uploads');
 if (!fs.existsSync(UPLOADS_DIR)) {
   fs.mkdirSync(UPLOADS_DIR, { recursive: true });
 }
@@ -49,7 +49,8 @@ const db = new sqlite3.Database(DB_PATH, (err) => {
 // Configure Express Middlewares
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-app.use(express.static(path.join(__dirname, 'public')));
+app.use('/uploads', express.static(UPLOADS_DIR));
+app.use(express.static(path.join(__dirname, 'client', 'dist')));
 
 app.use(session({
   secret: process.env.SESSION_SECRET || 'lms_secret_session_key_123!#',
@@ -1700,6 +1701,11 @@ app.get('/api/student/assessments/:id/review', requireLogin, (req, res) => {
       });
     });
   });
+});
+
+// Catch-all to support SPA routing via React Router
+app.get('*', (req, res) => {
+  res.sendFile(path.join(__dirname, 'client', 'dist', 'index.html'));
 });
 
 // Start Server
