@@ -91,6 +91,23 @@ const API = {
     return this.fetchJSON('/api/student/logs');
   },
 
+  getMeetLinks() {
+    return this.fetchJSON('/api/meet-links');
+  },
+
+  scheduleMeetLink(payload) {
+    return this.fetchJSON('/api/admin/meet-links', {
+      method: 'POST',
+      body: JSON.stringify(payload)
+    });
+  },
+
+  finishMeetLink(id) {
+    return this.fetchJSON(`/api/admin/meet-links/${id}/finish`, {
+      method: 'POST'
+    });
+  },
+
   getLeaderboard() {
     return this.fetchJSON('/api/leaderboard');
   },
@@ -157,6 +174,16 @@ const API = {
 
   finishCallbackRequest(id) {
     return this.fetchJSON(`/api/admin/callback-requests/${id}/finish`, {
+      method: 'POST'
+    });
+  },
+
+  getAdminQueries() {
+    return this.fetchJSON('/api/admin/queries');
+  },
+
+  finishLandingQuery(id) {
+    return this.fetchJSON(`/api/admin/queries/${id}/finish`, {
       method: 'POST'
     });
   },
@@ -330,3 +357,6 @@ const API = {
     });
   }
 };
+
+window.API = API;
+

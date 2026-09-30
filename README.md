@@ -1,183 +1,80 @@
-# LMS Portal Leo - Learning Management System
+# GSSS SSFGC LMS Portal — Digital Campus & Learning System
 
-## Overview
+Official Smart Learning Management System (LMS) for **GSSS Simha Subbamahalakshmi First Grade College (SSFGC), Mysuru**, affiliated with the **University of Mysore**. Managed by **Geetha Shishu Shikshana Sangha (GSSS®)**.
 
-LMS Portal Leo is a full-featured Learning Management System that enables educators to create and manage courses, deliver video lectures, and assess student learning through MCQs, coding assignments, and timed mock assessments. The platform includes gamification through XP leaderboards, real-time progress tracking, and comprehensive admin dashboards for monitoring student engagement.
+A high-performance, responsive, and feature-rich LMS and academic digital hub. This platform delivers a digital learning experience for **BCA**, **BBA**, and **B.Com** students alongside a comprehensive faculty administrative workspace.
 
-## How It Works
+---
 
-### User Roles & Authentication
+## 🌟 Core Features & Capabilities
 
-The system supports three user roles:
+### 1. Student Academic Portal
+* **Modular Video Lectures**: High-definition, unit-wise curriculum lessons mapped directly to University of Mysore syllabi.
+* **In-Browser Code Compiler**: Interactive practice IDE supporting **Python**, **Java**, **C++**, **JavaScript**, and **SQL** with automated test-case evaluation and AI debugging hints.
+* **Anti-Cheat Proctored Assessments**: Timed Online Assessments (OAs) equipped with tab-switch monitoring and real-time alerts.
+* **53-Week Contribution Heatmap**: GitHub-style visual tracker calculating daily lecture watch consistency, coding submissions, and study streaks.
+* **WhatsApp Web-Style Batch Chat**: Real-time cohort communication channels with color-coded initials avatars and keyboard `Enter` sending.
+* **Course-Targeted Live Meets**: Directly join faculty-scheduled Google Meet mentoring sessions.
+* **Gamified XP Leaderboard**: Earn Experience Points (XP) for watched lectures, solved coding problems, and high quiz scores.
 
-1. **Admin (Owner)** 
-2. **Faculty** - Instructors invited by admins who can create courses and content
-3. **Student** - Learners who enroll in courses and complete lessons
+### 2. Faculty & Admin Management Console
+* **Interactive Chart.js Analytics**: Live visualizations tracking course subscriptions, candidate completion rates, and 7-day login activity timelines.
+* **Curriculum Publisher**: Upload video lectures, link chapter study notes, create MCQ quizzes, and configure coding problem sets.
+* **Live Meeting Scheduler**: Manage course-targeted Google Meets and archive session histories.
+* **Anti-Cheat Audit Logs**: Review student exam submissions, scores, elapsed time, and tab-switch records to ensure academic integrity.
+* **Student Helpdesk Ticket Resolver**: View and resolve student inquiries submitted through the public portal.
 
-Users register with email/password (hashed with bcrypt) or can use pre-existing accounts. Sessions are maintained server-side using express-session with 24-hour expiry.
+---
 
-### Core Features
+## 🛠️ Tech Stack & Architecture
 
-#### 1. Course Management
-- Admins/Faculty create courses with title, description, category, and thumbnail
-- Courses appear in course listings that students can explore
-- Each course can contain multiple lectures, assignments, and MCQs
-- Instructors add metadata like name, title, bio, avatar, and syllabus roadmap
+* **Backend**: Node.js & Express.js server (`server.js`)
+* **Database**: SQLite3 (`database.db`)
+* **File & Media Storage**: Local disk storage handled by Multer (`public/uploads/`)
+* **Authentication**: Session-based auth with `express-session`, password encryption via `bcryptjs` (salt work factor = 10), and Role-Based Access Control (RBAC)
+* **Frontend**: Vanilla HTML5, CSS3, Google Fonts (`Sora` + `Manrope`), and lightweight JS controllers (`api.js`, `app.js`)
+* **Visuals & Charts**: Chart.js for admin analytics
 
-#### 2. Video Lectures
-- Upload videos directly or link YouTube/external video URLs
-- Videos are streamed to students with automatic progress tracking
-- System tracks seconds watched per video for XP calculations
-- Lectures can have notes, duration, and content type indicators
-- Lecures are ordered sequentially for structured learning paths
+---
 
-#### 3. Student Progress Tracking
-- System automatically marks lectures as complete/incomplete
-- Video watch time (seconds) is recorded in real-time as students watch
-- Login activity is logged for engagement analytics
-- A progress heatmap can be generated from login history for streak calculations
+## 🚀 Getting Started
 
-#### 4. Assessments & Quizzes
+### Prerequisites
+* [Node.js](https://nodejs.org) (v16+ recommended)
+* npm
 
-**MCQ (Multiple Choice Questions)**
-- Faculty creates questions with four options and correct answer
-- Students select answers during completion
-- Instant feedback shows if correct or incorrect
-- Progress and XP awarded automatically
-- PDF worksheets can be parsed to auto-generate MCQ questions
+### Installation & Launch
+1. Clone the repository:
+   ```bash
+   git clone https://github.com/Harsha-HY/lms-portal-leo.git
+   cd lms-portal-leo
+   ```
+2. Install dependencies:
+   ```bash
+   npm install
+   ```
+3. Start the application:
+   ```bash
+   npm start
+   ```
+4. Open [http://localhost:3000](http://localhost:3000) in your browser.
 
-**Coding Assignments**
-- JavaScript-based assignments with boilerplate code templates
-- Two-tier hint system (hint + hint_2) for progressive support
-- Test cases stored in JSON format for validation
-- System tracks tab-switch attempts to monitor exam integrity
+---
 
-**Timed Mock Assessments**
-- Proctored exams combining MCQs and coding tasks
-- Configurable duration in minutes
-- Real-time grading on submission
-- Tab-switch detection (>15 switches = disqualification)
-- Time-spent tracking for analytics
-- Student can review results after completion with correct answers visible
+## 🔑 Default Credentials
 
-#### 5. Gamification & Leaderboards
-- **XP System** - Points awarded for:
-  - Video watching (50 XP per 30 seconds watched)
-  - MCQ completion (25 XP default, configurable)
-  - Assignment completion (100 XP default, configurable)
-- **Global Leaderboard** - Ranks all students by total XP with course enrollments displayed
-- Admins can customize XP multipliers
+| Role | Email | Password | Access Portal |
+| :--- | :--- | :--- | :--- |
+| **Admin / Faculty** | `harshahy701@gmail.com` | `admin123` | [Admin Console](http://localhost:3000/admin.html) |
+| **Student** | `demo@gmail.com` | `demo123` | [Student Dashboard](http://localhost:3000/dashboard.html) |
 
-#### 6. Student Profiles & Onboarding
-- Students complete profile with education level, institution, degree stream, major, GPA
-- Resume upload support with PDF storage in `/uploads`
-- GitHub and LinkedIn profile links
-- Callback request system - students can request instructor call for doubt clarification
-- Admins track pending/completed callback requests
+---
 
-#### 7. Admin Tracking & Analytics
-- **Student Progress Dashboard** - View all students with lecture completion rates per course
-- **Login Audit Logs** - Track IP addresses, user agents, and login timestamps
-- **Detailed History** - Complete audit trail of:
-  - Student enrollments and course progress
-  - MCQ/Assignment submissions with correctness status
-  - Tab-switch counts during assessments
-  - Timestamps of all activities
+## 🏛️ Institution Details
 
-#### 8. Team Management
-- Admins invite faculty members with email/password credentials
-- Can revoke faculty/admin access by deleting accounts
-- Prevent self-removal of admin privileges
-
-## Data Flow
-
-### User Journey - Student
-
-1. **Register** → Auto-enrolls as student (first user is admin)
-2. **Browse Courses** → View available courses
-3. **Enroll** → Add course to personal dashboard
-4. **Watch Lectures** → Automatic progress/XP tracking, mark as complete
-5. **Complete MCQs** → Submit answers, get instant feedback
-6. **Solve Assignments** → Write/test code against test cases, earn XP
-7. **Take Assessments** → Timed mock exams with proctoring features
-8. **View Profile** → Track total XP, rank on leaderboard, enrolled courses
-9. **Request Callback** → Submit doubts for faculty interaction
-
-### Teacher/Admin Workflow
-
-1. **Invite Faculty** → Create additional instructors
-2. **Create Courses** → Define learning programs
-3. **Add Lectures** → Upload videos with notes and metadata
-4. **Create MCQs** → Build question pools (manual or PDF-parsed)
-5. **Create Assignments** → Design coding challenges with hints and test cases
-6. **Build Assessments** → Combine MCQs + assignments into timed exams
-7. **Monitor Progress** → View student completion rates and engagement
-8. **Manage Callbacks** → Track student doubts and mark as completed
-9. **Generate Reports** → Export audit logs and submission history
-
-## Database Architecture
-
-**SQLite Database** with 14 core tables:
-
-- `users` - Authentication & roles
-- `courses` - Course metadata
-- `lectures` - Video content
-- `enrollments` - Student-course relationships
-- `progress` - Video completion and watch time
-- `assignments` - Coding challenges
-- `mcqs` - Quiz questions
-- `submissions` - Student answers and results
-- `assessments` - Timed mock exams
-- `assessment_questions` - Links questions to assessments
-- `assessment_submissions` - Exam attempt results
-- `login_logs` - Activity audit trail
-- `student_profiles` - Extended profile information
-- `callback_requests` - Doubt/support requests
-
-## API Architecture
-
-The backend exposes RESTful endpoints organized by domain:
-
-- `/api/auth/*` - Authentication (register, login, logout, me)
-- `/api/courses/*` - Course CRUD & lecture management
-- `/api/student/*` - Student progress, profile, enrollment
-- `/api/admin/*` - Tracking, team management, content creation
-- `/api/submissions` - Student quiz/assignment submissions
-- `/api/leaderboard` - XP rankings
-- `/api/assignments`, `/api/mcqs` - Content management
-
-All endpoints except login/register require `requireLogin` middleware. Admin/Faculty endpoints require `requireAdminOrFaculty` or `requireAdmin` middleware enforcing role-based access control.
-
-## File Uploads
-
-- **Video Lectures** - Stored in `/uploads` with automatic naming
-- **Assignment Solutions** - Logged in submissions table
-- **Resumes** - PDF files stored in `/uploads`
-- **Thumbnails** - Course images from URLs or uploaded files
-- **File Size Limit** - 100MB per upload
-
-## Real-Time Features
-
-- Video progress updates send `watched_seconds` to backend
-- Tab-switch detection during assessments (client-side tracking)
-- Instant XP calculation on leaderboard
-- Automatic exam grading on submit with score/status response
-- Session state maintained server-side for 24 hours
-
-## Frontend Architecture
-
-Built with React + Vite + React Router:
-- SPA routing for multi-page navigation
-- Separate `/client` directory with dist build
-- Express serves React build as static files with fallback to index.html
-- REST API client calls to backend endpoints
-
-## Security Features
-
-- Password hashing with bcryptjs (10 salt rounds)
-- Session-based authentication with HTTP-only cookies
-- Role-based middleware for endpoint protection
-- Login tracking for audit purposes
-- Prevents self-removal of admin privileges
-- Assessment answers hidden during proctoring (exclude correct options)
-
+* **Institution**: GSSS Simha Subbamahalakshmi First Grade College (SSFGC), Mysuru
+* **Affiliation**: Affiliated with the University of Mysore
+* **Management**: Geetha Shishu Shikshana Sangha (GSSS®)
+* **Campus Address**: Plot No. 45 & 46 (part), Survey No. 22, Belagola Industrial Area, KRS Road, Metagalli, Mysuru – 570016, Karnataka, India
+* **Telephone**: +91 0821 2581302 / +91 944 878 2121
+* **Email**: `gsssfgc@gmail.com`
