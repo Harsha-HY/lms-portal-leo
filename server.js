@@ -57,7 +57,7 @@ app.use(session({
   resave: false,
   saveUninitialized: false,
   cookie: { 
-    maxAge: 24 * 60 * 60 * 1000, // 24 hours
+    maxAge: 365 * 24 * 60 * 60 * 1000, // 365 days persistent cookie
     secure: false // Set to true if running over HTTPS
   }
 }));
@@ -314,6 +314,39 @@ function initializeDatabase() {
       FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
     )`);
 
+    db.run(`CREATE TABLE IF NOT EXISTS landing_queries (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      name TEXT NOT NULL,
+      email TEXT NOT NULL,
+      phone TEXT NOT NULL,
+      interest TEXT NOT NULL,
+      question TEXT NOT NULL,
+      status TEXT DEFAULT 'pending',
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    )`);
+
+    db.run(`CREATE TABLE IF NOT EXISTS chat_messages (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id INTEGER NOT NULL,
+      message TEXT NOT NULL,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE CASCADE
+    )`);
+
+    db.run(`CREATE TABLE IF NOT EXISTS meet_links (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      course_id INTEGER NOT NULL,
+      topic TEXT NOT NULL,
+      subject TEXT NOT NULL,
+      meet_url TEXT NOT NULL,
+      meet_date TEXT NOT NULL,
+      duration TEXT NOT NULL,
+      mentor_name TEXT NOT NULL,
+      status TEXT DEFAULT 'active',
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY(course_id) REFERENCES courses(id) ON DELETE CASCADE
+    )`);
+
     // Database setup is complete
   });
 }
@@ -449,6 +482,122 @@ app.post('/api/auth/logout', (req, res) => {
   });
 });
 
+
+/* ==========================================================================
+   MEET LINKS SCHEDULER ENDPOINTS
+   ========================================================================== */
+// Get all meet links (active and finished)
+app.get('/api/meet-links', requireLogin, (req, res) => {
+  const userId = req.session.userId;
+  const userRole = req.session.userRole;
+  
+  if (userRole === 'admin' || userRole === 'faculty' || userRole === 'observer') {
+    // Admin sees all scheduled meetings
+    db.all(
+      `SELECT ml.*, c.title as course_title 
+       FROM meet_links ml 
+       LEFT JOIN courses c ON ml.course_id = c.id 
+       ORDER BY ml.meet_date DESC`,
+      [],
+      (err, rows) => {
+        if (err) return res.status(500).json({ error: 'Failed to retrieve meet links.' });
+        res.json(rows);
+      }
+    );
+  } else {
+    // Candidate only sees meet links for enrolled courses
+    db.all(
+      `SELECT ml.*, c.title as course_title 
+       FROM meet_links ml 
+       JOIN enrollments e ON ml.course_id = e.course_id 
+       LEFT JOIN courses c ON ml.course_id = c.id 
+       WHERE e.user_id = ? 
+       ORDER BY ml.meet_date DESC`,
+      [userId],
+      (err, rows) => {
+        if (err) return res.status(500).json({ error: 'Failed to retrieve meet links.' });
+        res.json(rows);
+      }
+    );
+  }
+});
+
+// Create meet link (Admin / Faculty)
+app.post('/api/admin/meet-links', requireAdminOrFaculty, (req, res) => {
+  const { course_id, topic, subject, meet_url, meet_date, duration, mentor_name } = req.body;
+  if (!course_id || !topic || !subject || !meet_url || !meet_date || !duration || !mentor_name) {
+    return res.status(400).json({ error: 'All fields are required.' });
+  }
+  db.run(
+    `INSERT INTO meet_links (course_id, topic, subject, meet_url, meet_date, duration, mentor_name) VALUES (?, ?, ?, ?, ?, ?, ?)`,
+    [course_id, topic, subject, meet_url, meet_date, duration, mentor_name],
+    function(err) {
+      if (err) return res.status(500).json({ error: 'Failed to schedule meet link.' });
+      
+      db.get(`SELECT * FROM meet_links WHERE id = ?`, [this.lastID], (err, row) => {
+        if (err) return res.status(500).json({ error: 'Failed to retrieve scheduled link.' });
+        res.status(201).json(row);
+      });
+    }
+  );
+});
+
+// Finish meet link (Admin / Faculty)
+app.post('/api/admin/meet-links/:id/finish', requireAdminOrFaculty, (req, res) => {
+  const meetId = req.params.id;
+  db.run(
+    `UPDATE meet_links SET status = 'finished' WHERE id = ?`,
+    [meetId],
+    (err) => {
+      if (err) return res.status(500).json({ error: 'Failed to complete meet link.' });
+      res.json({ success: true, message: 'Class finished successfully.' });
+    }
+  );
+});
+
+
+/* ==========================================================================
+   GROUP CHAT ENDPOINTS
+   ========================================================================== */
+app.get('/api/chat/messages', requireLogin, (req, res) => {
+  db.all(
+    `SELECT cm.*, u.name as sender_name, u.role as sender_role 
+     FROM chat_messages cm 
+     JOIN users u ON cm.user_id = u.id 
+     ORDER BY cm.created_at ASC`,
+    [],
+    (err, rows) => {
+      if (err) return res.status(500).json({ error: 'Database query failed.' });
+      res.json(rows);
+    }
+  );
+});
+
+app.post('/api/chat/messages', requireLogin, (req, res) => {
+  const { message } = req.body;
+  if (!message || message.trim() === '') {
+    return res.status(400).json({ error: 'Message content is required.' });
+  }
+  db.run(
+    `INSERT INTO chat_messages (user_id, message) VALUES (?, ?)`,
+    [req.session.userId, message],
+    function(err) {
+      if (err) return res.status(500).json({ error: 'Failed to insert chat message.' });
+      
+      db.get(
+        `SELECT cm.*, u.name as sender_name, u.role as sender_role 
+         FROM chat_messages cm 
+         JOIN users u ON cm.user_id = u.id 
+         WHERE cm.id = ?`,
+        [this.lastID],
+        (err, row) => {
+          if (err) return res.status(500).json({ error: 'Failed to retrieve inserted message.' });
+          res.status(201).json(row);
+        }
+      );
+    }
+  );
+});
 
 /* ==========================================================================
    COURSES & LECTURES ENDPOINTS
@@ -748,6 +897,42 @@ app.post('/api/admin/callback-requests/:id/finish', requireAdminOrFaculty, (req,
   const requestId = req.params.id;
   db.run(`UPDATE callback_requests SET status = 'completed' WHERE id = ?`, [requestId], (err) => {
     if (err) return res.status(500).json({ error: 'Failed to complete callback request.' });
+    res.json({ success: true });
+  });
+});
+
+// Public: Submit landing query form
+app.post('/api/public/queries', (req, res) => {
+  const { name, email, phone, interest, question } = req.body;
+  if (!name || !email || !phone || !interest || !question) {
+    return res.status(400).json({ error: 'All fields are required.' });
+  }
+  db.run(
+    `INSERT INTO landing_queries (name, email, phone, interest, question) VALUES (?, ?, ?, ?, ?)`,
+    [name, email, phone, interest, question],
+    function(err) {
+      if (err) {
+        console.error(err);
+        return res.status(500).json({ error: 'Failed to submit query.' });
+      }
+      res.json({ success: true, id: this.lastID });
+    }
+  );
+});
+
+// Admin: Get all landing queries
+app.get('/api/admin/queries', requireAdminOrFaculty, (req, res) => {
+  db.all(`SELECT * FROM landing_queries ORDER BY created_at DESC`, [], (err, rows) => {
+    if (err) return res.status(500).json({ error: 'Failed to fetch queries.' });
+    res.json(rows);
+  });
+});
+
+// Admin: Mark landing query as completed (Finish)
+app.post('/api/admin/queries/:id/finish', requireAdminOrFaculty, (req, res) => {
+  const queryId = req.params.id;
+  db.run(`UPDATE landing_queries SET status = 'completed' WHERE id = ?`, [queryId], (err) => {
+    if (err) return res.status(500).json({ error: 'Failed to complete query request.' });
     res.json({ success: true });
   });
 });
@@ -1703,12 +1888,15 @@ app.get('/api/student/assessments/:id/review', requireLogin, (req, res) => {
   });
 });
 
-// Catch-all to support SPA routing via React Router
+// Catch-all route to serve public/index.html
 app.get('*', (req, res) => {
-  res.sendFile(path.join(__dirname, 'client', 'dist', 'index.html'));
+  res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
 // Start Server
 app.listen(PORT, () => {
-  console.log(`LMS Server is running on http://localhost:${PORT}`);
+  console.log(`\n==================================================`);
+  console.log(`🚀 GSSS LMS Portal Server is running!`);
+  console.log(`👉 Access website at: http://localhost:${PORT}`);
+  console.log(`==================================================\n`);
 });

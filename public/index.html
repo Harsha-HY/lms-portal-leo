@@ -1,181 +1,717 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Sign In - LeoAxis</title>
-  <link rel="stylesheet" href="css/styles.css">
-</head>
-<body>
-  <div class="auth-container">
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>GSSS LMS Portal — Digital Campus & Learning System</title>
+  <meta name="description" content="Official Smart Learning Management System (LMS) of GSSS Simha Subbamahalakshmi First Grade College, Mysuru. Affiliated with the University of Mysore. Modular video lectures, online assessments, code compiler, and live mentoring."/>
+  <meta name="author" content="GSSS Simha Subbamahalakshmi First Grade College (SSFGC), Mysuru"/>
+  <link rel="icon" type="image/png" href="/images/gsss-logo.png"/>
+  <link rel="stylesheet" href="/assets/styles-DehusiHv.css"/>
+  <link rel="stylesheet" href="/css/landing.css"/>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700;800&family=Manrope:wght@400;500;600;700&display=swap"/>
+  <style>
+    :root {
+      --gsss-navy: #0b132b;
+      --gsss-blue: #1c2541;
+      --gsss-primary: #3a86ff;
+      --gsss-gold: #f59e0b;
+      --gsss-gold-light: #fbbf24;
+      --gsss-accent: #8b5cf6;
+      --gsss-border: rgba(255, 255, 255, 0.08);
+      --gsss-card-bg: rgba(255, 255, 255, 0.03);
+    }
     
-    <!-- Left Intro Column (Rich Design) -->
-    <div class="auth-sidebar">
-      <div class="auth-brand">
-        <div class="auth-brand-logo">L</div>
-        <span>LeoAxis</span>
-      </div>
+    body {
+      font-family: 'Manrope', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background-color: var(--background);
+      color: var(--foreground);
+      overflow-x: hidden;
+    }
+    
+    .font-display {
+      font-family: 'Sora', sans-serif;
+    }
+    
+    .gsss-badge-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.4rem 0.9rem;
+      border-radius: 9999px;
+      font-size: 0.75rem;
+      font-weight: 700;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      background: rgba(245, 158, 11, 0.12);
+      color: var(--gsss-gold);
+      border: 1px solid rgba(245, 158, 11, 0.3);
+    }
+    
+    .gsss-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 1.25rem;
+      padding: 1.75rem;
+      transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+      position: relative;
+      overflow: hidden;
+    }
+    
+    .gsss-card:hover {
+      transform: translateY(-4px);
+      border-color: rgba(245, 158, 11, 0.4);
+      box-shadow: 0 12px 30px -10px rgba(0, 0, 0, 0.3);
+    }
+    
+    .step-number-bubble {
+      width: 44px;
+      height: 44px;
+      border-radius: 12px;
+      background: linear-gradient(135deg, var(--gsss-navy) 0%, var(--gsss-blue) 100%);
+      border: 1px solid rgba(245, 158, 11, 0.4);
+      color: var(--gsss-gold);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: 'Sora', sans-serif;
+      font-weight: 800;
+      font-size: 1.15rem;
+      flex-shrink: 0;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+    }
+    
+    .feature-icon-box {
+      width: 48px;
+      height: 48px;
+      border-radius: 12px;
+      background: rgba(58, 134, 255, 0.1);
+      border: 1px solid rgba(58, 134, 255, 0.25);
+      color: var(--gsss-primary);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.35rem;
+      margin-bottom: 1.25rem;
+    }
+  </style>
+</head>
+<body class="min-h-screen antialiased">
+
+  <!-- =========================================================================
+       1. NAVIGATION HEADER
+       ========================================================================= -->
+  <header class="sticky top-0 z-50 w-full border-b border-border/80 bg-background/90 backdrop-blur-md transition-all">
+    <div class="mx-auto flex max-w-7xl items-center justify-between px-4 py-3.5 sm:px-6 lg:px-8">
       
-      <div class="auth-intro-content">
-        <h1 class="auth-intro-title">Empower Your Learning Journey</h1>
-        <p class="auth-intro-subtitle">
-          Access high-quality recorded lectures, track your milestones, and complete growth cycles with real-time feedback.
+      <!-- Brand Logo -->
+      <a href="/" class="flex items-center gap-3 group">
+        <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-blue-900 to-indigo-950 font-display font-extrabold text-[var(--gold)] border border-[var(--gold)]/40 shadow-sm transition-transform group-hover:scale-105">
+          G
+        </div>
+        <div class="flex flex-col">
+          <div class="flex items-center gap-1.5 font-display text-base font-extrabold tracking-tight text-foreground sm:text-lg">
+            GSSS SSFGC <span class="text-xs font-bold uppercase tracking-wider text-[var(--gold)] bg-[var(--gold)]/10 px-1.5 py-0.5 rounded border border-[var(--gold)]/20">LMS Portal</span>
+          </div>
+          <span class="text-[10px] font-medium text-muted-foreground">Affiliated with University of Mysore</span>
+        </div>
+      </a>
+
+      <!-- Center Nav Links -->
+      <nav class="hidden items-center gap-7 md:flex">
+        <a href="#overview" class="text-sm font-semibold text-muted-foreground transition-colors hover:text-foreground">Overview</a>
+        <a href="#how-it-works" class="text-sm font-semibold text-muted-foreground transition-colors hover:text-foreground">How It Works</a>
+        <a href="#features" class="text-sm font-semibold text-muted-foreground transition-colors hover:text-foreground">LMS Features</a>
+        <a href="#support" class="text-sm font-semibold text-muted-foreground transition-colors hover:text-foreground">Student Helpdesk</a>
+      </nav>
+
+      <!-- Right Action Items -->
+      <div class="flex items-center gap-2.5">
+        
+        <!-- Theme Controls -->
+        <div class="flex items-center gap-1 rounded-full border border-border p-1 bg-card/50">
+          <button aria-label="Light theme" class="rounded-full px-2.5 py-1 text-xs font-semibold text-muted-foreground hover:text-foreground transition-all">☀️</button>
+          <button aria-label="Dark theme" class="rounded-full px-2.5 py-1 text-xs font-semibold text-muted-foreground hover:text-foreground transition-all">🌙</button>
+          <button aria-label="Gold theme" class="rounded-full px-2.5 py-1 text-xs font-semibold text-muted-foreground hover:text-foreground transition-all">✨</button>
+        </div>
+
+        <!-- Portal Login CTA -->
+        <a href="login.html" id="nav-login-cta" class="inline-flex items-center justify-center gap-1.5 rounded-full bg-[var(--gold)] px-4 py-2 text-xs font-extrabold text-[var(--gold-foreground)] shadow-sm transition-all hover:scale-105 hover:bg-[var(--gold)]/90 sm:px-5 sm:text-sm">
+          <span>Portal Login</span>
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-arrow-right"><path d="M5 12h14"></path><path d="m12 5 7 7-7 7"></path></svg>
+        </a>
+      </div>
+    </div>
+  </header>
+
+  <!-- =========================================================================
+       2. HERO SECTION - GSSS DIGITAL LMS HUB (CLEAN INTERACTIVE DASHBOARD CARD)
+       ========================================================================= -->
+  <section id="overview" class="relative isolate overflow-hidden bg-background py-14 sm:py-20 lg:py-24">
+    <div class="aurora-bg" aria-hidden="true"></div>
+    <div class="pointer-events-none absolute inset-0 -z-0 text-foreground/[0.04] dot-grid" aria-hidden="true"></div>
+
+    <div class="relative mx-auto grid max-w-7xl items-center gap-12 px-4 sm:px-6 lg:grid-cols-[1.1fr_0.9fr] lg:gap-14 lg:px-8">
+      
+      <!-- Left Column: Copy & Actions -->
+      <div class="flex flex-col justify-center">
+        
+        <!-- Institution Tag -->
+        <div class="reveal gsss-badge-pill w-fit mb-5">
+          <span>🏛️</span>
+          <span>GSSS Simha Subbamahalakshmi First Grade College · Mysuru</span>
+        </div>
+
+        <!-- Main Title -->
+        <h1 class="reveal reveal-delay-1 font-display text-3xl font-extrabold leading-[1.15] tracking-tight text-foreground sm:text-5xl lg:text-5xl">
+          Empowering GSSS Students with <span class="anim-gradient-text">Smart Digital Learning</span>.
+        </h1>
+
+        <!-- Subtitle -->
+        <p class="reveal reveal-delay-2 mt-5 max-w-xl text-sm leading-relaxed text-muted-foreground sm:text-base">
+          The centralized academic management and evaluation portal for <strong>BCA</strong>, <strong>BBA</strong>, and <strong>B.Com</strong> departments. Access unit-wise recorded lectures, practice in live code compilers, take proctored assessments, and collaborate with mentors in real time.
+        </p>
+
+        <!-- CTA Buttons -->
+        <div class="reveal reveal-delay-3 mt-7 flex flex-wrap items-center gap-3.5">
+          <a href="login.html" id="hero-student-cta" class="inline-flex h-11 items-center justify-center gap-2 rounded-full bg-[var(--gold)] px-7 text-sm font-extrabold text-[var(--gold-foreground)] shadow-lg shadow-[var(--gold)]/20 transition-all hover:scale-105 hover:bg-[var(--gold)]/90">
+            <span>Enter Student Portal</span>
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-log-in"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"></path><polyline points="10 17 15 12 10 7"></polyline><line x1="15" x2="3" y1="12" y2="12"></line></svg>
+          </a>
+          <a href="#how-it-works" class="inline-flex h-11 items-center justify-center gap-2 rounded-full border border-border bg-card/80 px-6 text-sm font-bold text-foreground backdrop-blur transition-all hover:border-[var(--gold)]/50 hover:bg-card">
+            <span>How It Works</span>
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-chevron-down"><path d="m6 9 6 6 6-6"></path></svg>
+          </a>
+        </div>
+
+        <!-- Key Trust Badges -->
+        <div class="reveal reveal-delay-4 mt-9 grid grid-cols-2 gap-4 border-t border-border/80 pt-6 sm:grid-cols-4">
+          <div>
+            <div class="font-display text-xl font-extrabold text-foreground">100%</div>
+            <div class="text-xs text-muted-foreground">Syllabus Video Coverage</div>
+          </div>
+          <div>
+            <div class="font-display text-xl font-extrabold text-[var(--gold)]">In-Browser</div>
+            <div class="text-xs text-muted-foreground">Compiler & Debugger</div>
+          </div>
+          <div>
+            <div class="font-display text-xl font-extrabold text-foreground">Proctored</div>
+            <div class="text-xs text-muted-foreground">Mock OA Engine</div>
+          </div>
+          <div>
+            <div class="font-display text-xl font-extrabold text-emerald-500">Live</div>
+            <div class="text-xs text-muted-foreground">Faculty Meet Tracks</div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Right Column: Interactive LMS Portal Showcase Card (No Photo, Clean Layout) -->
+      <div class="reveal reveal-delay-2 relative">
+        <div class="tilt-3d overflow-hidden rounded-3xl border border-border bg-card p-6 shadow-2xl backdrop-blur-xl sm:p-7">
+          
+          <!-- Card Top Bar -->
+          <div class="flex items-center justify-between border-b border-border/80 pb-4">
+            <div class="flex items-center gap-2.5">
+              <span class="flex h-3 w-3 rounded-full bg-emerald-500 animate-pulse"></span>
+              <span class="font-display text-sm font-extrabold text-foreground">GSSS LMS Live Session</span>
+            </div>
+            <span class="rounded-full bg-blue-500/10 px-2.5 py-0.5 text-[11px] font-bold uppercase tracking-wider text-blue-400">Uni. of Mysore</span>
+          </div>
+
+          <!-- Feature Item 1 -->
+          <div class="mt-5 space-y-3.5">
+            <div class="rounded-2xl border border-border bg-background/50 p-4 transition-all hover:border-[var(--gold)]/40">
+              <div class="flex items-start gap-3.5">
+                <span class="grid h-10 w-10 place-items-center rounded-xl bg-[var(--gold)]/15 text-[var(--gold)] font-bold text-lg shrink-0">💻</span>
+                <div>
+                  <h4 class="text-sm font-bold text-foreground">BCA In-Browser Coding Labs</h4>
+                  <p class="text-xs text-muted-foreground mt-0.5">Solve algorithmic challenges in Python, C++, Java, and SQL with automated test case validation.</p>
+                </div>
+              </div>
+            </div>
+
+            <!-- Feature Item 2 -->
+            <div class="rounded-2xl border border-border bg-background/50 p-4 transition-all hover:border-emerald-500/40">
+              <div class="flex items-start gap-3.5">
+                <span class="grid h-10 w-10 place-items-center rounded-xl bg-emerald-500/15 text-emerald-500 font-bold text-lg shrink-0">📝</span>
+                <div>
+                  <h4 class="text-sm font-bold text-foreground">Anti-Cheat Proctored Assessments</h4>
+                  <p class="text-xs text-muted-foreground mt-0.5">Timed unit examinations with real-time tab switch violation alerts and instant scoring metrics.</p>
+                </div>
+              </div>
+            </div>
+
+            <!-- Feature Item 3 -->
+            <div class="rounded-2xl border border-border bg-background/50 p-4 transition-all hover:border-indigo-500/40">
+              <div class="flex items-start gap-3.5">
+                <span class="grid h-10 w-10 place-items-center rounded-xl bg-indigo-500/15 text-indigo-400 font-bold text-lg shrink-0">📊</span>
+                <div>
+                  <h4 class="text-sm font-bold text-foreground">53-Week Contribution Heatmap</h4>
+                  <p class="text-xs text-muted-foreground mt-0.5">Track daily lecture watch consistency, streak counters, and semester milestones effortlessly.</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Quick Portal Access Prompt -->
+          <div class="mt-6 flex items-center justify-between rounded-2xl bg-gradient-to-r from-blue-950/40 to-indigo-950/40 border border-blue-800/30 p-4">
+            <div class="text-xs text-muted-foreground">
+              Ready to begin your study session?
+            </div>
+            <a href="login.html" class="text-xs font-bold text-[var(--gold)] hover:underline">Launch LMS &rarr;</a>
+          </div>
+
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- =========================================================================
+       3. HOW IT WORKS IN GSSS COLLEGE (4-STEP LEARNING CYCLE)
+       ========================================================================= -->
+  <section id="how-it-works" class="relative border-t border-border bg-card/30 py-16 sm:py-20">
+    <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+      
+      <!-- Section Header -->
+      <div class="text-center max-w-3xl mx-auto">
+        <span class="gsss-badge-pill">Academic Workflow</span>
+        <h2 class="reveal reveal-delay-1 mt-3 font-display text-2xl font-extrabold tracking-tight text-foreground sm:text-4xl">
+          How GSSS LMS Portal Works
+        </h2>
+        <p class="reveal reveal-delay-2 mt-3 text-sm sm:text-base text-muted-foreground leading-relaxed">
+          A structured 4-step digital cycle built to reinforce daily classroom instruction, evaluate practical problem solving, and mentor candidates throughout their degree program.
         </p>
       </div>
 
-      <div class="auth-cards-container">
-        <div class="auth-feature-card">
-          <h4>Recorded Lectures</h4>
-          <p>Learn at your own pace with curated multi-stage lessons.</p>
-        </div>
-        <div class="auth-feature-card">
-          <h4>Progress Tracking</h4>
-          <p>Track your milestones, assignments, and weekly goals.</p>
-        </div>
-      </div>
-    </div>
-
-    <!-- Right Form Column -->
-    <div class="auth-form-side">
-      <div class="auth-form-wrapper">
+      <!-- 4-Step Grid -->
+      <div class="mt-12 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
         
-        <!-- Toggle State Info -->
-        <div class="auth-header">
-          <h2 id="auth-title">Welcome Back</h2>
-          <p id="auth-subtitle">
-            New to LeoAxis? <span class="auth-toggle-link" onclick="toggleAuthMode(true)">Create an account</span>
+        <!-- Step 1 -->
+        <div class="reveal reveal-delay-1 gsss-card">
+          <div class="step-number-bubble">01</div>
+          <h3 class="mt-5 font-display text-base sm:text-lg font-bold text-foreground">Lecture Modules & Study Notes</h3>
+          <p class="mt-2 text-xs leading-relaxed text-muted-foreground">
+            Watch high-definition, curriculum-mapped video lessons prepared by GSSS faculty. Download chapter notes, PDFs, and reference materials anytime.
+          </p>
+          <div class="mt-4 text-[11px] font-semibold text-blue-400">✓ Unit-wise Syllabus Mapping</div>
+        </div>
+
+        <!-- Step 2 -->
+        <div class="reveal reveal-delay-2 gsss-card">
+          <div class="step-number-bubble">02</div>
+          <h3 class="mt-5 font-display text-base sm:text-lg font-bold text-foreground">Hands-On Practice & Compilers</h3>
+          <p class="mt-2 text-xs leading-relaxed text-muted-foreground">
+            Solve programming exercises in Python, C++, Java, and SQL with real-time compiler feedback. BBA & B.Com candidates solve practical case study drills.
+          </p>
+          <div class="mt-4 text-[11px] font-semibold text-amber-400">✓ Live Test-Case Assertions</div>
+        </div>
+
+        <!-- Step 3 -->
+        <div class="reveal reveal-delay-3 gsss-card">
+          <div class="step-number-bubble">03</div>
+          <h3 class="mt-5 font-display text-base sm:text-lg font-bold text-foreground">Proctored Mock Assessments</h3>
+          <p class="mt-2 text-xs leading-relaxed text-muted-foreground">
+            Take timed unit evaluations and Online Assessments (OAs) in a proctored environment equipped with strict anti-cheat tab-monitoring warnings.
+          </p>
+          <div class="mt-4 text-[11px] font-semibold text-emerald-400">✓ Tab-Switch Tracking & Integrity</div>
+        </div>
+
+        <!-- Step 4 -->
+        <div class="reveal reveal-delay-4 gsss-card">
+          <div class="step-number-bubble">04</div>
+          <h3 class="mt-5 font-display text-base sm:text-lg font-bold text-foreground">Live Meets & Streaks</h3>
+          <p class="mt-2 text-xs leading-relaxed text-muted-foreground">
+            Join mentor-scheduled Google Meets, collaborate on cohort batch channels, and build daily study streaks on the 53-week heatmap.
+          </p>
+          <div class="mt-4 text-[11px] font-semibold text-purple-400">✓ Real-time Doubt Support</div>
+        </div>
+
+      </div>
+
+    </div>
+  </section>
+
+  <!-- =========================================================================
+       4. CORE LMS PLATFORM FEATURES
+       ========================================================================= -->
+  <section id="features" class="relative border-t border-border py-16 sm:py-20">
+    <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+      
+      <!-- Section Header -->
+      <div class="text-center max-w-3xl mx-auto">
+        <span class="gsss-badge-pill">Platform Capabilities</span>
+        <h2 class="reveal reveal-delay-1 mt-3 font-display text-2xl font-extrabold tracking-tight text-foreground sm:text-4xl">
+          Essential LMS Tools for Students & Mentors
+        </h2>
+        <p class="reveal reveal-delay-2 mt-3 text-sm sm:text-base text-muted-foreground leading-relaxed">
+          Built-in digital features engineered specifically to support continuous academic progression.
+        </p>
+      </div>
+
+      <!-- Features Grid -->
+      <div class="mt-12 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+        
+        <!-- Feature 1 -->
+        <div class="reveal reveal-delay-1 gsss-card">
+          <div class="feature-icon-box">📅</div>
+          <h3 class="font-display text-base font-bold text-foreground">53-Week Contribution Heatmap</h3>
+          <p class="mt-2 text-xs leading-relaxed text-muted-foreground">
+            Visualizes student daily activity, completed lectures, and coding submissions using GitHub-style activity squares to foster disciplined study habits.
           </p>
         </div>
 
-        <div id="error-alert" class="alert alert-danger"></div>
-        <div id="success-alert" class="alert alert-success"></div>
+        <!-- Feature 2 -->
+        <div class="reveal reveal-delay-2 gsss-card">
+          <div class="feature-icon-box">🛡️</div>
+          <h3 class="font-display text-base font-bold text-foreground">Anti-Cheat Mock Exam Engine</h3>
+          <p class="mt-2 text-xs leading-relaxed text-muted-foreground">
+            Monitors window visibility during timed assessments, records tab switch counts, and warns candidates in real-time to preserve exam integrity.
+          </p>
+        </div>
 
-        <!-- Credentials Form -->
-        <form id="auth-form" class="auth-form" onsubmit="handleAuthSubmit(event)">
-          
-          <div class="form-group" id="name-group" style="display: none;">
-            <label class="form-label" for="reg-name">Full Name</label>
-            <input class="form-input" type="text" id="reg-name" placeholder="John Doe">
-          </div>
+        <!-- Feature 3 -->
+        <div class="reveal reveal-delay-3 gsss-card">
+          <div class="feature-icon-box">💬</div>
+          <h3 class="font-display text-base font-bold text-foreground">WhatsApp Web-Style Batch Chat</h3>
+          <p class="mt-2 text-xs leading-relaxed text-muted-foreground">
+            Real-time cohort chat channels with speech bubbles, color-hashed avatars, and keyboard Enter triggers for seamless student-mentor discussions.
+          </p>
+        </div>
 
-          <div class="form-group">
-            <label class="form-label" for="auth-email">Email Address</label>
-            <input class="form-input" type="email" id="auth-email" required placeholder="name@domain.com">
-          </div>
+        <!-- Feature 4 -->
+        <div class="reveal reveal-delay-1 gsss-card">
+          <div class="feature-icon-box">🎥</div>
+          <h3 class="font-display text-base font-bold text-foreground">Course-Targeted Live Meets</h3>
+          <p class="mt-2 text-xs leading-relaxed text-muted-foreground">
+            Faculty schedule live Google Meet mentoring sessions targeted exclusively to enrolled cohorts, with automatic history archiving.
+          </p>
+        </div>
 
-          <div class="form-group">
-            <label class="form-label" for="auth-password">Password</label>
-            <input class="form-input" type="password" id="auth-password" required placeholder="••••••••">
-          </div>
+        <!-- Feature 5 -->
+        <div class="reveal reveal-delay-2 gsss-card">
+          <div class="feature-icon-box">🏆</div>
+          <h3 class="font-display text-base font-bold text-foreground">Gamified Academic Leaderboard</h3>
+          <p class="mt-2 text-xs leading-relaxed text-muted-foreground">
+            Earn Experience Points (XP) for watching video units, solving exercises, and achieving high scores in unit quizzes to climb the college rank table.
+          </p>
+        </div>
 
-          <button type="submit" class="btn btn-primary btn-block" id="submit-btn" style="margin-top: 1rem;">
-            Sign In
-          </button>
-        </form>
+        <!-- Feature 6 -->
+        <div class="reveal reveal-delay-3 gsss-card">
+          <div class="feature-icon-box">🤖</div>
+          <h3 class="font-display text-base font-bold text-foreground">AI Debugger & Concept Coach</h3>
+          <p class="mt-2 text-xs leading-relaxed text-muted-foreground">
+            Provides automated code analysis, syntax error explanations, and logical hints when students face compiler obstacles in coding challenges.
+          </p>
+        </div>
 
       </div>
+
     </div>
-  </div>
+  </section>
 
-  <script src="js/api.js"></script>
+  <!-- =========================================================================
+       5. STUDENT SUPPORT & ACADEMIC INQUIRY DESK
+       ========================================================================= -->
+  <section id="support" class="relative border-t border-border bg-card/30 py-16 sm:py-20">
+    <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+      
+      <div class="grid gap-12 lg:grid-cols-[1fr_1.1fr] items-start">
+        
+        <!-- Left: Campus Info -->
+        <div>
+          <span class="gsss-badge-pill">Academic Helpdesk</span>
+          <h2 class="reveal reveal-delay-1 mt-3 font-display text-2xl font-extrabold tracking-tight text-foreground sm:text-4xl">
+            Student Support & Helpdesk
+          </h2>
+          <p class="reveal reveal-delay-2 mt-3.5 text-sm text-muted-foreground leading-relaxed">
+            Have questions regarding portal access, course modules, assignment submissions, or live meet sessions? Reach out directly to the GSSS SSFGC academic desk.
+          </p>
+
+          <div class="mt-7 space-y-5 text-sm">
+            <div class="flex items-start gap-3.5">
+              <span class="grid h-10 w-10 place-items-center rounded-xl bg-blue-500/10 text-blue-400 font-bold shrink-0 text-lg">📍</span>
+              <div>
+                <h4 class="font-bold text-foreground">Campus Address</h4>
+                <p class="text-xs text-muted-foreground mt-0.5 leading-relaxed">
+                  GSSS Simha Subbamahalakshmi First Grade College (SSFGC)<br/>
+                  Plot No. 45 & 46 (part), Survey No. 22, Belagola Industrial Area,<br/>
+                  KRS Road, Metagalli, Mysuru – 570016, Karnataka, India.
+                </p>
+              </div>
+            </div>
+
+            <div class="flex items-start gap-3.5">
+              <span class="grid h-10 w-10 place-items-center rounded-xl bg-[var(--gold)]/10 text-[var(--gold)] font-bold shrink-0 text-lg">📞</span>
+              <div>
+                <h4 class="font-bold text-foreground">Telephone & Helpline</h4>
+                <p class="text-xs text-muted-foreground mt-0.5">
+                  +91 0821 2581302 / +91 944 878 2121
+                </p>
+              </div>
+            </div>
+
+            <div class="flex items-start gap-3.5">
+              <span class="grid h-10 w-10 place-items-center rounded-xl bg-emerald-500/10 text-emerald-400 font-bold shrink-0 text-lg">✉️</span>
+              <div>
+                <h4 class="font-bold text-foreground">Official Academic Email</h4>
+                <p class="text-xs text-muted-foreground mt-0.5">
+                  gsssfgc@gmail.com
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Right: Inquiry Form -->
+        <div class="gsss-card border border-border bg-card p-6 sm:p-8 shadow-xl">
+          <h3 class="font-display text-lg sm:text-xl font-bold text-foreground">Submit an Academic / Support Query</h3>
+          <p class="mt-1 text-xs text-muted-foreground">Inquiries submitted here are routed directly to faculty coordinators.</p>
+
+          <form id="contact-form" class="mt-6 space-y-4">
+            <div>
+              <label for="name" class="block text-xs font-bold text-foreground">Full Name</label>
+              <input type="text" id="name" required placeholder="e.g. Rahul Sharma" class="mt-1.5 flex h-10 w-full rounded-xl border border-border bg-background/50 px-3.5 text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-[var(--gold)] transition-colors"/>
+            </div>
+
+            <div class="grid gap-4 sm:grid-cols-2">
+              <div>
+                <label for="email" class="block text-xs font-bold text-foreground">Email Address</label>
+                <input type="email" id="email" required placeholder="name@domain.com" class="mt-1.5 flex h-10 w-full rounded-xl border border-border bg-background/50 px-3.5 text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-[var(--gold)] transition-colors"/>
+              </div>
+              <div>
+                <label for="phone" class="block text-xs font-bold text-foreground">Phone Number</label>
+                <input type="tel" id="phone" required placeholder="+91 9876543210" class="mt-1.5 flex h-10 w-full rounded-xl border border-border bg-background/50 px-3.5 text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-[var(--gold)] transition-colors"/>
+              </div>
+            </div>
+
+            <div>
+              <label for="topic" class="block text-xs font-bold text-foreground">Department / Query Category</label>
+              <select id="topic" class="mt-1.5 flex h-10 w-full rounded-xl border border-border bg-background/50 px-3.5 text-xs text-foreground focus:outline-none focus:border-[var(--gold)] transition-colors">
+                <option value="BCA Computer Applications">Department of Computer Applications (BCA)</option>
+                <option value="BBA Business Administration">Department of Business Administration (BBA)</option>
+                <option value="B.Com Commerce">Department of Commerce (B.Com)</option>
+                <option value="LMS Portal Technical Issue">GSSS LMS Portal Technical / Login Support</option>
+              </select>
+            </div>
+
+            <div>
+              <label for="message" class="block text-xs font-bold text-foreground">Your Question / Doubt Details</label>
+              <textarea id="message" rows="3" required placeholder="Please explain your question or assistance needed..." class="mt-1.5 flex w-full rounded-xl border border-border bg-background/50 p-3.5 text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-[var(--gold)] transition-colors resize-none"></textarea>
+            </div>
+
+            <button type="submit" class="inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-[var(--gold)] text-xs font-extrabold text-[var(--gold-foreground)] shadow-md transition-all hover:bg-[var(--gold)]/90 hover:scale-[1.01]">
+              <span>Submit Query to Faculty Desk</span>
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m22 2-7 20-4-9-9-4Z"></path><path d="M22 2 11 13"></path></svg>
+            </button>
+          </form>
+        </div>
+
+      </div>
+
+    </div>
+  </section>
+
+  <!-- =========================================================================
+       6. FOOTER
+       ========================================================================= -->
+  <footer class="border-t border-border bg-background py-12 text-muted-foreground">
+    <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+      
+      <div class="grid gap-8 sm:grid-cols-2 lg:grid-cols-4">
+        
+        <!-- Col 1 -->
+        <div class="space-y-3">
+          <div class="flex items-center gap-2.5">
+            <div class="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-900 font-display font-extrabold text-[var(--gold)]">
+              G
+            </div>
+            <span class="font-display font-bold text-foreground text-sm">GSSS LMS Portal</span>
+          </div>
+          <p class="text-xs leading-relaxed text-muted-foreground">
+            Simha Subbamahalakshmi First Grade College, Mysuru. Managed by Geetha Shishu Shikshana Sangha (GSSS®).
+          </p>
+          <div class="text-[11px] text-[var(--gold)] font-semibold">Affiliated with University of Mysore</div>
+        </div>
+
+        <!-- Col 2 -->
+        <div>
+          <h4 class="font-display text-xs font-extrabold uppercase tracking-wider text-foreground">Academic Portal</h4>
+          <ul class="mt-3 space-y-2 text-xs">
+            <li><a href="login.html" class="hover:text-foreground transition-colors">Student Dashboard</a></li>
+            <li><a href="login.html" class="hover:text-foreground transition-colors">Online Assessments (OAs)</a></li>
+            <li><a href="login.html" class="hover:text-foreground transition-colors">In-Browser Code Compiler</a></li>
+            <li><a href="login.html" class="hover:text-foreground transition-colors">Live Mentoring Sessions</a></li>
+          </ul>
+        </div>
+
+        <!-- Col 3 -->
+        <div>
+          <h4 class="font-display text-xs font-extrabold uppercase tracking-wider text-foreground">LMS Quick Links</h4>
+          <ul class="mt-3 space-y-2 text-xs">
+            <li><a href="#overview" class="hover:text-foreground transition-colors">Portal Overview</a></li>
+            <li><a href="#how-it-works" class="hover:text-foreground transition-colors">How GSSS LMS Works</a></li>
+            <li><a href="#features" class="hover:text-foreground transition-colors">Platform Features</a></li>
+            <li><a href="#support" class="hover:text-foreground transition-colors">Student Helpdesk</a></li>
+          </ul>
+        </div>
+
+        <!-- Col 4 -->
+        <div>
+          <h4 class="font-display text-xs font-extrabold uppercase tracking-wider text-foreground">Campus Location</h4>
+          <p class="mt-3 text-xs leading-relaxed text-muted-foreground">
+            KRS Road, Belagola Industrial Area, Metagalli, Mysuru – 570016, Karnataka.
+          </p>
+          <div class="mt-3 text-xs font-bold text-foreground">Phone: +91 0821 2581302</div>
+          <div class="text-xs text-muted-foreground">Email: gsssfgc@gmail.com</div>
+        </div>
+
+      </div>
+
+      <div class="mt-10 flex flex-col sm:flex-row items-center justify-between border-t border-border/80 pt-6 text-xs text-muted-foreground">
+        <div>&copy; 2026 GSSS Simha Subbamahalakshmi First Grade College (SSFGC). All Rights Reserved.</div>
+        <div class="mt-2 sm:mt-0 flex gap-4">
+          <a href="login.html" class="hover:text-foreground">GSSS LMS Portal Login</a>
+          <span>·</span>
+          <a href="#support" class="hover:text-foreground">Helpdesk</a>
+        </div>
+      </div>
+
+    </div>
+  </footer>
+
+  <!-- =========================================================================
+       SCRIPTS: AUTH STATE, THEME SWITCHER, FORM HANDLER, SCROLL REVEAL
+       ========================================================================= -->
   <script>
-    let isSignUpMode = false;
+    let isLoggedIn = false;
+    let dashboardUrl = 'login.html';
 
-    // Direct check if logged in
-    window.addEventListener('DOMContentLoaded', async () => {
-      // Apply active theme at startup
-      const activeTheme = localStorage.getItem('leo-theme') || 'theme-dark-slate';
-      document.body.classList.remove('theme-dark-slate', 'theme-cream-white', 'theme-cyberpunk', 'theme-ocean');
-      document.body.classList.add(activeTheme);
-
+    // Global session checker
+    async function checkAuth() {
       try {
-        const response = await fetch('/api/auth/me');
-        const data = await response.json();
+        const res = await fetch('/api/auth/me');
+        const data = await res.json();
         if (data.loggedIn) {
-          redirectToDashboard(data.user.role);
+          isLoggedIn = true;
+          dashboardUrl = data.user.role === 'admin' || data.user.role === 'faculty' ? 'admin.html' : 'dashboard.html';
+          
+          const navLogin = document.getElementById('nav-login-cta');
+          if (navLogin) {
+            navLogin.innerHTML = '<span>Go to Dashboard</span> <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"></path><path d="m12 5 7 7-7 7"></path></svg>';
+            navLogin.href = dashboardUrl;
+          }
+
+          const heroCta = document.getElementById('hero-student-cta');
+          if (heroCta) {
+            heroCta.innerHTML = '<span>Go to Dashboard</span> <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"></path><path d="m12 5 7 7-7 7"></path></svg>';
+            heroCta.href = dashboardUrl;
+          }
         }
       } catch (err) {
-        console.error('Error checking active login session:', err);
+        console.error('Auth check error:', err);
+      }
+    }
+
+    // Scroll reveal Intersection Observer
+    function setupScrollReveal() {
+      const observer = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+          if (entry.isIntersecting) {
+            entry.target.classList.add('in-view');
+          }
+        });
+      }, { threshold: 0.05 });
+
+      document.querySelectorAll('.reveal').forEach(el => {
+        observer.observe(el);
+      });
+    }
+
+    // Native theme switcher implementation
+    function setupThemeSwitcher() {
+      const htmlEl = document.documentElement;
+      const lightBtn = document.querySelector('button[aria-label="Light theme"]');
+      const darkBtn = document.querySelector('button[aria-label="Dark theme"]');
+      const goldBtn = document.querySelector('button[aria-label="Gold theme"]');
+
+      function applyTheme(theme) {
+        htmlEl.classList.remove('dark', 'theme-gold');
+        
+        [lightBtn, darkBtn, goldBtn].forEach(btn => {
+          if (btn) btn.className = "rounded-full px-2.5 py-1 text-xs font-semibold text-muted-foreground hover:text-foreground transition-all";
+        });
+
+        if (theme === 'dark') {
+          htmlEl.classList.add('dark');
+          if (darkBtn) darkBtn.className = "rounded-full px-2.5 py-1 text-xs font-semibold transition-all bg-[var(--navy)] text-[var(--gold)] shadow-sm";
+        } else if (theme === 'gold') {
+          htmlEl.classList.add('theme-gold', 'dark');
+          if (goldBtn) goldBtn.className = "rounded-full px-2.5 py-1 text-xs font-semibold transition-all bg-[var(--navy)] text-[var(--gold)] shadow-sm";
+        } else {
+          if (lightBtn) lightBtn.className = "rounded-full px-2.5 py-1 text-xs font-semibold transition-all bg-[var(--navy)] text-[var(--gold)] shadow-sm";
+        }
+        localStorage.setItem('landing-theme', theme);
+      }
+
+      if (lightBtn) lightBtn.addEventListener('click', () => applyTheme('light'));
+      if (darkBtn) darkBtn.addEventListener('click', () => applyTheme('dark'));
+      if (goldBtn) goldBtn.addEventListener('click', () => applyTheme('gold'));
+
+      const activeTheme = localStorage.getItem('landing-theme') || 'dark';
+      applyTheme(activeTheme);
+    }
+
+    // Contact & Support query submission
+    document.addEventListener('submit', async (e) => {
+      const form = e.target.closest('#contact-form');
+      if (!form) return;
+      
+      e.preventDefault();
+      
+      const name = document.getElementById('name')?.value || '';
+      const email = document.getElementById('email')?.value || '';
+      const phone = document.getElementById('phone')?.value || '';
+      const interest = document.getElementById('topic')?.value || '';
+      const question = document.getElementById('message')?.value || '';
+      
+      const submitBtn = form.querySelector('button[type="submit"]');
+      if (submitBtn) submitBtn.disabled = true;
+      
+      try {
+        const response = await fetch('/api/public/queries', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name, email, phone, interest, question })
+        });
+        
+        const data = await response.json();
+        if (data.error) {
+          alert('Error: ' + data.error);
+        } else {
+          const successMsg = document.createElement('div');
+          successMsg.style.cssText = 'margin-top: 1rem; padding: 0.85rem; border-radius: 10px; background: rgba(16, 185, 129, 0.15); border: 1px solid #10b981; color: #10b981; text-align: center; font-weight: 700; font-size: 0.85rem;';
+          successMsg.textContent = '✓ Your query has been submitted directly to the GSSS faculty desk!';
+          form.appendChild(successMsg);
+          form.reset();
+          setTimeout(() => successMsg.remove(), 4500);
+        }
+      } catch (err) {
+        console.error(err);
+        alert('Network error submitting query. Please try again.');
+      } finally {
+        if (submitBtn) submitBtn.disabled = false;
       }
     });
 
-    function toggleAuthMode(signUp) {
-      isSignUpMode = signUp;
-      const title = document.getElementById('auth-title');
-      const subtitle = document.getElementById('auth-subtitle');
-      const nameGroup = document.getElementById('name-group');
-      const submitBtn = document.getElementById('submit-btn');
-      const nameInput = document.getElementById('reg-name');
-
-      if (signUp) {
-        title.textContent = 'Create Account';
-        subtitle.innerHTML = 'Already have an account? <span class="auth-toggle-link" onclick="toggleAuthMode(false)">Sign In</span>';
-        nameGroup.style.display = 'flex';
-        nameInput.setAttribute('required', 'true');
-        submitBtn.textContent = 'Register Account';
-      } else {
-        title.textContent = 'Welcome Back';
-        subtitle.innerHTML = 'New to LeoAxis? <span class="auth-toggle-link" onclick="toggleAuthMode(true)">Create an account</span>';
-        nameGroup.style.display = 'none';
-        nameInput.removeAttribute('required');
-        submitBtn.textContent = 'Sign In';
-      }
-      clearAlerts();
-    }
-
-    // Clear alert contents
-    function clearAlerts() {
-      const errEl = document.getElementById('error-alert');
-      const succEl = document.getElementById('success-alert');
-      errEl.style.display = 'none';
-      succEl.style.display = 'none';
-    }
-
-    function showAlert(type, message) {
-      clearAlerts();
-      const el = document.getElementById(type === 'error' ? 'error-alert' : 'success-alert');
-      el.textContent = message;
-      el.style.display = 'block';
-    }
-
-    async function handleAuthSubmit(e) {
-      e.preventDefault();
-      clearAlerts();
-
-      const email = document.getElementById('auth-email').value;
-      const password = document.getElementById('auth-password').value;
-      
-      try {
-        if (isSignUpMode) {
-          const name = document.getElementById('reg-name').value;
-          const data = await API.register(name, email, password);
-          if (data.error) {
-            showAlert('error', data.error);
-          } else {
-            showAlert('success', 'Registration successful! Redirecting...');
-            setTimeout(() => redirectToDashboard(data.user.role), 1000);
-          }
-        } else {
-          const data = await API.login(email, password);
-          if (data.error) {
-            showAlert('error', data.error);
-          } else {
-            showAlert('success', 'Login successful! Redirecting...');
-            setTimeout(() => redirectToDashboard(data.user.role), 1000);
-          }
-        }
-      } catch (err) {
-        showAlert('error', 'Network error. Please try again.');
-      }
-    }
-
-    function redirectToDashboard(role) {
-      if (role === 'admin' || role === 'faculty') {
-        window.location.href = 'admin.html';
-      } else {
-        window.location.href = 'dashboard.html';
-      }
-    }
+    // Initialize on DOM ready
+    document.addEventListener('DOMContentLoaded', () => {
+      setupScrollReveal();
+      setupThemeSwitcher();
+      checkAuth();
+    });
   </script>
 </body>
 </html>

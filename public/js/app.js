@@ -13,6 +13,7 @@ let courseAssignmentsMap = {}; // courseId -> array of assignments
 let courseMCQsMap = {}; // courseId -> array of MCQs
 let activeModalLectureId = null;
 let enrolledCourseIds = [];
+let selectedJourneyCourseId = null;
 
 // Admin audit history state
 let historyStudents = [];
@@ -45,7 +46,11 @@ window.changeTheme = function(themeName) {
 
 async function initApp() {
   // Initialize and apply stored theme
-  const activeTheme = localStorage.getItem('leo-theme') || 'theme-dark-slate';
+  let activeTheme = localStorage.getItem('leo-theme');
+  if (!activeTheme || activeTheme === 'theme-dark-slate') {
+    activeTheme = 'theme-cream-white';
+    localStorage.setItem('leo-theme', 'theme-cream-white');
+  }
   document.body.classList.remove('theme-dark-slate', 'theme-cream-white', 'theme-cyberpunk', 'theme-ocean');
   document.body.classList.add(activeTheme);
   const selector = document.getElementById('theme-selector');
@@ -134,10 +139,11 @@ function updateSidebarUser() {
   const roleEl = document.getElementById('sidebar-user-role');
   const avatarEl = document.getElementById('sidebar-avatar');
 
-  if (nameEl) nameEl.textContent = currentUser.name;
-  if (roleEl) roleEl.textContent = currentUser.role;
-  if (avatarEl) {
-    const initials = currentUser.name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
+  if (!currentUser) return;
+  if (nameEl) nameEl.textContent = currentUser.name || 'User';
+  if (roleEl) roleEl.textContent = currentUser.role || 'Student';
+  if (avatarEl && currentUser.name) {
+    const initials = currentUser.name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase() || 'U';
     avatarEl.textContent = initials;
   }
 }
@@ -166,55 +172,67 @@ function switchTab(tabId, button) {
   if (targetView) targetView.style.display = 'block';
 
   // Toggle active class on sidebar links
-  document.querySelectorAll('.sidebar-link').forEach(btn => {
-    btn.classList.remove('active');
-  });
-  button.classList.add('active');
+  if (button) {
+    document.querySelectorAll('.sidebar-link').forEach(btn => {
+      btn.classList.remove('active');
+    });
+    button.classList.add('active');
+  }
 
   // Update headers
   const titleEl = document.getElementById('view-title');
   const subEl = document.getElementById('view-subtitle');
+  const userName = currentUser && currentUser.name ? currentUser.name : 'Student';
 
   if (tabId === 'home') {
-    titleEl.textContent = 'Welcome back, ' + currentUser.name + '!';
-    subEl.textContent = 'Track progress, complete milestones, and watch lectures.';
+    if (titleEl) titleEl.textContent = 'Welcome back, ' + userName + '!';
+    if (subEl) subEl.textContent = 'Track progress, complete milestones, and watch lectures.';
     renderHomeScreen();
   } else if (tabId === 'journey') {
-    titleEl.textContent = 'My Learning Journey';
-    subEl.textContent = 'Complete growth cycles to unlock technical modules.';
+    if (titleEl) titleEl.textContent = 'My Learning Journey';
+    if (subEl) subEl.textContent = 'Complete growth cycles to unlock technical modules.';
     renderJourneyScreen();
   } else if (tabId === 'courses') {
-    titleEl.textContent = 'Browse Other Courses';
-    subEl.textContent = 'Explore other specializations and catalog categories.';
+    if (titleEl) titleEl.textContent = 'Browse Other Courses';
+    if (subEl) subEl.textContent = 'Explore other specializations and catalog categories.';
     renderCoursesGrid();
   } else if (tabId === 'assignments') {
-    titleEl.textContent = 'Coding Assignment Workspace';
-    subEl.textContent = 'Solve programming exercises with a live compiler and AI debugging tutor.';
+    if (titleEl) titleEl.textContent = 'Coding Assignment Workspace';
+    if (subEl) subEl.textContent = 'Solve programming exercises with a live compiler and AI debugging tutor.';
     populateStudentCourseSelects('student-assign-course-select');
     loadStudentAssignments();
   } else if (tabId === 'quizzes') {
-    titleEl.textContent = 'Practice Quiz Quests';
-    subEl.textContent = 'Test your conceptual knowledge and review detailed AI explanations.';
+    if (titleEl) titleEl.textContent = 'Practice Quiz Quests';
+    if (subEl) subEl.textContent = 'Test your conceptual knowledge and review detailed AI explanations.';
     populateStudentCourseSelects('student-quiz-course-select');
     loadStudentQuizzes();
   } else if (tabId === 'leaderboard') {
-    titleEl.textContent = 'Global Standings & Leaderboard';
-    subEl.textContent = 'Compete with peers, earn XP, and track your rank standings.';
+    if (titleEl) titleEl.textContent = 'Global Standings & Leaderboard';
+    if (subEl) subEl.textContent = 'Compete with peers, earn XP, and track your rank standings.';
     loadStudentLeaderboard();
   } else if (tabId === 'assessments') {
-    titleEl.textContent = 'Timed Mock Exams & Assessments';
-    subEl.textContent = 'Simulate real corporate online assessments (OAs) with strict anti-cheat tab monitoring.';
+    if (titleEl) titleEl.textContent = 'Timed Mock Exams & Assessments';
+    if (subEl) subEl.textContent = 'Simulate real corporate online assessments (OAs) with strict anti-cheat tab monitoring.';
     loadStudentAssessments();
   } else if (tabId === 'profile') {
-    titleEl.textContent = 'My Student Profile';
-    subEl.textContent = 'Manage your academic details, resumes, and portfolio links.';
+    if (titleEl) titleEl.textContent = 'My Student Profile';
+    if (subEl) subEl.textContent = 'Manage your academic details, resumes, and portfolio links.';
     loadStudentProfilePanel();
   } else if (tabId === 'callback') {
-    titleEl.textContent = 'Request a Callback';
-    subEl.textContent = 'Submit your doubts and request a mentor phone call back.';
+    if (titleEl) titleEl.textContent = 'Request a Callback';
+    if (subEl) subEl.textContent = 'Submit your doubts and request a mentor phone call back.';
     loadStudentCallbackPanel();
+  } else if (tabId === 'chat') {
+    if (titleEl) titleEl.textContent = 'GSSS LMS Batch Group Chat';
+    if (subEl) subEl.textContent = 'Interact with fellow candidates and mentors in real-time.';
+    loadGroupChatPanel('student');
+  } else if (tabId === 'meet') {
+    if (titleEl) titleEl.textContent = 'Live Video Classes & Mentorship Meets';
+    if (subEl) subEl.textContent = 'Join active Google Meet sessions scheduled by your mentors.';
+    loadMeetLinksPanel('student');
   }
 }
+window.switchTab = switchTab;
 
 function switchAdminTab(tabId, button) {
   if (currentUser && currentUser.role === 'faculty') {
@@ -229,6 +247,15 @@ function switchAdminTab(tabId, button) {
   });
 
   const targetView = document.getElementById(`tab-admin-${tabId}`);
+  if (targetView) targetView.style.display = 'block';
+
+  if (button) {
+    document.querySelectorAll('.sidebar-link').forEach(btn => {
+      btn.classList.remove('active');
+    });
+    button.classList.add('active');
+  }
+
   if (targetView) targetView.style.display = 'block';
 
   document.querySelectorAll('.sidebar-link').forEach(btn => {
@@ -262,6 +289,10 @@ function switchAdminTab(tabId, button) {
     subEl.textContent = 'Create multiple-choice questions manually, scrap from PDF, or generate with AI.';
     populateCourseSelects();
     loadAdminMCQs();
+  } else if (tabId === 'overview-analytics') {
+    titleEl.textContent = 'Curriculum Overview & Enrollments Analytics';
+    subEl.textContent = 'Analyze course subscription trends, student progress distribution, and login logs activity.';
+    loadOverviewAnalytics();
   } else if (tabId === 'analytics') {
     titleEl.textContent = 'Student Activity Analytics Hub';
     subEl.textContent = 'Audit student daily login streaks, interactive GitHub-style contribution heatmaps, and course metrics.';
@@ -289,8 +320,22 @@ function switchAdminTab(tabId, button) {
     titleEl.textContent = 'Callback Queries & Mentorship Requests';
     subEl.textContent = 'Manage active doubts, callback request details, phone number lookups, and mark queries resolved.';
     loadAdminRequestsPanel();
+  } else if (tabId === 'queries') {
+    titleEl.textContent = 'Landing Page Queries & User Messages';
+    subEl.textContent = 'Track contact messages, query interest areas, and phone numbers from the public landing page.';
+    loadAdminQueriesPanel();
+  } else if (tabId === 'chat') {
+    titleEl.textContent = 'GSSS LMS Batch Group Chat (Admin Panel)';
+    subEl.textContent = 'Interact with candidates, post updates, and moderate conversations.';
+    loadGroupChatPanel('admin');
+  } else if (tabId === 'meet') {
+    titleEl.textContent = 'Google Meet Scheduler & Tracker';
+    subEl.textContent = 'Schedule meets, manage links, and review session histories.';
+    loadMeetLinksPanel('admin');
   }
 }
+window.switchAdminTab = switchAdminTab;
+
 
 /* ==========================================================================
    STUDENT PORTAL LOGIC (dashboard.html)
@@ -302,11 +347,19 @@ let xpMultipliers = { video_xp: 50, mcq_xp: 20, assignment_xp: 100 };
 // Fetch student progress and course lectures mapping
 async function loadDashboardData() {
   try {
-    allCourses = await API.getCourses();
-    enrolledCourseIds = await API.getEnrollments();
-    rawProgress = await API.getProgress();
+    const coursesRes = await API.getCourses();
+    allCourses = Array.isArray(coursesRes) ? coursesRes : [];
+    
+    const enrollRes = await API.getEnrollments();
+    enrolledCourseIds = Array.isArray(enrollRes) ? enrollRes : [];
+
+    const progRes = await API.getProgress();
+    rawProgress = Array.isArray(progRes) ? progRes : [];
     completedLectureIds = rawProgress.map(r => r.lecture_id);
-    submissionsCache = await API.getSubmissions();
+
+    const subRes = await API.getSubmissions();
+    submissionsCache = Array.isArray(subRes) ? subRes : [];
+
     
     let loginLogs = [];
     try {
@@ -399,7 +452,7 @@ function renderHomeDates() {
     dayItem.className = `date-strip-item ${isToday ? 'active' : ''}`;
     
     // Check completion status from rawProgress list
-    const completedOnThisDate = rawProgress.some(p => {
+    const completedOnThisDate = Array.isArray(rawProgress) && rawProgress.some(p => {
       const compDate = new Date(p.updated_at);
       return compDate.toDateString() === d.toDateString();
     });
@@ -512,7 +565,7 @@ function renderHomeScreen() {
     ongoingContainer.innerHTML = `
       <div class="empty-state-card">
         <div class="empty-state-icon">🎓</div>
-        <h3>Welcome to LeoAxis</h3>
+        <h3>Welcome to GSSS LMS Portal</h3>
         <p>You have not enrolled in any courses yet. Please navigate to the "Other Courses" tab to enroll in learning modules.</p>
       </div>
     `;
@@ -524,12 +577,10 @@ function renderHomeScreen() {
     const assigns = courseAssignmentsMap[course.id] || [];
     const quizCount = courseMCQsMap[course.id] || [];
 
-    const totalInCourse = lecs.length + assigns.length + quizCount.length;
+    const totalInCourse = lecs.length;
     if (totalInCourse === 0) return;
 
-    const completedInCourse = lecs.filter(l => completedLectureIds.includes(l.id)).length +
-      assigns.filter(a => submissionsCache.some(s => s.type === 'assignment' && s.reference_id === a.id && s.is_correct === 1)).length +
-      quizCount.filter(q => submissionsCache.some(s => s.type === 'mcq' && s.reference_id === q.id && s.is_correct === 1)).length;
+    const completedInCourse = lecs.filter(l => completedLectureIds.includes(l.id)).length;
 
     const progressPct = totalInCourse > 0 ? Math.round((completedInCourse / totalInCourse) * 100) : 0;
 
@@ -613,16 +664,10 @@ function updateProgressWidgets() {
     const assigns = courseAssignmentsMap[course.id] || [];
     const quizCount = courseMCQsMap[course.id] || [];
 
-    totalMilestonesCount += lecs.length + assigns.length + quizCount.length;
+    totalMilestonesCount += lecs.length;
     
     // Completed videos
     totalCompletedCount += lecs.filter(l => completedLectureIds.includes(l.id)).length;
-    
-    // Completed assignments
-    totalCompletedCount += assigns.filter(a => submissionsCache.some(s => s.type === 'assignment' && s.reference_id === a.id && s.is_correct === 1)).length;
-    
-    // Completed MCQs
-    totalCompletedCount += quizCount.filter(q => submissionsCache.some(s => s.type === 'mcq' && s.reference_id === q.id && s.is_correct === 1)).length;
   });
 
   const dailyPct = totalMilestonesCount > 0 ? Math.round((totalCompletedCount / totalMilestonesCount) * 100) : 0;
@@ -726,74 +771,106 @@ function renderJourneyScreen() {
     return;
   }
 
-  enrolledCourses.forEach((course, index) => {
-    const lecs = courseLecturesMap[course.id] || [];
-    const assigns = courseAssignmentsMap[course.id] || [];
-    const quizCount = courseMCQsMap[course.id] || [];
+  // Determine selected course ID
+  if (!selectedJourneyCourseId && enrolledCourses.length > 0) {
+    selectedJourneyCourseId = enrolledCourses[0].id;
+  } else if (selectedJourneyCourseId && !enrolledCourses.some(c => c.id === selectedJourneyCourseId)) {
+    selectedJourneyCourseId = enrolledCourses.length > 0 ? enrolledCourses[0].id : null;
+  }
 
-    const totalInCourse = lecs.length + assigns.length + quizCount.length;
-    const completedInCourse = lecs.filter(l => completedLectureIds.includes(l.id)).length +
-      assigns.filter(a => submissionsCache.some(s => s.type === 'assignment' && s.reference_id === a.id && s.is_correct === 1)).length +
-      quizCount.filter(q => submissionsCache.some(s => s.type === 'mcq' && s.reference_id === q.id && s.is_correct === 1)).length;
+  // 1. Registered course tabs header selector (rendering as course thumbnail cards)
+  const selectorDiv = document.createElement('div');
+  selectorDiv.className = 'journey-course-selector';
+  selectorDiv.style.cssText = 'display: flex; gap: 1rem; margin-bottom: 1.5rem; border-bottom: 1px solid var(--card-border); padding-bottom: 1rem; flex-wrap: wrap;';
+  
+  enrolledCourses.forEach((course) => {
+    const isActive = course.id === selectedJourneyCourseId;
+    const tabBtn = document.createElement('button');
+    tabBtn.style.cssText = `background-image: url('${course.thumbnail_url || '/uploads/default-course.jpg'}'); width: 140px; height: 80px; background-size: cover; background-position: center; border-radius: var(--radius-sm); border: ${isActive ? '2.5px solid var(--primary)' : '1px solid var(--card-border)'}; cursor: pointer; position: relative; overflow: hidden; padding: 0; box-shadow: ${isActive ? '0 0 10px rgba(139, 92, 246, 0.4)' : 'none'}; transition: all 0.2s;`;
+    
+    // Add course title label overlay
+    const titleOverlay = document.createElement('div');
+    titleOverlay.style.cssText = 'position: absolute; bottom: 0; left: 0; width: 100%; background: rgba(0,0,0,0.75); color: #fff; font-size: 0.72rem; font-weight: 700; padding: 0.25rem 0.4rem; text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;';
+    titleOverlay.textContent = course.title;
+    tabBtn.appendChild(titleOverlay);
+    
+    tabBtn.onclick = () => {
+      selectedJourneyCourseId = course.id;
+      renderJourneyScreen();
+    };
+    selectorDiv.appendChild(tabBtn);
+  });
+  container.appendChild(selectorDiv);
 
-    const progressPct = totalInCourse > 0 ? Math.round((completedInCourse / totalInCourse) * 100) : 0;
+  // 2. Timeline display for selected course only
+  const course = enrolledCourses.find(c => c.id === selectedJourneyCourseId);
+  if (!course) return;
 
-    const block = document.createElement('div');
-    block.className = 'growth-cycle-block';
-    block.innerHTML = `
-      <div class="growth-cycle-header">
-        <div>
-          <span class="lecture-badge badge-green" style="margin-bottom: 0.5rem; display: inline-block;">Growth Cycle ${index + 1}</span>
-          <h3 style="font-size: 1.4rem; color: var(--text-main);">${course.title}</h3>
-          <p style="font-size: 0.85rem; color: var(--text-muted); margin-top: 0.25rem;">${course.description || ''}</p>
-        </div>
-        <span class="growth-cycle-percentage" style="font-size: 1.2rem;">${progressPct}% Complete</span>
+  const courseIdx = enrolledCourses.indexOf(course);
+  const lecs = courseLecturesMap[course.id] || [];
+  const assigns = courseAssignmentsMap[course.id] || [];
+  const quizCount = courseMCQsMap[course.id] || [];
+
+  const totalInCourse = lecs.length;
+  const completedInCourse = lecs.filter(l => completedLectureIds.includes(l.id)).length;
+
+  const progressPct = totalInCourse > 0 ? Math.round((completedInCourse / totalInCourse) * 100) : 0;
+
+  const block = document.createElement('div');
+  block.className = 'growth-cycle-block';
+  block.innerHTML = `
+    <div class="growth-cycle-header" style="text-align: left; display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1.25rem;">
+      <div>
+        <span class="lecture-badge badge-green" style="margin-bottom: 0.5rem; display: inline-block;">Growth Cycle ${courseIdx + 1}</span>
+        <h3 style="font-size: 1.4rem; color: var(--text-main);">${course.title}</h3>
+        <p style="font-size: 0.85rem; color: var(--text-muted); margin-top: 0.25rem;">${course.description || ''}</p>
       </div>
-      <div class="growth-cycle-progress-bar" style="height: 10px;">
-        <div class="growth-cycle-progress-fill" style="width: ${progressPct}%; background-color: var(--success);"></div>
-      </div>
-      <div class="timeline-container">
-        ${lecs.map((lec, lecIdx) => {
-          const isLecCompleted = isLectureCompleted(lec.id, course.id);
-          const isLocked = lecIdx > 0 && !isLectureCompleted(lecs[lecIdx - 1].id, course.id);
-          
-          const badgeType = (lec.content_type || 'Video Lecture').toUpperCase();
-          const duration = lec.duration || '15 mins';
-          
-          let badgeColorClass = "badge-green";
-          if (badgeType === 'ASSESSMENT' || badgeType === 'ASSIGNMENT') {
-            badgeColorClass = "badge-yellow";
-          } else if (badgeType === 'PRACTICE') {
-            badgeColorClass = "badge-yellow";
-          }
+      <span class="growth-cycle-percentage" style="font-size: 1.2rem;">${progressPct}% Complete</span>
+    </div>
+    <div class="growth-cycle-progress-bar" style="height: 10px; margin-bottom: 1.5rem;">
+      <div class="growth-cycle-progress-fill" style="width: ${progressPct}%; background-color: var(--success);"></div>
+    </div>
+    <div class="timeline-container">
+      ${lecs.map((lec, lecIdx) => {
+        const isLecCompleted = isLectureCompleted(lec.id, course.id);
+        const isLocked = lecIdx > 0 && !isLectureCompleted(lecs[lecIdx - 1].id, course.id);
+        
+        const badgeType = (lec.content_type || 'Video Lecture').toUpperCase();
+        const duration = lec.duration || '15 mins';
+        
+        let badgeColorClass = "badge-green";
+        if (badgeType === 'ASSESSMENT' || badgeType === 'ASSIGNMENT') {
+          badgeColorClass = "badge-yellow";
+        } else if (badgeType === 'PRACTICE') {
+          badgeColorClass = "badge-yellow";
+        }
 
-          const clickAction = isLocked ? `alert('This milestone is locked. Complete the previous lectures first!')` : `playLecture(${lec.id}, '${lec.title}', '${course.title}', '${lec.video_url}')`;
+        const clickAction = isLocked ? `alert('This milestone is locked. Complete the previous lectures first!')` : `playLecture(${lec.id}, '${lec.title}', '${course.title}', '${lec.video_url}')`;
 
-          return `
-            <div class="timeline-item ${isLecCompleted ? 'completed' : ''} ${isLocked ? 'locked-timeline-item' : ''}" onclick="${clickAction}">
-              <div class="timeline-content">
-                <span class="timeline-title">${lec.title}</span>
-                <div class="timeline-badges">
-                  <span class="lecture-badge ${badgeColorClass}">${badgeType}</span>
-                  <span style="font-size: 0.75rem; color: var(--text-muted); font-weight: 500;">⏱ ${duration}</span>
-                </div>
-              </div>
-              <div class="lecture-status-indicator" onclick="event.stopPropagation(); ${isLocked ? '' : `toggleLectureStatus(${lec.id})`}" style="margin: 0; border: none; background: transparent;">
-                ${isLocked ? `
-                  <span style="font-size: 0.85rem; color: var(--text-muted);">🔒</span>
-                ` : `
-                  <svg fill="none" stroke="currentColor" stroke-width="3" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" style="width: 18px; height: 18px; color: ${isLecCompleted ? 'var(--success)' : 'rgba(255, 255, 255, 0.25)'}; filter: ${isLecCompleted ? 'drop-shadow(0 0 4px rgba(16, 185, 129, 0.4))' : 'none'};">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                  </svg>
-                `}
+        return `
+          <div class="timeline-item ${isLecCompleted ? 'completed' : ''} ${isLocked ? 'locked-timeline-item' : ''}" onclick="${clickAction}">
+            <div class="timeline-content">
+              <span class="timeline-title">${lec.title}</span>
+              <div class="timeline-badges">
+                <span class="lecture-badge ${badgeColorClass}">${badgeType}</span>
+                <span style="font-size: 0.75rem; color: var(--text-muted); font-weight: 500;">⏱ ${duration}</span>
               </div>
             </div>
-          `;
-        }).join('')}
-      </div>
-    `;
-    container.appendChild(block);
-  });
+            <div class="lecture-status-indicator" onclick="event.stopPropagation(); ${isLocked ? '' : `toggleLectureStatus(${lec.id})`}" style="margin: 0; border: none; background: transparent;">
+              ${isLocked ? `
+                <span style="font-size: 0.85rem; color: var(--text-muted);">🔒</span>
+              ` : `
+                <svg fill="none" stroke="currentColor" stroke-width="3" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" style="width: 18px; height: 18px; color: ${isLecCompleted ? 'var(--success)' : 'rgba(255, 255, 255, 0.25)'}; filter: ${isLecCompleted ? 'drop-shadow(0 0 4px rgba(16, 185, 129, 0.4))' : 'none'};">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                </svg>
+              `}
+            </div>
+          </div>
+        `;
+      }).join('')}
+    </div>
+  `;
+  container.appendChild(block);
 }
 
 // Render "Other Courses" catalogs
@@ -3780,84 +3857,63 @@ window.drawActivityHeatmapAndRings = function(logs, progress, submissions, enrol
     const y = dateObj.getFullYear();
     const m = String(dateObj.getMonth() + 1).padStart(2, '0');
     const d = String(dateObj.getDate()).padStart(2, '0');
-    return `${y}-${m}-${d}`;
+    return `${y}-\ ${m}-\ ${d}`.replace(/\s+/g, '');
   };
 
   // Add Logins
-  logs.forEach(log => {
-    if (log.login_time) {
-      const dateStr = log.login_time.substring(0, 10);
-      activityMap[dateStr] = (activityMap[dateStr] || 0) + 1;
-      totalActions++;
-    }
-  });
+  if (Array.isArray(logs)) {
+    logs.forEach(log => {
+      if (log.login_time) {
+        const dateStr = log.login_time.substring(0, 10);
+        activityMap[dateStr] = (activityMap[dateStr] || 0) + 1;
+        totalActions++;
+      }
+    });
+  }
 
   // Add video completions
-  progress.forEach(prog => {
-    if ((prog.completed || prog.completed === 1) && prog.updated_at) {
-      const dateStr = prog.updated_at.substring(0, 10);
-      activityMap[dateStr] = (activityMap[dateStr] || 0) + 1;
-      totalActions++;
-    }
-  });
+  if (Array.isArray(progress)) {
+    progress.forEach(prog => {
+      if ((prog.completed || prog.completed === 1) && prog.updated_at) {
+        const dateStr = prog.updated_at.substring(0, 10);
+        activityMap[dateStr] = (activityMap[dateStr] || 0) + 1;
+        totalActions++;
+      }
+    });
+  }
 
   // Add MCQ & Coding submissions
-  submissions.forEach(sub => {
-    const rawDate = sub.created_at || sub.updated_at;
-    if (rawDate) {
-      const dateStr = rawDate.substring(0, 10);
-      activityMap[dateStr] = (activityMap[dateStr] || 0) + 1;
-      totalActions++;
-    }
-  });
+  if (Array.isArray(submissions)) {
+    submissions.forEach(sub => {
+      const rawDate = sub.created_at || sub.updated_at;
+      if (rawDate) {
+        const dateStr = rawDate.substring(0, 10);
+        activityMap[dateStr] = (activityMap[dateStr] || 0) + 1;
+        totalActions++;
+      }
+    });
+  }
 
   if (summaryText) {
     summaryText.textContent = `${totalActions} submissions & actions in the last year`;
   }
 
-  // 2. Calculate Streak
-  let currentStreak = 0;
-  const today = new Date();
-  let checkDate = new Date(today);
-
-  // Check today first
-  let dateKey = formatDateStr(checkDate);
-  if (activityMap[dateKey] > 0) {
-    currentStreak++;
-    // go back day-by-day
-    while (true) {
-      checkDate.setDate(checkDate.getDate() - 1);
-      dateKey = formatDateStr(checkDate);
-      if (activityMap[dateKey] > 0) {
-        currentStreak++;
-      } else {
-        break;
-      }
-    }
-  } else {
-    // Check if yesterday had activity, to maintain streak if today is not finished yet
-    checkDate.setDate(checkDate.getDate() - 1);
-    dateKey = formatDateStr(checkDate);
-    if (activityMap[dateKey] > 0) {
-      currentStreak++;
-      while (true) {
-        checkDate.setDate(checkDate.getDate() - 1);
-        dateKey = formatDateStr(checkDate);
-        if (activityMap[dateKey] > 0) {
-          currentStreak++;
-        } else {
-          break;
-        }
-      }
-    }
-  }
+  // 2. Calculate Streak - how many days they spent (total unique days)
+  const uniqueDaysSpent = Object.keys(activityMap).length;
 
   if (streakFlame) {
-    streakFlame.textContent = `${currentStreak} Day Streak`;
+    const dayLabel = uniqueDaysSpent === 1 ? 'Day' : 'Days';
+    // Match the dashboard text exactly
+    if (gridId === 'analytics-heatmap-grid') {
+      streakFlame.textContent = `${uniqueDaysSpent} Day${uniqueDaysSpent === 1 ? '' : 's'} Streak`;
+    } else {
+      streakFlame.textContent = `${uniqueDaysSpent} ${dayLabel} Streak`;
+    }
   }
 
   // 3. Render 53-week Heatmap Grid
   grid.innerHTML = '';
+  const today = new Date();
   // Start from Sunday 364 days ago
   const startDay = new Date();
   startDay.setDate(startDay.getDate() - 364);
@@ -3866,6 +3922,10 @@ window.drawActivityHeatmapAndRings = function(logs, progress, submissions, enrol
 
   // Draw 371 cells (53 weeks * 7 days)
   const cellDate = new Date(startDay);
+  const isDarkTheme = document.documentElement.classList.contains('dark') || 
+                      document.body.classList.contains('dark') ||
+                      document.documentElement.className.includes('dark');
+
   for (let i = 0; i < 371; i++) {
     const cellKey = formatDateStr(cellDate);
     const count = activityMap[cellKey] || 0;
@@ -3880,17 +3940,17 @@ window.drawActivityHeatmapAndRings = function(logs, progress, submissions, enrol
     if (cellDate > today) {
       cell.style.backgroundColor = 'transparent';
     } else {
-      // Color scale based on actions count
+      // Color scale based on actions count - make 0-count visible
       if (count === 0) {
-        cell.style.backgroundColor = 'rgba(255, 255, 255, 0.03)';
+        cell.style.backgroundColor = isDarkTheme ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.06)';
       } else if (count === 1) {
-        cell.style.backgroundColor = 'rgba(59, 130, 246, 0.2)';
+        cell.style.backgroundColor = 'rgba(59, 130, 246, 0.3)';
       } else if (count === 2) {
-        cell.style.backgroundColor = 'rgba(59, 130, 246, 0.4)';
+        cell.style.backgroundColor = 'rgba(59, 130, 246, 0.55)';
       } else if (count === 3) {
-        cell.style.backgroundColor = 'rgba(59, 130, 246, 0.7)';
+        cell.style.backgroundColor = 'rgba(59, 130, 246, 0.8)';
       } else {
-        cell.style.backgroundColor = 'var(--primary)'; // High visibility blue/purple
+        cell.style.backgroundColor = 'var(--primary)'; // High visibility
       }
       
       const formattedDateLabel = cellDate.toLocaleDateString('en-US', { weekday: 'long', day: 'numeric', month: 'short', year: 'numeric' });
@@ -5388,7 +5448,7 @@ window.selectOnboardingLevel = function(level) {
 window.backToOnboardingStep1 = function() {
   document.getElementById('onboarding-step-2').style.display = 'none';
   document.getElementById('onboarding-step-1').style.display = 'flex';
-  document.getElementById('onboarding-modal-title').innerText = 'Welcome to Leo Access!';
+  document.getElementById('onboarding-modal-title').innerText = 'Welcome to GSSS LMS Portal!';
 };
 
 window.uploadOnboardingResumeFile = async function() {
@@ -5518,11 +5578,17 @@ window.handleSaveProfile = async function(e) {
 };
 
 window.loadStudentProfilePanel = async function() {
-  document.getElementById('profile-panel-name').innerText = currentUser.name;
-  document.getElementById('profile-panel-email').innerText = currentUser.email;
+  const name = currentUser && currentUser.name ? currentUser.name : 'Student';
+  const email = currentUser && currentUser.email ? currentUser.email : '';
+  const pName = document.getElementById('profile-panel-name');
+  if (pName) pName.innerText = name;
+  const pEmail = document.getElementById('profile-panel-email');
+  if (pEmail) pEmail.innerText = email;
 
-  const initials = currentUser.name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
-  document.getElementById('profile-panel-avatar').innerText = initials;
+  const initials = name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase() || 'ST';
+  const pAvatar = document.getElementById('profile-panel-avatar');
+  if (pAvatar) pAvatar.innerText = initials;
+
 
   try {
     const profile = await API.getStudentProfile();
@@ -5902,3 +5968,758 @@ window.finishCallbackQuery = async function(requestId) {
     console.error('Failed to resolve callback query:', err);
   }
 };
+
+window.loadAdminQueriesPanel = async function() {
+  try {
+    const queries = await API.getAdminQueries();
+    
+    const pendingList = document.getElementById('queries-pending-list');
+    const completedList = document.getElementById('queries-completed-list');
+    
+    if (!pendingList || !completedList) return;
+    
+    pendingList.innerHTML = '';
+    completedList.innerHTML = '';
+
+    const pendingQueries = queries.filter(q => q.status === 'pending');
+    const completedQueries = queries.filter(q => q.status === 'completed');
+
+    // Update counts
+    document.getElementById('queries-pending-count').textContent = `${pendingQueries.length} Pending`;
+    document.getElementById('queries-completed-count').textContent = `${completedQueries.length} Completed`;
+
+    if (pendingQueries.length === 0) {
+      pendingList.innerHTML = `<span style="font-size: 0.85rem; color: var(--text-muted); font-style: italic;">No pending landing queries.</span>`;
+    } else {
+      pendingQueries.forEach(q => {
+        const card = createAdminQueryCard(q, true);
+        pendingList.appendChild(card);
+      });
+    }
+
+    if (completedQueries.length === 0) {
+      completedList.innerHTML = `<span style="font-size: 0.85rem; color: var(--text-muted); font-style: italic;">No finished landing queries yet.</span>`;
+    } else {
+      completedQueries.forEach(q => {
+        const card = createAdminQueryCard(q, false);
+        completedList.appendChild(card);
+      });
+    }
+  } catch (err) {
+    console.error('Failed to load admin queries panel:', err);
+  }
+};
+
+function createAdminQueryCard(query, isPending) {
+  const card = document.createElement('div');
+  card.className = 'admin-panel-card';
+  card.style.cssText = `
+    padding: 1.25rem;
+    background: rgba(255,255,255,0.02);
+    border: 1px solid var(--card-border);
+    border-radius: var(--radius-sm);
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    text-align: left;
+    margin-bottom: 0.75rem;
+  `;
+
+  card.innerHTML = `
+    <!-- Header -->
+    <div style="display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 1px solid var(--card-border); padding-bottom: 0.5rem; width: 100%;">
+      <div>
+        <h4 style="margin: 0; font-size: 1.1rem; color: var(--text-main); font-weight: 800;">${query.name}</h4>
+        <span style="font-size: 0.75rem; color: var(--text-muted);">${query.email} | Phone: <strong style="color: var(--primary-light);">${query.phone}</strong></span>
+      </div>
+      <span style="font-size: 0.7rem; color: var(--text-muted);">${new Date(query.created_at).toLocaleDateString()}</span>
+    </div>
+
+    <!-- Interest Area -->
+    <div>
+      <span style="font-size: 0.7rem; text-transform: uppercase; color: var(--success); font-weight: 800; display: block; margin-bottom: 0.15rem;">Interested In</span>
+      <span style="font-size: 0.85rem; font-weight: bold; color: var(--text-main);">${query.interest}</span>
+    </div>
+
+    <!-- Question Description -->
+    <div style="background: rgba(0,0,0,0.15); padding: 0.75rem; border-radius: var(--radius-sm); border: 1px solid rgba(255,255,255,0.01);">
+      <span style="font-size: 0.7rem; text-transform: uppercase; color: var(--text-muted); font-weight: 800; display: block; margin-bottom: 0.25rem;">💬 Message / Question</span>
+      <p style="margin: 0; font-size: 0.85rem; color: var(--text-main); line-height: 1.45; white-space: pre-line;">${query.question}</p>
+    </div>
+
+    <!-- Action Box -->
+    ${isPending ? `
+      <div style="display: flex; justify-content: flex-end; margin-top: 0.25rem;">
+        <button class="btn btn-primary" onclick="finishLandingQuery(${query.id})" style="padding: 0.45rem 1rem; font-size: 0.8rem; font-weight: 700; background: var(--success); border: none;">✓ Resolve Message</button>
+      </div>
+    ` : `
+      <div style="display: flex; justify-content: flex-end; margin-top: 0.25rem; font-size: 0.8rem; font-weight: 700; color: var(--success); align-items: center; gap: 0.25rem;">
+        <span>✓ Resolved & Completed</span>
+      </div>
+    `}
+  `;
+  return card;
+}
+
+window.finishLandingQuery = async function(queryId) {
+  try {
+    const res = await API.finishLandingQuery(queryId);
+    if (res.success) {
+      loadAdminQueriesPanel();
+    } else {
+      alert('Failed to resolve query: ' + (res.error || 'Server error'));
+    }
+  } catch (err) {
+    console.error('Failed to resolve landing query:', err);
+  }
+};
+
+/* ==========================================================================
+   GROUP BATCH CHAT COMPONENT
+   ========================================================================== */
+let chatPollInterval = null;
+
+function loadGroupChatPanel(role) {
+  if (chatPollInterval) {
+    clearInterval(chatPollInterval);
+  }
+  fetchAndRenderChatMessages(role);
+  chatPollInterval = setInterval(() => {
+    fetchAndRenderChatMessages(role);
+  }, 3000);
+}
+
+function getAvatarHTML(name, role) {
+  const initials = name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
+  let hash = 0;
+  for (let i = 0; i < name.length; i++) {
+    hash = name.charCodeAt(i) + ((hash << 5) - hash);
+  }
+  
+  const hexColors = [
+    'linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%)',
+    'linear-gradient(135deg, #a855f7 0%, #6b21a8 100%)',
+    'linear-gradient(135deg, #10b981 0%, #047857 100%)',
+    'linear-gradient(135deg, #f43f5e 0%, #be123c 100%)',
+    'linear-gradient(135deg, #f59e0b 0%, #b45309 100%)',
+    'linear-gradient(135deg, #6366f1 0%, #4338ca 100%)',
+    'linear-gradient(135deg, #06b6d4 0%, #0891b2 100%)'
+  ];
+  
+  const background = role === 'admin' || role === 'faculty' 
+    ? 'linear-gradient(135deg, #f59e0b 0%, #eab308 50%, #d97706 100%)' 
+    : hexColors[Math.abs(hash) % hexColors.length];
+    
+  const color = role === 'admin' || role === 'faculty' ? '#000000' : '#ffffff';
+  
+  return `<div class="chat-avatar" style="background: ${background}; color: ${color};">${initials}</div>`;
+}
+
+async function fetchAndRenderChatMessages(role) {
+  try {
+    const res = await fetch('/api/chat/messages');
+    if (!res.ok) return;
+    const messages = await res.json();
+    
+    const containerId = role === 'admin' ? 'chat-messages-container-admin' : 'chat-messages-container';
+    const container = document.getElementById(containerId);
+    if (!container) return;
+    
+    const isAtBottom = container.scrollHeight - container.scrollTop <= container.clientHeight + 100;
+    
+    container.innerHTML = messages.map(msg => {
+      const isMe = currentUser && msg.user_id === currentUser.id;
+      const isAdminMsg = msg.sender_role === 'admin' || msg.sender_role === 'faculty';
+      const timeStr = new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+      
+      if (isMe) {
+        return `
+          <div class="chat-message-row row-right">
+            <div class="chat-bubble bubble-right">
+              <div class="chat-msg-text">${escapeHTML(msg.message)}</div>
+              <div class="chat-time-badge">
+                <span>${timeStr}</span>
+                <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-check-check text-emerald-300"><path d="M2 17L8 23L22 9"/><path d="M16 5l-8 8-2-2"/></svg>
+              </div>
+            </div>
+          </div>
+        `;
+      } else {
+        const avatar = getAvatarHTML(msg.sender_name, msg.sender_role);
+        
+        let hash = 0;
+        for (let i = 0; i < msg.sender_name.length; i++) {
+          hash = msg.sender_name.charCodeAt(i) + ((hash << 5) - hash);
+        }
+        const nameColors = [
+          'text-blue-400',
+          'text-purple-400',
+          'text-emerald-400',
+          'text-rose-400',
+          'text-amber-400',
+          'text-indigo-400',
+          'text-cyan-400'
+        ];
+        const nameColor = isAdminMsg ? 'text-amber-400 font-extrabold' : nameColors[Math.abs(hash) % nameColors.length];
+        
+        const roleBadge = isAdminMsg 
+          ? `<span class="chat-sender-role role-mentor">Mentor</span>` 
+          : `<span class="chat-sender-role role-candidate">Candidate</span>`;
+        
+        return `
+          <div class="chat-message-row row-left">
+            ${avatar}
+            <div class="chat-bubble bubble-left">
+              <div class="chat-sender-header">
+                <span class="chat-sender-name ${nameColor}">${msg.sender_name}</span>
+                ${roleBadge}
+              </div>
+              <div class="chat-msg-text">${escapeHTML(msg.message)}</div>
+              <div class="chat-time-badge">
+                <span>${timeStr}</span>
+              </div>
+            </div>
+          </div>
+        `;
+      }
+    }).join('');
+    
+    if (isAtBottom || container.getAttribute('data-loaded') !== 'true') {
+      container.scrollTop = container.scrollHeight;
+      container.setAttribute('data-loaded', 'true');
+    }
+  } catch (err) {
+    console.error('Error fetching chat messages:', err);
+  }
+}
+
+async function sendGroupChatMessage() {
+  const input = document.getElementById('chat-input-field');
+  if (!input) return;
+  const val = input.value.trim();
+  if (val === '') return;
+  
+  input.disabled = true;
+  const sendBtn = document.getElementById('chat-send-btn');
+  if (sendBtn) sendBtn.disabled = true;
+  
+  try {
+    const res = await fetch('/api/chat/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ message: val })
+    });
+    
+    if (res.ok) {
+      input.value = '';
+      await fetchAndRenderChatMessages('student');
+      const container = document.getElementById('chat-messages-container');
+      if (container) container.scrollTop = container.scrollHeight;
+    }
+  } catch (err) {
+    console.error('Failed to send message:', err);
+  } finally {
+    input.disabled = false;
+    if (sendBtn) sendBtn.disabled = false;
+    input.focus();
+  }
+}
+
+async function sendGroupChatMessageAdmin() {
+  const input = document.getElementById('chat-input-field-admin');
+  if (!input) return;
+  const val = input.value.trim();
+  if (val === '') return;
+  
+  input.disabled = true;
+  const sendBtn = document.getElementById('chat-send-btn-admin');
+  if (sendBtn) sendBtn.disabled = true;
+  
+  try {
+    const res = await fetch('/api/chat/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ message: val })
+    });
+    
+    if (res.ok) {
+      input.value = '';
+      await fetchAndRenderChatMessages('admin');
+      const container = document.getElementById('chat-messages-container-admin');
+      if (container) container.scrollTop = container.scrollHeight;
+    }
+  } catch (err) {
+    console.error('Failed to send message:', err);
+  } finally {
+    input.disabled = false;
+    if (sendBtn) sendBtn.disabled = false;
+    input.focus();
+  }
+}
+
+function escapeHTML(str) {
+  return str
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+}
+
+
+/* ==========================================================================
+   MEET LINKS MANAGER COMPONENT
+   ========================================================================== */
+let cachedMeets = [];
+
+function loadMeetLinksPanel(role) {
+  if (role === 'admin') {
+    populateMeetCourseSelect();
+    populateMeetHistoryFilter();
+  }
+  fetchAndRenderMeetLinks(role);
+}
+
+function formatMeetDate(dateStr) {
+  const options = { weekday: 'short', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' };
+  return new Date(dateStr).toLocaleDateString('en-US', options);
+}
+
+async function populateMeetHistoryFilter() {
+  const filterSelect = document.getElementById('meet-history-filter');
+  if (!filterSelect) return;
+  
+  try {
+    const courses = await API.getCourses();
+    filterSelect.innerHTML = '<option value="all">All Courses</option>' + 
+      courses.map(c => `<option value="${c.id}">${escapeHTML(c.title)}</option>`).join('');
+  } catch (err) {
+    console.error('Failed to populate meet history filter:', err);
+  }
+}
+
+function filterAdminMeetHistory() {
+  renderAdminMeetHistoryList();
+}
+
+function renderAdminMeetHistoryList() {
+  const filterVal = document.getElementById('meet-history-filter')?.value || 'all';
+  const historyContainer = document.getElementById('admin-history-meets');
+  if (!historyContainer) return;
+  
+  const finishedMeets = cachedMeets.filter(m => m.status === 'finished');
+  const filteredMeets = filterVal === 'all' 
+    ? finishedMeets 
+    : finishedMeets.filter(m => m.course_id == filterVal);
+    
+  if (filteredMeets.length === 0) {
+    historyContainer.innerHTML = '<tr><td colspan="6" style="padding: 1rem; text-align: center; color: var(--text-muted); font-style: italic;">No finished classes match this selection.</td></tr>';
+  } else {
+    historyContainer.innerHTML = filteredMeets.map(meet => {
+      return `
+        <tr style="border-bottom: 1px solid var(--card-border);">
+          <td style="padding: 0.75rem 1rem;">
+            <div style="font-weight: 700; color: var(--text-main);">${escapeHTML(meet.topic)}</div>
+            <div style="font-size: 0.75rem; color: var(--text-muted);">${escapeHTML(meet.course_title || meet.subject)}</div>
+          </td>
+          <td style="padding: 0.75rem 1rem;">${escapeHTML(meet.mentor_name)}</td>
+          <td style="padding: 0.75rem 1rem;">${formatMeetDate(meet.meet_date)}</td>
+          <td style="padding: 0.75rem 1rem;">${escapeHTML(meet.duration)}</td>
+          <td style="padding: 0.75rem 1rem; max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;"><a href="${meet.meet_url}" target="_blank" style="color: var(--text-muted);">${escapeHTML(meet.meet_url)}</a></td>
+          <td style="padding: 0.75rem 1rem;"><span style="background: rgba(244, 63, 94, 0.1); color: var(--accent); font-size: 0.7rem; font-weight: 800; padding: 0.15rem 0.45rem; border-radius: 4px; text-transform: uppercase;">Finished</span></td>
+        </tr>
+      `;
+    }).join('');
+  }
+}
+
+async function fetchAndRenderMeetLinks(role) {
+  try {
+    const meets = await API.getMeetLinks();
+    cachedMeets = meets;
+    
+    if (role === 'admin') {
+      const activeContainer = document.getElementById('admin-active-meets');
+      if (!activeContainer) return;
+      
+      activeContainer.innerHTML = '';
+      const activeMeets = meets.filter(m => m.status === 'active');
+      
+      if (activeMeets.length === 0) {
+        activeContainer.innerHTML = '<span style="color: var(--text-muted); font-size: 0.85rem; font-style: italic;">No active classes currently scheduled.</span>';
+      } else {
+        activeContainer.innerHTML = activeMeets.map(meet => {
+          return `
+            <div class="card" style="padding: 1.25rem; border: 1px solid var(--card-border); background: var(--bg-main); border-radius: var(--radius-md); min-height: 200px; display: flex; flex-direction: column; justify-content: space-between; text-align: left;">
+              <div>
+                <span style="font-size: 0.65rem; font-weight: 700; color: var(--primary); text-transform: uppercase; letter-spacing: 0.05em; display: block; margin-bottom: 0.25rem;">${escapeHTML(meet.course_title || meet.subject)}</span>
+                <h4 style="font-size: 1.15rem; font-weight: 800; margin-bottom: 0.5rem; line-height: 1.2; color: var(--text-main);">${escapeHTML(meet.topic)}</h4>
+                <div style="font-size: 0.8rem; color: var(--text-muted); display: flex; flex-direction: column; gap: 0.25rem;">
+                  <div>📚 Course: <strong>${escapeHTML(meet.course_title || meet.subject)}</strong></div>
+                  <div>👤 Mentor: <strong>${escapeHTML(meet.mentor_name)}</strong></div>
+                  <div>📅 Date: <strong>${formatMeetDate(meet.meet_date)}</strong></div>
+                  <div>⏱️ Duration: <strong>${escapeHTML(meet.duration)}</strong></div>
+                  <div style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">🔗 Link: <a href="${meet.meet_url}" target="_blank" style="color: var(--primary);">${escapeHTML(meet.meet_url)}</a></div>
+                </div>
+              </div>
+              <button onclick="finishMeetLink(${meet.id})" class="chat-submit-btn" style="width: 100%; height: 36px; border-radius: var(--radius-sm); font-size: 0.85rem; font-weight: bold; margin-top: 1rem; background: var(--accent);">Finish Class</button>
+            </div>
+          `;
+        }).join('');
+      }
+      
+      // Render the filtered history list
+      renderAdminMeetHistoryList();
+    } else {
+      // Student
+      const activeContainer = document.getElementById('student-active-meets');
+      const historyContainer = document.getElementById('student-history-meets');
+      if (!activeContainer || !historyContainer) return;
+      
+      activeContainer.innerHTML = '';
+      historyContainer.innerHTML = '';
+      
+      const activeMeets = meets.filter(m => m.status === 'active');
+      const finishedMeets = meets.filter(m => m.status === 'finished');
+      
+      if (activeMeets.length === 0) {
+        activeContainer.innerHTML = '<span style="color: var(--text-muted); font-size: 0.85rem; font-style: italic;">No active live classes currently scheduled. Enjoy your self-paced learning!</span>';
+      } else {
+        activeContainer.innerHTML = activeMeets.map(meet => {
+          return `
+            <div class="card" style="padding: 1.25rem; border: 1px solid var(--card-border); background: var(--bg-main); border-radius: var(--radius-md); min-height: 180px; display: flex; flex-direction: column; justify-content: space-between; text-align: left;">
+              <div>
+                <span style="font-size: 0.65rem; font-weight: 700; color: var(--primary); text-transform: uppercase; letter-spacing: 0.05em; display: block; margin-bottom: 0.25rem;">${escapeHTML(meet.course_title || meet.subject)}</span>
+                <h4 style="font-size: 1.15rem; font-weight: 800; margin-bottom: 0.5rem; line-height: 1.2; color: var(--text-main);">${escapeHTML(meet.topic)}</h4>
+                <div style="font-size: 0.8rem; color: var(--text-muted); display: flex; flex-direction: column; gap: 0.25rem;">
+                  <div>📚 Course: <strong>${escapeHTML(meet.course_title || meet.subject)}</strong></div>
+                  <div>👤 Mentor: <strong>${escapeHTML(meet.mentor_name)}</strong></div>
+                  <div>📅 Date: <strong>${formatMeetDate(meet.meet_date)}</strong></div>
+                  <div>⏱️ Duration: <strong>${escapeHTML(meet.duration)}</strong></div>
+                </div>
+              </div>
+              <a href="${meet.meet_url}" target="_blank" class="chat-submit-btn" style="width: 100%; height: 36px; border-radius: var(--radius-sm); font-size: 0.85rem; font-weight: bold; text-decoration: none; display: flex; align-items: center; justify-content: center; margin-top: 1rem; background: var(--primary); color: #ffffff;">Join Meeting</a>
+            </div>
+          `;
+        }).join('');
+      }
+      
+      if (finishedMeets.length === 0) {
+        historyContainer.innerHTML = '<tr><td colspan="5" style="padding: 1rem; text-align: center; color: var(--text-muted); font-style: italic;">No completed meetings recorded yet.</td></tr>';
+      } else {
+        historyContainer.innerHTML = finishedMeets.map(meet => {
+          return `
+            <tr style="border-bottom: 1px solid var(--card-border);">
+              <td style="padding: 0.75rem 1rem;">
+                <div style="font-weight: 700; color: var(--text-main);">${escapeHTML(meet.topic)}</div>
+                <div style="font-size: 0.75rem; color: var(--text-muted);">${escapeHTML(meet.course_title || meet.subject)}</div>
+              </td>
+              <td style="padding: 0.75rem 1rem;">${escapeHTML(meet.mentor_name)}</td>
+              <td style="padding: 0.75rem 1rem;">${formatMeetDate(meet.meet_date)}</td>
+              <td style="padding: 0.75rem 1rem;">${escapeHTML(meet.duration)}</td>
+              <td style="padding: 0.75rem 1rem;"><span style="background: rgba(244, 63, 94, 0.1); color: var(--accent); font-size: 0.7rem; font-weight: 800; padding: 0.15rem 0.45rem; border-radius: 4px; text-transform: uppercase;">Completed</span></td>
+            </tr>
+          `;
+        }).join('');
+      }
+    }
+  } catch (err) {
+    console.error('Failed to load meet links:', err);
+  }
+}
+
+async function populateMeetCourseSelect() {
+  const select = document.getElementById('meet-course-select');
+  if (!select) return;
+  
+  try {
+    const courses = await API.getCourses();
+    select.innerHTML = '<option value="">Select a Course...</option>' + 
+      courses.map(c => `<option value="${c.id}">${escapeHTML(c.title)}</option>`).join('');
+  } catch (err) {
+    console.error('Failed to load courses for meet selection dropdown:', err);
+  }
+}
+
+async function scheduleMeetLink() {
+  const courseSelect = document.getElementById('meet-course-select');
+  if (!courseSelect) return;
+  
+  const courseVal = courseSelect.value;
+  if (!courseVal) {
+    alert('Please select a course from the dropdown.');
+    return;
+  }
+  
+  const course_id = parseInt(courseVal);
+  const topic = document.getElementById('meet-topic-input').value.trim();
+  const meet_url = document.getElementById('meet-url-input').value.trim();
+  const meet_date = document.getElementById('meet-date-input').value;
+  const duration = document.getElementById('meet-duration-input').value.trim();
+  const mentor_name = document.getElementById('meet-mentor-input').value.trim();
+  
+  if (!course_id || !topic || !meet_url || !meet_date || !duration || !mentor_name) {
+    alert('Please fill out all fields.');
+    return;
+  }
+  
+  try {
+    const courses = await API.getCourses();
+    const course = courses.find(c => c.id == course_id);
+    const subject = course ? course.title : 'Live Class';
+    
+    const res = await API.scheduleMeetLink({ course_id, topic, subject, meet_url, meet_date, duration, mentor_name });
+    if (res && res.id) {
+      document.getElementById('schedule-meet-form').reset();
+      await populateMeetCourseSelect();
+      fetchAndRenderMeetLinks('admin');
+      alert('Class scheduled successfully!');
+    }
+  } catch (err) {
+    console.error(err);
+    alert('Failed to schedule class. Please try again.');
+  }
+}
+
+async function finishMeetLink(id) {
+  if (!confirm('Are you sure you want to finish this class? Candidates will no longer see the join link.')) return;
+  try {
+    const res = await API.finishMeetLink(id);
+    if (res && res.success) {
+      fetchAndRenderMeetLinks('admin');
+      alert('Class marked as finished and moved to logs.');
+    }
+  } catch (err) {
+    console.error(err);
+    alert('Failed to complete class action.');
+  }
+}
+
+/* ==========================================================================
+   OVERVIEW ANALYTICS GRAPH COMPONENT (Chart.js)
+   ========================================================================== */
+let enrollmentsChart = null;
+let progressChart = null;
+let activityChart = null;
+
+async function loadOverviewAnalytics() {
+  try {
+    const data = await API.getStudentHistory();
+    historyStudents = data.students || [];
+    historyLogs = data.logs || [];
+    historyProgress = data.progress || [];
+    historyEnrollments = data.enrollments || [];
+    historySubmissions = data.submissions || [];
+    historyLectures = data.lectures || [];
+    
+    // Render charts
+    renderOverviewAnalyticsCharts();
+  } catch (err) {
+    console.error('Failed to load overview analytics data:', err);
+  }
+}
+
+function renderOverviewAnalyticsCharts() {
+  if (typeof Chart === 'undefined') {
+    console.warn('Chart.js is not loaded yet. Retrying in 200ms...');
+    setTimeout(renderOverviewAnalyticsCharts, 200);
+    return;
+  }
+
+  // Destroy old charts to prevent overlaps
+  if (enrollmentsChart) enrollmentsChart.destroy();
+  if (progressChart) progressChart.destroy();
+  if (activityChart) activityChart.destroy();
+
+  // Update summary numbers
+  const totalStudentsEl = document.getElementById('overview-total-students');
+  const totalCoursesEl = document.getElementById('overview-total-courses');
+  const totalEnrollmentsEl = document.getElementById('overview-total-enrollments');
+  
+  if (totalStudentsEl) totalStudentsEl.textContent = historyStudents.length;
+  if (totalCoursesEl) totalCoursesEl.textContent = allCourses.length;
+  if (totalEnrollmentsEl) totalEnrollmentsEl.textContent = historyEnrollments.length;
+
+  // 1. Enrollments per course Bar Chart
+  const enrollCounts = {};
+  historyEnrollments.forEach(e => {
+    const cid = e.course_id;
+    enrollCounts[cid] = (enrollCounts[cid] || 0) + 1;
+  });
+  const barLabels = allCourses.map(c => c.title);
+  const barData = allCourses.map(c => enrollCounts[c.id] || 0);
+
+  const canvasBar = document.getElementById('chart-enrollments-bar');
+  if (canvasBar) {
+    const ctxBar = canvasBar.getContext('2d');
+    enrollmentsChart = new Chart(ctxBar, {
+      type: 'bar',
+      data: {
+        labels: barLabels,
+        datasets: [{
+          label: 'Enrolled Candidates',
+          data: barData,
+          backgroundColor: 'rgba(139, 92, 246, 0.65)',
+          borderColor: '#8b5cf6',
+          borderWidth: 1.5,
+          borderRadius: 6
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: { display: false }
+        },
+        scales: {
+          y: {
+            beginAtZero: true,
+            ticks: { stepSize: 1, color: '#9ca3af' },
+            grid: { color: 'rgba(255, 255, 255, 0.05)' }
+          },
+          x: {
+            ticks: { color: '#9ca3af' },
+            grid: { display: false }
+          }
+        }
+      }
+    });
+  }
+
+  // 2. Doughnut Chart: Progress Distribution
+  let notStartedCount = 0;
+  let inProgressCount = 0;
+  let completedCount = 0;
+
+  historyEnrollments.forEach(enroll => {
+    const studentId = enroll.user_id;
+    const courseId = enroll.course_id;
+    
+    const studentProgs = historyProgress.filter(p => p.user_id === studentId && p.course_id == courseId);
+    const completedLectures = studentProgs.filter(p => p.completed === 1 || p.completed === true);
+    
+    if (completedLectures.length === 0) {
+      notStartedCount++;
+    } else {
+      // Find course total lectures
+      const courseLectures = courseLecturesMap[courseId] || [];
+      if (courseLectures.length > 0 && completedLectures.length >= courseLectures.length) {
+        completedCount++;
+      } else {
+        inProgressCount++;
+      }
+    }
+  });
+
+  const canvasDoughnut = document.getElementById('chart-progress-doughnut');
+  if (canvasDoughnut) {
+    const ctxDoughnut = canvasDoughnut.getContext('2d');
+    progressChart = new Chart(ctxDoughnut, {
+      type: 'doughnut',
+      data: {
+        labels: ['Not Started', 'In Progress', 'Fully Completed'],
+        datasets: [{
+          data: [notStartedCount, inProgressCount, completedCount],
+          backgroundColor: [
+            'rgba(244, 63, 94, 0.65)',
+            'rgba(14, 165, 233, 0.65)',
+            'rgba(16, 185, 129, 0.65)'
+          ],
+          borderColor: [
+            '#f43f5e',
+            '#0ea5e9',
+            '#10b981'
+          ],
+          borderWidth: 1.5
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: {
+            position: 'bottom',
+            labels: { color: '#9ca3af' }
+          }
+        }
+      }
+    });
+  }
+
+  // 3. Line Chart: 7-Day Activity Logs
+  const activityByDay = {};
+  const lineLabels = [];
+  const lineData = [];
+  
+  for (let i = 6; i >= 0; i--) {
+    const d = new Date();
+    d.setDate(d.getDate() - i);
+    const yyyymmdd = d.toISOString().substring(0, 10);
+    const label = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+    lineLabels.push(label);
+    activityByDay[yyyymmdd] = 0;
+  }
+
+  historyLogs.forEach(l => {
+    if (l.login_time) {
+      const date = l.login_time.substring(0, 10);
+      if (activityByDay[date] !== undefined) activityByDay[date]++;
+    }
+  });
+  historyProgress.forEach(p => {
+    if (p.updated_at) {
+      const date = p.updated_at.substring(0, 10);
+      if (activityByDay[date] !== undefined) activityByDay[date]++;
+    }
+  });
+  historySubmissions.forEach(s => {
+    const raw = s.created_at || s.updated_at;
+    if (raw) {
+      const date = raw.substring(0, 10);
+      if (activityByDay[date] !== undefined) activityByDay[date]++;
+    }
+  });
+
+  const dateKeys = Object.keys(activityByDay).sort();
+  dateKeys.forEach(k => {
+    lineData.push(activityByDay[k]);
+  });
+
+  const canvasLine = document.getElementById('chart-activity-line');
+  if (canvasLine) {
+    const ctxLine = canvasLine.getContext('2d');
+    activityChart = new Chart(ctxLine, {
+      type: 'line',
+      data: {
+        labels: lineLabels,
+        datasets: [{
+          label: 'Activity Actions',
+          data: lineData,
+          borderColor: '#10b981',
+          backgroundColor: 'rgba(16, 185, 129, 0.05)',
+          borderWidth: 2,
+          tension: 0.3,
+          fill: true
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: { display: false }
+        },
+        scales: {
+          y: {
+            beginAtZero: true,
+            ticks: { stepSize: 1, color: '#9ca3af' },
+            grid: { color: 'rgba(255, 255, 255, 0.05)' }
+          },
+          x: {
+            ticks: { color: '#9ca3af' },
+            grid: { display: false }
+          }
+        }
+      }
+    });
+  }
+}

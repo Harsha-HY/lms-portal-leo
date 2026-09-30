@@ -3,17 +3,23 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Admin Dashboard - LeoAxis</title>
+  <title>Admin Dashboard - GSSS LMS Portal</title>
+  <link rel="icon" type="image/png" href="/images/gsss-logo.png">
   <link rel="stylesheet" href="css/styles.css">
 </head>
-<body>
+<body class="theme-cream-white">
   <div class="app-layout">
     
     <!-- Sidebar Panel (Coursera Style) -->
     <aside class="app-sidebar">
-      <a href="#" class="sidebar-brand">
-        <div class="auth-brand-logo">L</div>
-        <span>LeoAxis</span>
+      <a href="index.html" class="sidebar-brand" style="text-decoration: none;">
+        <img src="/images/gsss-logo.png" alt="GSSS Crest" style="width: 36px; height: 36px; object-fit: contain;" onerror="this.onerror=null; this.src='https://ssfgc.ac.in/wp-content/uploads/2025/11/gsss-logo.png';">
+        <div style="display: flex; flex-direction: column;">
+          <div style="display: flex; align-items: center; gap: 0.35rem; font-family: 'Sora', sans-serif; font-size: 0.95rem; font-weight: 800; color: #0b132b;">
+            GSSS SSFGC <span style="font-size: 0.65rem; font-weight: 800; text-transform: uppercase; background: rgba(245, 158, 11, 0.15); color: #b45309; padding: 0.1rem 0.4rem; border-radius: 4px; border: 1px solid rgba(245, 158, 11, 0.3);">LMS</span>
+          </div>
+          <span style="font-size: 0.65rem; font-weight: 600; color: #64748b;">Uni. of Mysore</span>
+        </div>
       </a>
       
       <nav class="sidebar-nav">
@@ -83,6 +89,21 @@
             <path stroke-linecap="round" stroke-linejoin="round" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path>
           </svg>
           Callback Requests
+        </button>
+
+        <button class="sidebar-link" id="meet-nav-btn" onclick="switchAdminTab('meet', this)">
+      <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-video h-5 w-5"><path d="m22 8-6 4 6 4V8Z"/><rect width="14" height="12" x="2" y="6" rx="2" ry="2"/></svg>
+      <span>Meet Manager</span>
+    </button>
+    <button class="sidebar-link" id="chat-nav-btn" onclick="switchAdminTab('chat', this)">
+      <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-message-square h-5 w-5"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+      <span>Group Chat</span>
+    </button>
+    <button class="sidebar-link" id="queries-nav-btn" onclick="switchAdminTab('queries', this)">
+          <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M18.364 5.636l-3.536 3.536m0 5.656l3.536 3.536M9.172 9.172L5.636 5.636m3.536 9.192l-3.536 3.536M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-5 0a4 4 0 11-8 0 4 4 0 018 0z"></path>
+          </svg>
+          User Queries
         </button>
 
         <button class="sidebar-link" id="xp-nav-btn" onclick="switchAdminTab('xp', this)">
@@ -908,7 +929,51 @@
 
 
       <!-- 5. STUDENT ANALYTICS WORKSPACE -->
-      <section id="tab-admin-analytics" class="admin-tab-view" style="display: none;">
+      <!-- Overview Analytics Tab -->
+    <section id="tab-admin-overview-analytics" class="admin-tab-view" style="display: none;">
+      <!-- Premium Cards -->
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1rem; margin-bottom: 1.5rem;">
+        <div style="padding: 1.25rem; border: 1px solid var(--card-border); background: var(--bg-main); border-radius: var(--radius-md); text-align: left;">
+          <span style="font-size: 0.75rem; color: var(--text-muted); font-weight: 600; text-transform: uppercase;">Total Registered Students</span>
+          <h3 style="font-size: 2rem; font-weight: 900; margin-top: 0.25rem; color: var(--primary);" id="overview-total-students">0</h3>
+        </div>
+        <div style="padding: 1.25rem; border: 1px solid var(--card-border); background: var(--bg-main); border-radius: var(--radius-md); text-align: left;">
+          <span style="font-size: 0.75rem; color: var(--text-muted); font-weight: 600; text-transform: uppercase;">Total Active Courses</span>
+          <h3 style="font-size: 2rem; font-weight: 900; margin-top: 0.25rem; color: var(--success);" id="overview-total-courses">0</h3>
+        </div>
+        <div style="padding: 1.25rem; border: 1px solid var(--card-border); background: var(--bg-main); border-radius: var(--radius-md); text-align: left;">
+          <span style="font-size: 0.75rem; color: var(--text-muted); font-weight: 600; text-transform: uppercase;">Total Active Enrollments</span>
+          <h3 style="font-size: 2rem; font-weight: 900; margin-top: 0.25rem; color: var(--info);" id="overview-total-enrollments">0</h3>
+        </div>
+      </div>
+
+      <!-- Charts Grid -->
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-bottom: 1.5rem; align-items: stretch;">
+        <div class="chat-window" style="height: auto; min-height: 380px; margin-top: 0; padding: 1.5rem;">
+          <h3 style="font-size: 1rem; font-weight: 700; color: var(--text-main); margin-bottom: 1rem; text-transform: uppercase; letter-spacing: 0.05em;">Enrollments Per Course</h3>
+          <div style="flex: 1; position: relative; min-height: 250px;">
+            <canvas id="chart-enrollments-bar"></canvas>
+          </div>
+        </div>
+
+        <div class="chat-window" style="height: auto; min-height: 380px; margin-top: 0; padding: 1.5rem;">
+          <h3 style="font-size: 1rem; font-weight: 700; color: var(--text-main); margin-bottom: 1rem; text-transform: uppercase; letter-spacing: 0.05em;">Student Progress Distribution</h3>
+          <div style="flex: 1; position: relative; min-height: 250px;">
+            <canvas id="chart-progress-doughnut"></canvas>
+          </div>
+        </div>
+      </div>
+
+      <!-- Activity Timeline Chart -->
+      <div class="chat-window" style="height: auto; min-height: 350px; margin-top: 0; padding: 1.5rem;">
+        <h3 style="font-size: 1rem; font-weight: 700; color: var(--text-main); margin-bottom: 1rem; text-transform: uppercase; letter-spacing: 0.05em;">Student Activity Logs Timeline (Last 7 Days)</h3>
+        <div style="flex: 1; position: relative; min-height: 220px;">
+          <canvas id="chart-activity-line"></canvas>
+        </div>
+      </div>
+    </section>
+
+    <section id="tab-admin-analytics" class="admin-tab-view" style="display: none;">
         <div class="admin-grid" style="grid-template-columns: 1fr 2fr; gap: 1.5rem; align-items: stretch; min-height: 500px;">
           <!-- Left Column: Student Selection List -->
           <div class="admin-panel-card" style="padding: 1.5rem; display: flex; flex-direction: column; gap: 1rem;">
@@ -1050,6 +1115,154 @@
             <div id="requests-completed-list" style="display: flex; flex-direction: column; gap: 1rem; overflow-y: auto; max-height: 520px; padding-right: 0.25rem;">
               <!-- Populated dynamically via JS -->
               <span style="font-size: 0.85rem; color: var(--text-muted); font-style: italic;">No finished callback requests yet.</span>
+            </div>
+          </div>
+
+        </div>
+      </section>
+
+      <!-- LANDING PAGE QUERIES WORKSPACE -->
+      
+    <!-- Google Meet Scheduler Tab -->
+    <section id="tab-admin-meet" class="admin-tab-view" style="display: none;">
+      <div style="display: grid; grid-template-columns: 320px 1fr; gap: 1.5rem; align-items: start;">
+        
+        <!-- Sidebar Form -->
+        <div style="padding: 1.5rem; border: 1px solid var(--card-border); background: var(--bg-main); border-radius: var(--radius-lg); box-shadow: var(--shadow-sm);">
+          <h3 style="font-size: 1.1rem; font-weight: 700; margin-bottom: 1.25rem;">Schedule Class</h3>
+          <form id="schedule-meet-form" onsubmit="event.preventDefault(); scheduleMeetLink();" style="display: flex; flex-direction: column; gap: 1rem;">
+            <div>
+              <label style="font-size: 0.75rem; color: var(--text-muted); font-weight: 600; display: block; margin-bottom: 0.25rem;">Topic Name</label>
+              <input type="text" id="meet-topic-input" required class="chat-input-box" style="border: 1px solid var(--card-border); border-radius: var(--radius-sm); width: 100%; height: 38px; padding: 0.5rem;" placeholder="e.g. Intro to Async Programming" />
+            </div>
+            <div>
+              <label style="font-size: 0.75rem; color: var(--text-muted); font-weight: 600; display: block; margin-bottom: 0.25rem;">Target Course</label>
+              <select id="meet-course-select" required class="chat-input-box" style="border: 1px solid var(--card-border); border-radius: var(--radius-sm); width: 100%; height: 38px; padding: 0.5rem; background: var(--bg-main); color: var(--text-main);">
+                <!-- Populated dynamically via JS -->
+              </select>
+            </div>
+            <div>
+              <label style="font-size: 0.75rem; color: var(--text-muted); font-weight: 600; display: block; margin-bottom: 0.25rem;">Meet URL</label>
+              <input type="url" id="meet-url-input" required class="chat-input-box" style="border: 1px solid var(--card-border); border-radius: var(--radius-sm); width: 100%; height: 38px; padding: 0.5rem;" placeholder="https://meet.google.com/..." />
+            </div>
+            <div>
+              <label style="font-size: 0.75rem; color: var(--text-muted); font-weight: 600; display: block; margin-bottom: 0.25rem;">Date & Time</label>
+              <input type="datetime-local" id="meet-date-input" required class="chat-input-box" style="border: 1px solid var(--card-border); border-radius: var(--radius-sm); width: 100%; height: 38px; padding: 0.5rem;" />
+            </div>
+            <div>
+              <label style="font-size: 0.75rem; color: var(--text-muted); font-weight: 600; display: block; margin-bottom: 0.25rem;">Duration</label>
+              <input type="text" id="meet-duration-input" required class="chat-input-box" style="border: 1px solid var(--card-border); border-radius: var(--radius-sm); width: 100%; height: 38px; padding: 0.5rem;" placeholder="e.g. 60 Minutes" />
+            </div>
+            <div>
+              <label style="font-size: 0.75rem; color: var(--text-muted); font-weight: 600; display: block; margin-bottom: 0.25rem;">Mentor Name</label>
+              <input type="text" id="meet-mentor-input" required class="chat-input-box" style="border: 1px solid var(--card-border); border-radius: var(--radius-sm); width: 100%; height: 38px; padding: 0.5rem;" placeholder="e.g. Hemanth Sir" />
+            </div>
+            <button type="submit" class="chat-submit-btn" style="width: 100%; height: 40px; border-radius: var(--radius-md); font-weight: bold; background: var(--primary);">Schedule Meet</button>
+          </form>
+        </div>
+        
+        <!-- Main Panels -->
+        <div style="display: flex; flex-direction: column; gap: 1.5rem;">
+          <!-- Active List -->
+          <div class="chat-window" style="height: auto; min-height: 250px; margin-top: 0;">
+            <h3 style="font-size: 1.1rem; font-weight: 700; color: var(--text-main); margin-bottom: 0.5rem; text-transform: uppercase; letter-spacing: 0.05em;">Scheduled Active Classes</h3>
+            <div id="admin-active-meets" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 1rem; margin-top: 0.5rem;">
+              <!-- Active Meet Cards -->
+            </div>
+          </div>
+          
+          <!-- History Table -->
+          <div class="chat-window" style="height: auto; min-height: 250px; margin-top: 0;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem; flex-wrap: wrap; gap: 0.5rem;">
+              <h3 style="font-size: 1.1rem; font-weight: 700; color: var(--text-main); text-transform: uppercase; letter-spacing: 0.05em; margin: 0;">History Logs (Completed Meets)</h3>
+              <div style="display: flex; align-items: center; gap: 0.5rem;">
+                <label style="font-size: 0.75rem; color: var(--text-muted); font-weight: 600;">Filter by Course:</label>
+                <select id="meet-history-filter" onchange="filterAdminMeetHistory()" class="chat-input-box" style="border: 1px solid var(--card-border); border-radius: var(--radius-sm); height: 32px; padding: 0.25rem 0.5rem; background: var(--bg-main); color: var(--text-main); font-size: 0.75rem; width: 160px;">
+                  <!-- Populated dynamically via JS -->
+                </select>
+              </div>
+            </div>
+            <div style="overflow-x: auto; margin-top: 0.5rem;">
+              <table class="history-table" style="width: 100%; border-collapse: collapse; text-align: left; font-size: 0.85rem;">
+                <thead>
+                  <tr style="border-bottom: 2px solid var(--card-border); color: var(--text-muted);">
+                    <th style="padding: 0.75rem 1rem;">Topic & Subject</th>
+                    <th style="padding: 0.75rem 1rem;">Mentor Name</th>
+                    <th style="padding: 0.75rem 1rem;">Scheduled Time</th>
+                    <th style="padding: 0.75rem 1rem;">Duration</th>
+                    <th style="padding: 0.75rem 1rem;">Original URL</th>
+                    <th style="padding: 0.75rem 1rem;">Status</th>
+                  </tr>
+                </thead>
+                <tbody id="admin-history-meets">
+                  <!-- History rows -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+        
+      </div>
+    </section>
+
+    <!-- Group Chat Tab -->
+    <section id="tab-admin-chat" class="admin-tab-view" style="display: none;">
+      <div class="chat-window">
+        <div class="chat-header">
+          <div class="chat-header-info">
+            <h2>GSSS LMS Batch Chat (Admin Panel)</h2>
+            <p>Interact with candidates, post updates, and moderate conversations.</p>
+          </div>
+          <div class="chat-status-badge">
+            <span class="chat-status-dot"></span>
+            <span>Active</span>
+          </div>
+        </div>
+        
+        <div id="chat-messages-container-admin" class="chat-messages-box">
+          <!-- Messages will load here dynamically -->
+        </div>
+        
+        
+        <div class="chat-input-bar">
+          <input type="text" id="chat-input-field-admin" placeholder="Message #batch-chat as admin..." onkeydown="if(event.key === 'Enter') { event.preventDefault(); sendGroupChatMessageAdmin(); }" class="chat-input-box" />
+          <button id="chat-send-btn-admin" onclick="sendGroupChatMessageAdmin()" class="chat-submit-btn" aria-label="Send message">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m3 3 3 9-3 9 19-9z"/><path d="M6 12h16"/></svg>
+          </button>
+        </div>
+      </div>
+    </section>
+
+<section id="tab-admin-queries" class="admin-tab-view" style="display: none;">
+        <div class="admin-grid" style="grid-template-columns: 1fr 1fr; gap: 2rem; align-items: stretch; min-height: 500px; text-align: left;">
+          
+          <!-- Left Column: Pending Box -->
+          <div class="admin-panel-card" style="padding: 1.5rem; display: flex; flex-direction: column; gap: 1rem; border-color: var(--card-border);">
+            <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--card-border); padding-bottom: 0.50rem;">
+              <h3 style="margin: 0; display: flex; align-items: center; gap: 0.5rem;">
+                <span style="color: #f59e0b;">⏳</span> Pending User Queries
+              </h3>
+              <span id="queries-pending-count" class="badge-purple" style="font-size: 0.75rem;">0 Pending</span>
+            </div>
+            
+            <div id="queries-pending-list" style="display: flex; flex-direction: column; gap: 1rem; overflow-y: auto; max-height: 520px; padding-right: 0.25rem;">
+              <!-- Populated dynamically via JS -->
+              <span style="font-size: 0.85rem; color: var(--text-muted); font-style: italic;">No pending landing queries.</span>
+            </div>
+          </div>
+
+          <!-- Right Column: Finished/Completed Box -->
+          <div class="admin-panel-card" style="padding: 1.5rem; display: flex; flex-direction: column; gap: 1rem; border-color: rgba(16, 185, 129, 0.2);">
+            <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--card-border); padding-bottom: 0.50rem;">
+              <h3 style="margin: 0; display: flex; align-items: center; gap: 0.5rem;">
+                <span style="color: #10b981;">✓</span> Finished / Resolved Queries
+              </h3>
+              <span id="queries-completed-count" class="badge-success" style="font-size: 0.75rem; background: rgba(16, 185, 129, 0.15); border: 1px solid rgba(16, 185, 129, 0.3); color: var(--success);">0 Completed</span>
+            </div>
+            
+            <div id="queries-completed-list" style="display: flex; flex-direction: column; gap: 1rem; overflow-y: auto; max-height: 520px; padding-right: 0.25rem;">
+              <!-- Populated dynamically via JS -->
+              <span style="font-size: 0.85rem; color: var(--text-muted); font-style: italic;">No finished landing queries yet.</span>
             </div>
           </div>
 

@@ -1,5 +1,7 @@
 node_modules/
+*.db
 database.db
+lms.db
 public/uploads/*
 !public/uploads/.gitkeep
 .env
