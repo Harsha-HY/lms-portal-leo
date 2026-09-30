@@ -49,8 +49,7 @@ const db = new sqlite3.Database(DB_PATH, (err) => {
 // Configure Express Middlewares
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-app.use('/uploads', express.static(UPLOADS_DIR));
-app.use(express.static(path.join(__dirname, 'client', 'dist')));
+app.use(express.static(path.join(__dirname, 'public')));
 
 app.use(session({
   secret: process.env.SESSION_SECRET || 'lms_secret_session_key_123!#',
@@ -1888,12 +1887,15 @@ app.get('/api/student/assessments/:id/review', requireLogin, (req, res) => {
   });
 });
 
-// Catch-all to support SPA routing via React Router
+// Catch-all route to serve public/index.html
 app.get('*', (req, res) => {
-  res.sendFile(path.join(__dirname, 'client', 'dist', 'index.html'));
+  res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
 // Start Server
 app.listen(PORT, () => {
-  console.log(`LMS Server is running on http://localhost:${PORT}`);
+  console.log(`\n==================================================`);
+  console.log(`🚀 GSSS LMS Portal Server is running!`);
+  console.log(`🔗 Access website at: http://localhost:${PORT}`);
+  console.log(`==================================================\n`);
 });
