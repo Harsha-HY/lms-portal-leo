@@ -1078,13 +1078,13 @@ window.switchModalTab = function(tabName) {
     const sec = document.getElementById(`modal-sec-${t}`);
     if (btn) {
       if (t === tabName) {
-        btn.className = 'btn btn-primary';
+        btn.className = 'btn btn-primary modal-tab-active';
         btn.style.background = '';
         btn.style.color = '';
       } else {
-        btn.className = 'btn btn-logout';
-        btn.style.background = 'rgba(255,255,255,0.05)';
-        btn.style.color = 'var(--text-main)';
+        btn.className = 'btn modal-tab-inactive';
+        btn.style.background = '';
+        btn.style.color = '';
       }
     }
     if (sec) {
@@ -1237,15 +1237,15 @@ window.playLecture = async function(lectureId, title, courseTitle, videoUrl) {
     linkedMCQs.forEach((q, qIdx) => {
       const qDiv = document.createElement('div');
       qDiv.className = 'quiz-question-block';
-      qDiv.style.cssText = 'border-bottom: 1px solid var(--card-border); padding-bottom: 1.25rem; width: 100%; text-align: left;';
+      qDiv.style.cssText = 'border-bottom: 1.5px solid rgba(180, 140, 100, 0.2); padding-bottom: 1.25rem; width: 100%; text-align: left;';
       
       qDiv.innerHTML = `
-        <h4 style="margin: 0 0 0.75rem 0; font-size: 0.95rem; color: var(--text-main); line-height: 1.4;">${qIdx + 1}. ${q.question}</h4>
+        <h4 style="margin: 0 0 0.75rem 0; font-size: 1rem; font-weight: 800; color: #0b132b; line-height: 1.4;">${qIdx + 1}. ${q.question}</h4>
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; margin-bottom: 0.5rem;" id="quiz-sheet-opts-${q.id}">
-          <button onclick="selectModalQuizOption(${q.id}, 'A', this)" class="btn btn-logout quiz-opt-btn" style="text-align: left; font-weight: normal; font-size: 0.8rem; background: rgba(255,255,255,0.02); border: 1px solid var(--card-border); padding: 0.6rem 0.85rem; border-radius: var(--radius-sm); color: var(--text-main);">A. ${q.option_a}</button>
-          <button onclick="selectModalQuizOption(${q.id}, 'B', this)" class="btn btn-logout quiz-opt-btn" style="text-align: left; font-weight: normal; font-size: 0.8rem; background: rgba(255,255,255,0.02); border: 1px solid var(--card-border); padding: 0.6rem 0.85rem; border-radius: var(--radius-sm); color: var(--text-main);">B. ${q.option_b}</button>
-          <button onclick="selectModalQuizOption(${q.id}, 'C', this)" class="btn btn-logout quiz-opt-btn" style="text-align: left; font-weight: normal; font-size: 0.8rem; background: rgba(255,255,255,0.02); border: 1px solid var(--card-border); padding: 0.6rem 0.85rem; border-radius: var(--radius-sm); color: var(--text-main);">C. ${q.option_c}</button>
-          <button onclick="selectModalQuizOption(${q.id}, 'D', this)" class="btn btn-logout quiz-opt-btn" style="text-align: left; font-weight: normal; font-size: 0.8rem; background: rgba(255,255,255,0.02); border: 1px solid var(--card-border); padding: 0.6rem 0.85rem; border-radius: var(--radius-sm); color: var(--text-main);">D. ${q.option_d}</button>
+          <button onclick="selectModalQuizOption(${q.id}, 'A', this)" class="btn quiz-opt-btn">A. ${q.option_a}</button>
+          <button onclick="selectModalQuizOption(${q.id}, 'B', this)" class="btn quiz-opt-btn">B. ${q.option_b}</button>
+          <button onclick="selectModalQuizOption(${q.id}, 'C', this)" class="btn quiz-opt-btn">C. ${q.option_c}</button>
+          <button onclick="selectModalQuizOption(${q.id}, 'D', this)" class="btn quiz-opt-btn">D. ${q.option_d}</button>
         </div>
         <div id="quiz-sheet-feedback-${q.id}" style="margin-top: 0.5rem; display: none;"></div>
       `;
@@ -1389,15 +1389,14 @@ window.selectModalQuizOption = function(mcqId, optionVal, btnEl) {
   if (!optContainer) return;
   
   optContainer.querySelectorAll('.quiz-opt-btn').forEach(btn => {
-    btn.style.borderColor = 'var(--card-border)';
-    btn.style.backgroundColor = 'rgba(255,255,255,0.02)';
-    btn.style.color = 'var(--text-main)';
+    btn.classList.remove('quiz-opt-selected');
+    btn.style.borderColor = '';
+    btn.style.backgroundColor = '';
+    btn.style.color = '';
   });
 
   selectedModalQuizOptions[mcqId] = optionVal;
-  btnEl.style.borderColor = 'var(--primary)';
-  btnEl.style.backgroundColor = 'rgba(59, 130, 246, 0.08)';
-  btnEl.style.color = 'var(--primary-light)';
+  btnEl.classList.add('quiz-opt-selected');
 };
 
 window.submitQuizSheet = async function() {
@@ -3593,13 +3592,13 @@ window.switchLinkingSubTab = function(subTabName) {
     const sec = document.getElementById(`sec-subtab-${t}`);
     if (btn) {
       if (t === subTabName) {
-        btn.className = 'btn btn-primary';
+        btn.className = 'btn btn-primary modal-tab-active';
         btn.style.background = '';
         btn.style.color = '';
       } else {
-        btn.className = 'btn btn-logout';
-        btn.style.background = 'rgba(255,255,255,0.05)';
-        btn.style.color = 'var(--text-main)';
+        btn.className = 'btn modal-tab-inactive';
+        btn.style.background = '';
+        btn.style.color = '';
       }
     }
     if (sec) sec.style.display = (t === subTabName) ? 'block' : 'none';

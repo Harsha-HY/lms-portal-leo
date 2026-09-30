@@ -2200,3 +2200,231 @@ tr:hover td {
   border-color: #f59e0b !important;
   box-shadow: 0 0 0 2px rgba(245, 158, 11, 0.2) !important;
 }
+
+/* ==========================================================================
+   VIDEO PLAYER & MILESTONE WORKSPACE (WARM CREAM HIGH CONTRAST)
+   ========================================================================== */
+
+.modal-overlay {
+  background: rgba(11, 19, 43, 0.65) !important;
+  backdrop-filter: blur(8px);
+}
+
+.video-modal-box {
+  background: #FFFFFF !important;
+  border: 1.5px solid rgba(180, 140, 100, 0.3) !important;
+  box-shadow: 0 24px 60px -12px rgba(11, 19, 43, 0.35) !important;
+  border-radius: 1.25rem !important;
+  max-width: 1050px !important;
+  width: 95% !important;
+  max-height: 90vh !important;
+  display: flex !important;
+  flex-direction: column !important;
+  overflow: hidden !important;
+  color: #1e293b !important;
+}
+
+.video-modal-header {
+  background: #FAF8F5 !important;
+  border-bottom: 1.5px solid rgba(180, 140, 100, 0.2) !important;
+  padding: 1rem 1.5rem !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  gap: 1rem !important;
+}
+
+.video-modal-header .modal-title {
+  color: #0b132b !important;
+  font-family: 'Sora', sans-serif !important;
+  font-size: 1.25rem !important;
+  font-weight: 800 !important;
+  margin: 0 !important;
+}
+
+.video-modal-tabs {
+  display: flex !important;
+  gap: 0.5rem !important;
+  flex-wrap: wrap !important;
+}
+
+.modal-tab-active {
+  background: linear-gradient(135deg, #0b132b 0%, #1c2541 100%) !important;
+  color: #f59e0b !important;
+  font-weight: 800 !important;
+  padding: 0.35rem 0.85rem !important;
+  font-size: 0.825rem !important;
+  border-radius: 0.5rem !important;
+  border: 1px solid rgba(245, 158, 11, 0.4) !important;
+  box-shadow: 0 4px 12px rgba(11, 19, 43, 0.2) !important;
+}
+
+.modal-tab-inactive {
+  background: #FFFFFF !important;
+  color: #334155 !important;
+  font-weight: 700 !important;
+  padding: 0.35rem 0.85rem !important;
+  font-size: 0.825rem !important;
+  border-radius: 0.5rem !important;
+  border: 1.5px solid rgba(180, 140, 100, 0.25) !important;
+  transition: all 0.2s ease !important;
+}
+
+.modal-tab-inactive:hover {
+  background: #F5EFE9 !important;
+  color: #0b132b !important;
+  border-color: #f59e0b !important;
+}
+
+.video-modal-body {
+  flex: 1 !important;
+  overflow-y: auto !important;
+  padding: 1.25rem !important;
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 1rem !important;
+  background: #FAF8F5 !important;
+}
+
+.video-custom-controls {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 0.75rem !important;
+  padding: 0.75rem 1.25rem !important;
+  background: #0b132b !important;
+  border-radius: 0.75rem !important;
+  margin-top: 0.75rem !important;
+  margin-bottom: 0.5rem !important;
+  flex-wrap: wrap !important;
+  box-shadow: 0 8px 24px rgba(11, 19, 43, 0.2) !important;
+}
+
+.video-ctrl-btn {
+  background: rgba(255, 255, 255, 0.12) !important;
+  color: #FFFFFF !important;
+  font-weight: 700 !important;
+  padding: 0.35rem 0.75rem !important;
+  font-size: 0.825rem !important;
+  border: 1px solid rgba(255, 255, 255, 0.2) !important;
+  border-radius: 0.5rem !important;
+  transition: all 0.2s ease !important;
+}
+
+.video-ctrl-btn:hover {
+  background: rgba(255, 255, 255, 0.22) !important;
+  color: #f59e0b !important;
+  border-color: #f59e0b !important;
+}
+
+.video-ctrl-select {
+  background: rgba(255, 255, 255, 0.15) !important;
+  color: #FFFFFF !important;
+  font-weight: 700 !important;
+  border: 1px solid rgba(255, 255, 255, 0.25) !important;
+  border-radius: 0.5rem !important;
+  padding: 0.3rem 0.6rem !important;
+  font-size: 0.8rem !important;
+  width: auto !important;
+  height: auto !important;
+}
+
+.video-ctrl-select option {
+  background: #0b132b !important;
+  color: #FFFFFF !important;
+}
+
+.video-notes-card,
+.video-quiz-card {
+  background: #FFFFFF !important;
+  border: 1.5px solid rgba(180, 140, 100, 0.25) !important;
+  padding: 1.5rem !important;
+  border-radius: 1rem !important;
+}
+
+.video-subpanel-header {
+  display: flex !important;
+  justify-content: space-between !important;
+  align-items: center !important;
+  margin-bottom: 1.25rem !important;
+  border-bottom: 1.5px solid rgba(180, 140, 100, 0.2) !important;
+  padding-bottom: 0.75rem !important;
+}
+
+.video-notes-text {
+  font-size: 1rem !important;
+  line-height: 1.7 !important;
+  color: #1e293b !important;
+  font-weight: 500 !important;
+  text-align: left !important;
+  padding: 0.5rem !important;
+  white-space: pre-wrap !important;
+  font-family: 'Manrope', sans-serif !important;
+}
+
+.quiz-opt-btn {
+  text-align: left !important;
+  font-weight: 600 !important;
+  font-size: 0.88rem !important;
+  background: #FAF8F5 !important;
+  border: 1.5px solid rgba(180, 140, 100, 0.25) !important;
+  padding: 0.75rem 1rem !important;
+  border-radius: 0.65rem !important;
+  color: #1e293b !important;
+  transition: all 0.2s ease !important;
+  cursor: pointer !important;
+  width: 100% !important;
+}
+
+.quiz-opt-btn:hover {
+  background: #F5EFE9 !important;
+  border-color: #f59e0b !important;
+  color: #0b132b !important;
+  transform: translateY(-1px) !important;
+}
+
+.quiz-opt-selected {
+  background: linear-gradient(135deg, #0b132b 0%, #1c2541 100%) !important;
+  color: #f59e0b !important;
+  font-weight: 800 !important;
+  border-color: #f59e0b !important;
+  box-shadow: 0 4px 12px rgba(11, 19, 43, 0.2) !important;
+}
+
+.video-coding-grid {
+  display: grid !important;
+  grid-template-columns: 1fr 1.25fr !important;
+  gap: 1.25rem !important;
+  min-height: 520px !important;
+  background: #FFFFFF !important;
+  border: 1.5px solid rgba(180, 140, 100, 0.25) !important;
+  border-radius: 1rem !important;
+  padding: 1.25rem !important;
+}
+
+.video-coding-instructions {
+  overflow-y: auto !important;
+  padding-right: 0.75rem !important;
+  border-right: 1.5px solid rgba(180, 140, 100, 0.2) !important;
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 1rem !important;
+}
+
+.video-hint-box {
+  background: #FAF8F5 !important;
+  border: 1.5px solid rgba(180, 140, 100, 0.22) !important;
+  padding: 0.65rem 0.85rem !important;
+  border-radius: 0.5rem !important;
+  margin-bottom: 0.5rem !important;
+}
+
+.video-modal-footer {
+  background: #FAF8F5 !important;
+  border-top: 1.5px solid rgba(180, 140, 100, 0.2) !important;
+  padding: 0.85rem 1.5rem !important;
+  display: flex !important;
+  justify-content: space-between !important;
+  align-items: center !important;
+  flex-shrink: 0 !important;
+}
