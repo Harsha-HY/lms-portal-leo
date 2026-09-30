@@ -1888,12 +1888,15 @@ app.get('/api/student/assessments/:id/review', requireLogin, (req, res) => {
   });
 });
 
-// Catch-all to support SPA routing via React Router
+// Catch-all route to serve public/index.html
 app.get('*', (req, res) => {
-  res.sendFile(path.join(__dirname, 'client', 'dist', 'index.html'));
+  res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
 // Start Server
 app.listen(PORT, () => {
-  console.log(`LMS Server is running on http://localhost:${PORT}`);
+  console.log(`\n==================================================`);
+  console.log(`🚀 GSSS LMS Portal Server is running!`);
+  console.log(`👉 Access website at: http://localhost:${PORT}`);
+  console.log(`==================================================\n`);
 });
