@@ -43,6 +43,8 @@ const db = new sqlite3.Database(DB_PATH, (err) => {
   } else {
     console.log('Connected to SQLite database.');
     initializeDatabase();
+    setTimeout(ensureAdminAccount, 2000); // auto-fix admin after DB init
+
   }
 });
 
@@ -349,6 +351,37 @@ function initializeDatabase() {
     )`);
 
     // Database setup is complete
+  });
+}
+
+// Ensure default admin account always exists and password is correct
+function ensureAdminAccount() {
+  const adminEmail = 'harshahy701@gmail.com';
+  const adminPassword = 'admin123';
+  db.get(`SELECT id, password_hash FROM users WHERE email = ?`, [adminEmail], (err, row) => {
+    if (err) return;
+    if (!row) {
+      // Create admin if not exists
+      bcrypt.hash(adminPassword, 10, (err, hash) => {
+        if (err) return;
+        db.run(`INSERT INTO users (name, email, password_hash, role) VALUES (?, ?, ?, ?)`,
+          ['LeoAxis', adminEmail, hash, 'admin'],
+          (err) => { if (!err) console.log('Admin account created.'); }
+        );
+      });
+    } else {
+      // Verify existing hash works — if not, reset it
+      bcrypt.compare(adminPassword, row.password_hash, (err, match) => {
+        if (!match) {
+          bcrypt.hash(adminPassword, 10, (err, hash) => {
+            if (err) return;
+            db.run(`UPDATE users SET password_hash = ? WHERE email = ?`, [hash, adminEmail],
+              (err) => { if (!err) console.log('Admin password auto-fixed.'); }
+            );
+          });
+        }
+      });
+    }
   });
 }
 
