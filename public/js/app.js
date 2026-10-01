@@ -1865,16 +1865,16 @@ async function handleUploadLecture(e) {
   const title = document.getElementById('lecture-title').value;
   const order_index = document.getElementById('lecture-order').value;
   const fileInput = document.getElementById('lecture-video-file');
-  const file = fileInput.files[0];
+  const file = fileInput ? fileInput.files[0] : null;
+  const videoUrlInput = document.getElementById('lecture-video-url');
+  const videoUrl = videoUrlInput ? videoUrlInput.value.trim() : '';
 
   if (!courseId) {
     showAdminAlert(alertContainer, 'error', 'Please select or create a course first.');
     return;
   }
-  if (!file) {
-    showAdminAlert(alertContainer, 'error', 'Please choose a recorded video file to upload.');
-    return;
-  }
+  // No longer require a file — URL or notes-only is fine
+
 
   const progressWrapper = document.getElementById('upload-progress-wrapper');
   const progressFill = document.getElementById('upload-progress-fill');
@@ -1894,8 +1894,13 @@ async function handleUploadLecture(e) {
   formData.append('order_index', order_index);
   formData.append('content_type', content_type);
   formData.append('duration', duration);
-  formData.append('video_file', file);
   formData.append('notes', notes);
+  if (file) {
+    formData.append('video_file', file);
+  } else if (videoUrl) {
+    formData.append('video_url', videoUrl);
+  }
+
 
   const xhr = new XMLHttpRequest();
   xhr.open('POST', `/api/courses/${courseId}/lectures`, true);

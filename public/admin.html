@@ -295,8 +295,12 @@
                 <input class="form-input" type="text" id="lecture-title" required placeholder="e.g. 1. Introduction to Relational Databases">
               </div>
               <div class="form-group">
-                <label class="form-label" for="lecture-video-file">Upload Recorded Video File</label>
-                <input class="form-input" type="file" id="lecture-video-file" accept="video/*" required>
+                <label class="form-label" for="lecture-video-file">Upload Video File <span style="color:var(--text-muted); font-weight:normal;">(Optional if using URL below)</span></label>
+                <input class="form-input" type="file" id="lecture-video-file" accept="video/*">
+              </div>
+              <div class="form-group">
+                <label class="form-label" for="lecture-video-url">— OR — Paste YouTube / Video URL <span style="color:var(--text-muted); font-weight:normal;">(Optional)</span></label>
+                <input class="form-input" type="url" id="lecture-video-url" placeholder="https://www.youtube.com/watch?v=...">
               </div>
               
               <div class="form-group">

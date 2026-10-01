@@ -47,9 +47,11 @@ const db = new sqlite3.Database(DB_PATH, (err) => {
 });
 
 // Configure Express Middlewares
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+app.use(express.json({ limit: '50mb' }));
+app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 app.use(express.static(path.join(__dirname, 'public')));
+// Serve uploaded files (videos, resumes, etc.)
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 app.use(session({
   secret: process.env.SESSION_SECRET || 'lms_secret_session_key_123!#',
@@ -662,21 +664,20 @@ app.get('/api/courses/:id/lectures', requireLogin, (req, res) => {
 app.post('/api/courses/:id/lectures', requireAdminOrFaculty, upload.single('video_file'), (req, res) => {
   const courseId = req.params.id;
   const { title, order_index, duration, content_type, notes } = req.body;
-  
+
   if (!title) {
     return res.status(400).json({ error: 'Title is required.' });
   }
 
   let video_url = '';
-  
-  // Check if file was uploaded
+
+  // Accept uploaded file OR a pasted URL — neither is strictly required
   if (req.file) {
     video_url = `uploads/${req.file.filename}`;
   } else if (req.body.video_url) {
     video_url = req.body.video_url;
-  } else {
-    return res.status(400).json({ error: 'Video file or video URL is required.' });
   }
+  // video_url stays '' if neither provided (notes-only lecture)
 
   const order = order_index || 0;
   const dur = duration || '15 mins';
